@@ -12,7 +12,7 @@ func TestTokenGenerationAndValidation(t *testing.T) {
 
 	userID := "018f3a5e-1234-7000-8000-000000000001"
 	phone := "+6281234567890"
-	role := db.RolesKader
+	role := db.UserRoleKader
 
 	tokenStr, err := authService.GenerateToken(userID, phone, role)
 	if err != nil {
@@ -44,7 +44,7 @@ func TestValidateInvalidToken(t *testing.T) {
 	authService := NewAuthService(nil, secret)
 
 	otherService := NewAuthService(nil, []byte("wrong-secret"))
-	tokenStr, err := authService.GenerateToken("id-123", "+628123456789", db.RolesOrangTua)
+	tokenStr, err := authService.GenerateToken("id-123", "+628123456789", db.UserRoleOrangTua)
 	if err != nil {
 		t.Fatalf("GenerateToken failed: %v", err)
 	}

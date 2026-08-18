@@ -11,55 +11,216 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Roles string
+type QuestionType string
 
 const (
-	RolesTenagaKesehatan Roles = "tenaga_kesehatan"
-	RolesKader           Roles = "kader"
-	RolesOrangTua        Roles = "orang_tua"
+	QuestionTypeMultipleChoice QuestionType = "multiple_choice"
+	QuestionTypeTrueFalse      QuestionType = "true_false"
 )
 
-func (e *Roles) Scan(src interface{}) error {
+func (e *QuestionType) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = Roles(s)
+		*e = QuestionType(s)
 	case string:
-		*e = Roles(s)
+		*e = QuestionType(s)
 	default:
-		return fmt.Errorf("unsupported scan type for Roles: %T", src)
+		return fmt.Errorf("unsupported scan type for QuestionType: %T", src)
 	}
 	return nil
 }
 
-type NullRoles struct {
-	Roles Roles
-	Valid bool // Valid is true if Roles is not NULL
+type NullQuestionType struct {
+	QuestionType QuestionType
+	Valid        bool // Valid is true if QuestionType is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullRoles) Scan(value interface{}) error {
+func (ns *NullQuestionType) Scan(value interface{}) error {
 	if value == nil {
-		ns.Roles, ns.Valid = "", false
+		ns.QuestionType, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.Roles.Scan(value)
+	return ns.QuestionType.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullRoles) Value() (driver.Value, error) {
+func (ns NullQuestionType) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.Roles), nil
+	return string(ns.QuestionType), nil
+}
+
+type StuntingStatus string
+
+const (
+	StuntingStatusSeverelyStunted StuntingStatus = "severely_stunted"
+	StuntingStatusStunted         StuntingStatus = "stunted"
+	StuntingStatusNormal          StuntingStatus = "normal"
+	StuntingStatusTall            StuntingStatus = "tall"
+)
+
+func (e *StuntingStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = StuntingStatus(s)
+	case string:
+		*e = StuntingStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for StuntingStatus: %T", src)
+	}
+	return nil
+}
+
+type NullStuntingStatus struct {
+	StuntingStatus StuntingStatus
+	Valid          bool // Valid is true if StuntingStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullStuntingStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.StuntingStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.StuntingStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullStuntingStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.StuntingStatus), nil
+}
+
+type UserRole string
+
+const (
+	UserRoleTenagaKesehatan UserRole = "tenaga_kesehatan"
+	UserRoleKader           UserRole = "kader"
+	UserRoleOrangTua        UserRole = "orang_tua"
+)
+
+func (e *UserRole) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = UserRole(s)
+	case string:
+		*e = UserRole(s)
+	default:
+		return fmt.Errorf("unsupported scan type for UserRole: %T", src)
+	}
+	return nil
+}
+
+type NullUserRole struct {
+	UserRole UserRole
+	Valid    bool // Valid is true if UserRole is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUserRole) Scan(value interface{}) error {
+	if value == nil {
+		ns.UserRole, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.UserRole.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUserRole) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.UserRole), nil
+}
+
+type Child struct {
+	ID          pgtype.UUID
+	ParentID    pgtype.UUID
+	Nik         *string
+	FullName    string
+	Gender      *string
+	BirthDate   pgtype.Date
+	HomeAddress *string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type EducationMaterial struct {
+	ID          pgtype.UUID
+	CreatorID   pgtype.UUID
+	Title       string
+	Description *string
+	VideoUrl    *string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type Measurement struct {
+	ID                    pgtype.UUID
+	MeasurerID            pgtype.UUID
+	MeasurerRole          UserRole
+	ChildrenID            pgtype.UUID
+	MeasuredAt            pgtype.Timestamptz
+	Weight                pgtype.Numeric
+	Height                pgtype.Numeric
+	StuntingStatus        NullStuntingStatus
+	ZScore                pgtype.Numeric
+	HeadCircumference     pgtype.Numeric
+	UpperArmCircumference pgtype.Numeric
+}
+
+type Notification struct {
+	ID        pgtype.UUID
+	UserID    pgtype.UUID
+	Title     string
+	Message   string
+	IsRead    *bool
+	CreatedAt pgtype.Timestamptz
+}
+
+type Quiz struct {
+	ID          pgtype.UUID
+	CreatorID   pgtype.UUID
+	Title       string
+	Description *string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type QuizQuestion struct {
+	ID           pgtype.UUID
+	QuizID       pgtype.UUID
+	QuestionText string
+	QuestionType QuestionType
+	Options      []byte
+	CorrectAns   *string
+}
+
+type QuizSubmission struct {
+	ID          pgtype.UUID
+	KaderID     pgtype.UUID
+	QuizID      pgtype.UUID
+	Score       pgtype.Numeric
+	Answers     []byte
+	SubmittedAt pgtype.Timestamptz
 }
 
 type User struct {
-	ID               pgtype.UUID
-	Name             string
-	PhoneNumber      string
-	Role             Roles
-	ResetToken       *string
-	ResetTokenExpiry pgtype.Timestamptz
-	CreatedAt        pgtype.Timestamptz
+	ID                    pgtype.UUID
+	Name                  string
+	Nik                   *string
+	PhoneNumber           *string
+	Role                  UserRole
+	ResetToken            *string
+	ResetTokenExpiry      pgtype.Timestamptz
+	CreatedAt             pgtype.Timestamptz
+	LastLoggedIn          pgtype.Timestamp
+	IsNotificationEnabled *bool
 }

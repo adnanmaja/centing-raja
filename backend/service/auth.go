@@ -18,7 +18,7 @@ import (
 type Claims struct {
 	UserID      string   `json:"user_id"`
 	PhoneNumber string   `json:"phone_number"`
-	Role        db.Roles `json:"role"`
+	Role        db.UserRole `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -35,14 +35,14 @@ func NewAuthService(db *db.Queries, jwtSecret []byte) *AuthService {
 }
 
 func (s *AuthService) Register(ctx context.Context, name, phoneNumber string, roleStr string) (db.CreateUserRow, error) {
-	role := db.Roles(roleStr)
-	if role != db.RolesTenagaKesehatan && role != db.RolesKader && role != db.RolesOrangTua {
+	role := db.UserRole(roleStr)
+	if role != db.UserRoleTenagaKesehatan && role != db.UserRoleKader && role != db.UserRoleOrangTua {
 		return db.CreateUserRow{}, errors.New("invalid role")
 	}
 
 	user, err := s.db.CreateUser(ctx, db.CreateUserParams{
 		Name:        name,
-		PhoneNumber: phoneNumber,
+		PhoneNumber: &phoneNumber,
 		Role:        role,
 	})
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *AuthService) Register(ctx context.Context, name, phoneNumber string, ro
 }
 
 func (s *AuthService) RequestOTP(ctx context.Context, phoneNumber string) (string, error) {
-	_, err := s.db.GetUserByPhoneNumber(ctx, phoneNumber)
+	_, err := s.db.GetUserByPhoneNumber(ctx, &phoneNumber)
 	if err != nil {
 		return "", errors.New("user not found")
 	}
@@ -72,7 +72,7 @@ func (s *AuthService) RequestOTP(ctx context.Context, phoneNumber string) (strin
 	expiry := time.Now().Add(5 * time.Minute)
 
 	err = s.db.UpdateUserOTP(ctx, db.UpdateUserOTPParams{
-		PhoneNumber:      phoneNumber,
+		PhoneNumber:      &phoneNumber,
 		ResetToken:       &otpCode,
 		ResetTokenExpiry: pgtype.Timestamptz{Time: expiry, Valid: true},
 	})
@@ -84,18 +84,18 @@ func (s *AuthService) RequestOTP(ctx context.Context, phoneNumber string) (strin
 	return otpCode, nil
 }
 
-func (s *AuthService) VerifyOTP(ctx context.Context, phoneNumber, otpCode string) (string, db.User, error) {
-	user, err := s.db.GetUserByPhoneNumber(ctx, phoneNumber)
+func (s *AuthService) VerifyOTP(ctx context.Context, phoneNumber, otpCode string) (string, db.GetUserByPhoneNumberRow, error) {
+	user, err := s.db.GetUserByPhoneNumber(ctx, &phoneNumber)
 	if err != nil {
-		return "", db.User{}, errors.New("invalid phone number or OTP")
+		return "", db.GetUserByPhoneNumberRow{}, errors.New("invalid phone number or OTP")
 	}
 
 	if user.ResetToken == nil || *user.ResetToken != otpCode {
-		return "", db.User{}, errors.New("invalid phone number or OTP")
+		return "", db.GetUserByPhoneNumberRow{}, errors.New("invalid phone number or OTP")
 	}
 
 	if !user.ResetTokenExpiry.Valid || time.Now().After(user.ResetTokenExpiry.Time) {
-		return "", db.User{}, errors.New("OTP expired")
+		return "", db.GetUserByPhoneNumberRow{}, errors.New("OTP expired")
 	}
 
 	err = s.db.ClearUserOTP(ctx, user.ID)
@@ -103,16 +103,20 @@ func (s *AuthService) VerifyOTP(ctx context.Context, phoneNumber, otpCode string
 		log.Printf("failed to clear OTP: %v", err)
 	}
 
-	token, err := s.GenerateToken(user.ID.String(), user.PhoneNumber, user.Role)
+	phone := ""
+	if user.PhoneNumber != nil {
+		phone = *user.PhoneNumber
+	}
+	token, err := s.GenerateToken(user.ID.String(), phone, user.Role)
 	if err != nil {
 		log.Printf("token generation failed: %v", err)
-		return "", db.User{}, errors.New("failed to generate token")
+		return "", db.GetUserByPhoneNumberRow{}, errors.New("failed to generate token")
 	}
 
 	return token, user, nil
 }
 
-func (s *AuthService) GenerateToken(userID, phoneNumber string, role db.Roles) (string, error) {
+func (s *AuthService) GenerateToken(userID, phoneNumber string, role db.UserRole) (string, error) {
 	claims := Claims{
 		UserID:      userID,
 		PhoneNumber: phoneNumber,

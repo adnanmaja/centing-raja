@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/adnanmaja/centing-raja/db"
 	"github.com/adnanmaja/centing-raja/service"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,7 @@ func NewServer(svcs *service.Services) *Server {
 	}
 
 	authHandler := NewAuthHandler(svcs.Auth)
+	childrenHandler := NewChildrenHandler(svcs.Children)
 
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
@@ -38,6 +40,22 @@ func NewServer(svcs *service.Services) *Server {
 
 	protected := router.Group("/")
 	protected.Use(authHandler.AuthMiddleware())
+
+	protected.POST("/children", childrenHandler.CreateChildren)
+	protected.GET("/children", childrenHandler.ListChildren)
+	protected.GET("/children/:id", childrenHandler.GetChildByID)
+	protected.PUT("/children/:id", childrenHandler.UpdateChild)
+	protected.DELETE("/children/:id", childrenHandler.DeleteChild)
+
+	nakes := protected.Group("/nakes")
+	nakes.Use(RequireRole(db.UserRoleTenagaKesehatan))
+
+	kader := protected.Group("/kader")
+	kader.Use(RequireRole(db.UserRoleKader))
+
+	ortu := protected.Group("/ortu")
+	ortu.Use(RequireRole(db.UserRoleOrangTua))
+	ortu.GET("/child", childrenHandler.ChildrenByParent)
 
 	server.router = router
 	return server

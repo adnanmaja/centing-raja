@@ -22,7 +22,269 @@ func (q *Queries) ClearUserOTP(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const createChild = `-- name: CreateChild :one
+
+INSERT INTO children (parent_id, nik, full_name, gender, birth_date, home_address)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, parent_id, nik, full_name, gender, birth_date, home_address, created_at, updated_at
+`
+
+type CreateChildParams struct {
+	ParentID    pgtype.UUID
+	Nik         *string
+	FullName    string
+	Gender      *string
+	BirthDate   pgtype.Date
+	HomeAddress *string
+}
+
+// Children --
+func (q *Queries) CreateChild(ctx context.Context, arg CreateChildParams) (Child, error) {
+	row := q.db.QueryRow(ctx, createChild,
+		arg.ParentID,
+		arg.Nik,
+		arg.FullName,
+		arg.Gender,
+		arg.BirthDate,
+		arg.HomeAddress,
+	)
+	var i Child
+	err := row.Scan(
+		&i.ID,
+		&i.ParentID,
+		&i.Nik,
+		&i.FullName,
+		&i.Gender,
+		&i.BirthDate,
+		&i.HomeAddress,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createEducationMaterial = `-- name: CreateEducationMaterial :one
+
+INSERT INTO education_material (creator_id, title, description, video_url)
+VALUES ($1, $2, $3, $4)
+RETURNING id, creator_id, title, description, video_url, created_at, updated_at
+`
+
+type CreateEducationMaterialParams struct {
+	CreatorID   pgtype.UUID
+	Title       string
+	Description *string
+	VideoUrl    *string
+}
+
+// Education measurements --
+func (q *Queries) CreateEducationMaterial(ctx context.Context, arg CreateEducationMaterialParams) (EducationMaterial, error) {
+	row := q.db.QueryRow(ctx, createEducationMaterial,
+		arg.CreatorID,
+		arg.Title,
+		arg.Description,
+		arg.VideoUrl,
+	)
+	var i EducationMaterial
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.Title,
+		&i.Description,
+		&i.VideoUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createMeasurement = `-- name: CreateMeasurement :one
+
+INSERT INTO measurement (
+    measurer_id,
+    measurer_role,
+    children_id,
+    weight,
+    height,
+    stunting_status,
+    z_score,
+    head_circumference,
+    upper_arm_circumference
+)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, measurer_id, measurer_role, children_id, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference
+`
+
+type CreateMeasurementParams struct {
+	MeasurerID            pgtype.UUID
+	MeasurerRole          UserRole
+	ChildrenID            pgtype.UUID
+	Weight                pgtype.Numeric
+	Height                pgtype.Numeric
+	StuntingStatus        NullStuntingStatus
+	ZScore                pgtype.Numeric
+	HeadCircumference     pgtype.Numeric
+	UpperArmCircumference pgtype.Numeric
+}
+
+// Measuremenets --
+func (q *Queries) CreateMeasurement(ctx context.Context, arg CreateMeasurementParams) (Measurement, error) {
+	row := q.db.QueryRow(ctx, createMeasurement,
+		arg.MeasurerID,
+		arg.MeasurerRole,
+		arg.ChildrenID,
+		arg.Weight,
+		arg.Height,
+		arg.StuntingStatus,
+		arg.ZScore,
+		arg.HeadCircumference,
+		arg.UpperArmCircumference,
+	)
+	var i Measurement
+	err := row.Scan(
+		&i.ID,
+		&i.MeasurerID,
+		&i.MeasurerRole,
+		&i.ChildrenID,
+		&i.MeasuredAt,
+		&i.Weight,
+		&i.Height,
+		&i.StuntingStatus,
+		&i.ZScore,
+		&i.HeadCircumference,
+		&i.UpperArmCircumference,
+	)
+	return i, err
+}
+
+const createNotification = `-- name: CreateNotification :one
+
+INSERT INTO notifications (user_id, title, message)
+VALUES ($1, $2, $3)
+RETURNING id, user_id, title, message, is_read, created_at
+`
+
+type CreateNotificationParams struct {
+	UserID  pgtype.UUID
+	Title   string
+	Message string
+}
+
+// Notifications --
+func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error) {
+	row := q.db.QueryRow(ctx, createNotification, arg.UserID, arg.Title, arg.Message)
+	var i Notification
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Title,
+		&i.Message,
+		&i.IsRead,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const createQuiz = `-- name: CreateQuiz :one
+
+INSERT INTO quiz (creator_id, title, description)
+VALUES ($1, $2, $3)
+RETURNING id, creator_id, title, description, created_at, updated_at
+`
+
+type CreateQuizParams struct {
+	CreatorID   pgtype.UUID
+	Title       string
+	Description *string
+}
+
+// Quizzes --
+func (q *Queries) CreateQuiz(ctx context.Context, arg CreateQuizParams) (Quiz, error) {
+	row := q.db.QueryRow(ctx, createQuiz, arg.CreatorID, arg.Title, arg.Description)
+	var i Quiz
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.Title,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createQuizQuestion = `-- name: CreateQuizQuestion :one
+
+INSERT INTO quiz_questions (quiz_id, question_text, question_type, options, correct_ans)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, quiz_id, question_text, question_type, options, correct_ans
+`
+
+type CreateQuizQuestionParams struct {
+	QuizID       pgtype.UUID
+	QuestionText string
+	QuestionType QuestionType
+	Options      []byte
+	CorrectAns   *string
+}
+
+// Quiz questions --
+func (q *Queries) CreateQuizQuestion(ctx context.Context, arg CreateQuizQuestionParams) (QuizQuestion, error) {
+	row := q.db.QueryRow(ctx, createQuizQuestion,
+		arg.QuizID,
+		arg.QuestionText,
+		arg.QuestionType,
+		arg.Options,
+		arg.CorrectAns,
+	)
+	var i QuizQuestion
+	err := row.Scan(
+		&i.ID,
+		&i.QuizID,
+		&i.QuestionText,
+		&i.QuestionType,
+		&i.Options,
+		&i.CorrectAns,
+	)
+	return i, err
+}
+
+const createQuizSubmission = `-- name: CreateQuizSubmission :one
+
+INSERT INTO quiz_submissions (kader_id, quiz_id, score, answers)
+VALUES ($1, $2, $3, $4)
+RETURNING id, kader_id, quiz_id, score, answers, submitted_at
+`
+
+type CreateQuizSubmissionParams struct {
+	KaderID pgtype.UUID
+	QuizID  pgtype.UUID
+	Score   pgtype.Numeric
+	Answers []byte
+}
+
+// Quiz submissions --
+func (q *Queries) CreateQuizSubmission(ctx context.Context, arg CreateQuizSubmissionParams) (QuizSubmission, error) {
+	row := q.db.QueryRow(ctx, createQuizSubmission,
+		arg.KaderID,
+		arg.QuizID,
+		arg.Score,
+		arg.Answers,
+	)
+	var i QuizSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.KaderID,
+		&i.QuizID,
+		&i.Score,
+		&i.Answers,
+		&i.SubmittedAt,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
+
 INSERT INTO users (name, phone_number, role)
 VALUES ($1, $2, $3)
 RETURNING id, name, phone_number, role, created_at
@@ -30,18 +292,19 @@ RETURNING id, name, phone_number, role, created_at
 
 type CreateUserParams struct {
 	Name        string
-	PhoneNumber string
-	Role        Roles
+	PhoneNumber *string
+	Role        UserRole
 }
 
 type CreateUserRow struct {
 	ID          pgtype.UUID
 	Name        string
-	PhoneNumber string
-	Role        Roles
+	PhoneNumber *string
+	Role        UserRole
 	CreatedAt   pgtype.Timestamptz
 }
 
+// Users --
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
 	row := q.db.QueryRow(ctx, createUser, arg.Name, arg.PhoneNumber, arg.Role)
 	var i CreateUserRow
@@ -55,6 +318,76 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 	return i, err
 }
 
+const deleteChild = `-- name: DeleteChild :exec
+DELETE FROM children
+WHERE id = $1
+`
+
+func (q *Queries) DeleteChild(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteChild, id)
+	return err
+}
+
+const deleteEducationMaterial = `-- name: DeleteEducationMaterial :exec
+DELETE FROM education_material
+WHERE id = $1
+`
+
+func (q *Queries) DeleteEducationMaterial(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteEducationMaterial, id)
+	return err
+}
+
+const deleteMeasurement = `-- name: DeleteMeasurement :exec
+DELETE FROM measurement
+WHERE id = $1
+`
+
+func (q *Queries) DeleteMeasurement(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteMeasurement, id)
+	return err
+}
+
+const deleteNotification = `-- name: DeleteNotification :exec
+DELETE FROM notifications
+WHERE id = $1
+`
+
+func (q *Queries) DeleteNotification(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteNotification, id)
+	return err
+}
+
+const deleteQuiz = `-- name: DeleteQuiz :exec
+DELETE FROM quiz
+WHERE id = $1
+`
+
+func (q *Queries) DeleteQuiz(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteQuiz, id)
+	return err
+}
+
+const deleteQuizQuestion = `-- name: DeleteQuizQuestion :exec
+DELETE FROM quiz_questions
+WHERE id = $1
+`
+
+func (q *Queries) DeleteQuizQuestion(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteQuizQuestion, id)
+	return err
+}
+
+const deleteQuizSubmission = `-- name: DeleteQuizSubmission :exec
+DELETE FROM quiz_submissions
+WHERE id = $1
+`
+
+func (q *Queries) DeleteQuizSubmission(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteQuizSubmission, id)
+	return err
+}
+
 const deleteUser = `-- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1
@@ -65,6 +398,193 @@ func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const getChildByID = `-- name: GetChildByID :one
+SELECT id, parent_id, nik, full_name, gender, birth_date, home_address, created_at, updated_at FROM children
+WHERE id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetChildByID(ctx context.Context, id pgtype.UUID) (Child, error) {
+	row := q.db.QueryRow(ctx, getChildByID, id)
+	var i Child
+	err := row.Scan(
+		&i.ID,
+		&i.ParentID,
+		&i.Nik,
+		&i.FullName,
+		&i.Gender,
+		&i.BirthDate,
+		&i.HomeAddress,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getEducationMaterialByID = `-- name: GetEducationMaterialByID :one
+SELECT id, creator_id, title, description, video_url, created_at, updated_at FROM education_material
+WHERE id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetEducationMaterialByID(ctx context.Context, id pgtype.UUID) (EducationMaterial, error) {
+	row := q.db.QueryRow(ctx, getEducationMaterialByID, id)
+	var i EducationMaterial
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.Title,
+		&i.Description,
+		&i.VideoUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getMeasurementByID = `-- name: GetMeasurementByID :one
+SELECT id, measurer_id, measurer_role, children_id, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference FROM measurement
+WHERE id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetMeasurementByID(ctx context.Context, id pgtype.UUID) (Measurement, error) {
+	row := q.db.QueryRow(ctx, getMeasurementByID, id)
+	var i Measurement
+	err := row.Scan(
+		&i.ID,
+		&i.MeasurerID,
+		&i.MeasurerRole,
+		&i.ChildrenID,
+		&i.MeasuredAt,
+		&i.Weight,
+		&i.Height,
+		&i.StuntingStatus,
+		&i.ZScore,
+		&i.HeadCircumference,
+		&i.UpperArmCircumference,
+	)
+	return i, err
+}
+
+const getMeasurements = `-- name: GetMeasurements :many
+SELECT id, measurer_id, measurer_role, children_id, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference FROM measurement
+WHERE measurer_id = $1
+ORDER BY measured_at DESC
+`
+
+func (q *Queries) GetMeasurements(ctx context.Context, measurerID pgtype.UUID) ([]Measurement, error) {
+	rows, err := q.db.Query(ctx, getMeasurements, measurerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Measurement
+	for rows.Next() {
+		var i Measurement
+		if err := rows.Scan(
+			&i.ID,
+			&i.MeasurerID,
+			&i.MeasurerRole,
+			&i.ChildrenID,
+			&i.MeasuredAt,
+			&i.Weight,
+			&i.Height,
+			&i.StuntingStatus,
+			&i.ZScore,
+			&i.HeadCircumference,
+			&i.UpperArmCircumference,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getNotificationByID = `-- name: GetNotificationByID :one
+SELECT id, user_id, title, message, is_read, created_at FROM notifications
+WHERE id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetNotificationByID(ctx context.Context, id pgtype.UUID) (Notification, error) {
+	row := q.db.QueryRow(ctx, getNotificationByID, id)
+	var i Notification
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Title,
+		&i.Message,
+		&i.IsRead,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getQuizByID = `-- name: GetQuizByID :one
+SELECT id, creator_id, title, description, created_at, updated_at FROM quiz
+WHERE id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetQuizByID(ctx context.Context, id pgtype.UUID) (Quiz, error) {
+	row := q.db.QueryRow(ctx, getQuizByID, id)
+	var i Quiz
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.Title,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getQuizQuestionByID = `-- name: GetQuizQuestionByID :one
+SELECT id, quiz_id, question_text, question_type, options, correct_ans FROM quiz_questions
+WHERE id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetQuizQuestionByID(ctx context.Context, id pgtype.UUID) (QuizQuestion, error) {
+	row := q.db.QueryRow(ctx, getQuizQuestionByID, id)
+	var i QuizQuestion
+	err := row.Scan(
+		&i.ID,
+		&i.QuizID,
+		&i.QuestionText,
+		&i.QuestionType,
+		&i.Options,
+		&i.CorrectAns,
+	)
+	return i, err
+}
+
+const getQuizSubmissionByID = `-- name: GetQuizSubmissionByID :one
+SELECT id, kader_id, quiz_id, score, answers, submitted_at FROM quiz_submissions
+WHERE id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetQuizSubmissionByID(ctx context.Context, id pgtype.UUID) (QuizSubmission, error) {
+	row := q.db.QueryRow(ctx, getQuizSubmissionByID, id)
+	var i QuizSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.KaderID,
+		&i.QuizID,
+		&i.Score,
+		&i.Answers,
+		&i.SubmittedAt,
+	)
+	return i, err
+}
+
 const getUserByID = `-- name: GetUserByID :one
 SELECT id, name, phone_number, role, reset_token, reset_token_expiry, created_at
 FROM users
@@ -72,9 +592,19 @@ WHERE id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error) {
+type GetUserByIDRow struct {
+	ID               pgtype.UUID
+	Name             string
+	PhoneNumber      *string
+	Role             UserRole
+	ResetToken       *string
+	ResetTokenExpiry pgtype.Timestamptz
+	CreatedAt        pgtype.Timestamptz
+}
+
+func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDRow, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
-	var i User
+	var i GetUserByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -94,9 +624,19 @@ WHERE phone_number = $1
 LIMIT 1
 `
 
-func (q *Queries) GetUserByPhoneNumber(ctx context.Context, phoneNumber string) (User, error) {
+type GetUserByPhoneNumberRow struct {
+	ID               pgtype.UUID
+	Name             string
+	PhoneNumber      *string
+	Role             UserRole
+	ResetToken       *string
+	ResetTokenExpiry pgtype.Timestamptz
+	CreatedAt        pgtype.Timestamptz
+}
+
+func (q *Queries) GetUserByPhoneNumber(ctx context.Context, phoneNumber *string) (GetUserByPhoneNumberRow, error) {
 	row := q.db.QueryRow(ctx, getUserByPhoneNumber, phoneNumber)
-	var i User
+	var i GetUserByPhoneNumberRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -107,6 +647,329 @@ func (q *Queries) GetUserByPhoneNumber(ctx context.Context, phoneNumber string) 
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const listChildren = `-- name: ListChildren :many
+SELECT id, parent_id, nik, full_name, gender, birth_date, home_address, created_at, updated_at FROM children
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListChildrenParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) ListChildren(ctx context.Context, arg ListChildrenParams) ([]Child, error) {
+	rows, err := q.db.Query(ctx, listChildren, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Child
+	for rows.Next() {
+		var i Child
+		if err := rows.Scan(
+			&i.ID,
+			&i.ParentID,
+			&i.Nik,
+			&i.FullName,
+			&i.Gender,
+			&i.BirthDate,
+			&i.HomeAddress,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listChildrenByParentID = `-- name: ListChildrenByParentID :many
+SELECT id, parent_id, nik, full_name, gender, birth_date, home_address, created_at, updated_at FROM children
+WHERE parent_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListChildrenByParentID(ctx context.Context, parentID pgtype.UUID) ([]Child, error) {
+	rows, err := q.db.Query(ctx, listChildrenByParentID, parentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Child
+	for rows.Next() {
+		var i Child
+		if err := rows.Scan(
+			&i.ID,
+			&i.ParentID,
+			&i.Nik,
+			&i.FullName,
+			&i.Gender,
+			&i.BirthDate,
+			&i.HomeAddress,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEducationMaterials = `-- name: ListEducationMaterials :many
+SELECT id, creator_id, title, description, video_url, created_at, updated_at FROM education_material
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListEducationMaterialsParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) ListEducationMaterials(ctx context.Context, arg ListEducationMaterialsParams) ([]EducationMaterial, error) {
+	rows, err := q.db.Query(ctx, listEducationMaterials, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EducationMaterial
+	for rows.Next() {
+		var i EducationMaterial
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatorID,
+			&i.Title,
+			&i.Description,
+			&i.VideoUrl,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMeasurementsByChildID = `-- name: ListMeasurementsByChildID :many
+SELECT id, measurer_id, measurer_role, children_id, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference FROM measurement
+WHERE children_id = $1
+ORDER BY measured_at DESC
+`
+
+func (q *Queries) ListMeasurementsByChildID(ctx context.Context, childrenID pgtype.UUID) ([]Measurement, error) {
+	rows, err := q.db.Query(ctx, listMeasurementsByChildID, childrenID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Measurement
+	for rows.Next() {
+		var i Measurement
+		if err := rows.Scan(
+			&i.ID,
+			&i.MeasurerID,
+			&i.MeasurerRole,
+			&i.ChildrenID,
+			&i.MeasuredAt,
+			&i.Weight,
+			&i.Height,
+			&i.StuntingStatus,
+			&i.ZScore,
+			&i.HeadCircumference,
+			&i.UpperArmCircumference,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listNotificationsByUserID = `-- name: ListNotificationsByUserID :many
+SELECT id, user_id, title, message, is_read, created_at FROM notifications
+WHERE user_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListNotificationsByUserID(ctx context.Context, userID pgtype.UUID) ([]Notification, error) {
+	rows, err := q.db.Query(ctx, listNotificationsByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Notification
+	for rows.Next() {
+		var i Notification
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Title,
+			&i.Message,
+			&i.IsRead,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listQuizQuestionsByQuizID = `-- name: ListQuizQuestionsByQuizID :many
+SELECT id, quiz_id, question_text, question_type, options, correct_ans FROM quiz_questions
+WHERE quiz_id = $1
+`
+
+func (q *Queries) ListQuizQuestionsByQuizID(ctx context.Context, quizID pgtype.UUID) ([]QuizQuestion, error) {
+	rows, err := q.db.Query(ctx, listQuizQuestionsByQuizID, quizID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []QuizQuestion
+	for rows.Next() {
+		var i QuizQuestion
+		if err := rows.Scan(
+			&i.ID,
+			&i.QuizID,
+			&i.QuestionText,
+			&i.QuestionType,
+			&i.Options,
+			&i.CorrectAns,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listQuizSubmissionsByKaderID = `-- name: ListQuizSubmissionsByKaderID :many
+SELECT id, kader_id, quiz_id, score, answers, submitted_at FROM quiz_submissions
+WHERE kader_id = $1
+ORDER BY submitted_at DESC
+`
+
+func (q *Queries) ListQuizSubmissionsByKaderID(ctx context.Context, kaderID pgtype.UUID) ([]QuizSubmission, error) {
+	rows, err := q.db.Query(ctx, listQuizSubmissionsByKaderID, kaderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []QuizSubmission
+	for rows.Next() {
+		var i QuizSubmission
+		if err := rows.Scan(
+			&i.ID,
+			&i.KaderID,
+			&i.QuizID,
+			&i.Score,
+			&i.Answers,
+			&i.SubmittedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listQuizSubmissionsByQuizID = `-- name: ListQuizSubmissionsByQuizID :many
+SELECT id, kader_id, quiz_id, score, answers, submitted_at FROM quiz_submissions
+WHERE quiz_id = $1
+ORDER BY submitted_at DESC
+`
+
+func (q *Queries) ListQuizSubmissionsByQuizID(ctx context.Context, quizID pgtype.UUID) ([]QuizSubmission, error) {
+	rows, err := q.db.Query(ctx, listQuizSubmissionsByQuizID, quizID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []QuizSubmission
+	for rows.Next() {
+		var i QuizSubmission
+		if err := rows.Scan(
+			&i.ID,
+			&i.KaderID,
+			&i.QuizID,
+			&i.Score,
+			&i.Answers,
+			&i.SubmittedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listQuizzes = `-- name: ListQuizzes :many
+SELECT id, creator_id, title, description, created_at, updated_at FROM quiz
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListQuizzesParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) ListQuizzes(ctx context.Context, arg ListQuizzesParams) ([]Quiz, error) {
+	rows, err := q.db.Query(ctx, listQuizzes, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Quiz
+	for rows.Next() {
+		var i Quiz
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatorID,
+			&i.Title,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listUsers = `-- name: ListUsers :many
@@ -124,8 +987,8 @@ type ListUsersParams struct {
 type ListUsersRow struct {
 	ID          pgtype.UUID
 	Name        string
-	PhoneNumber string
-	Role        Roles
+	PhoneNumber *string
+	Role        UserRole
 	CreatedAt   pgtype.Timestamptz
 }
 
@@ -155,6 +1018,215 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUse
 	return items, nil
 }
 
+const markNotificationAsRead = `-- name: MarkNotificationAsRead :exec
+UPDATE notifications
+SET is_read = TRUE
+WHERE id = $1
+`
+
+func (q *Queries) MarkNotificationAsRead(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, markNotificationAsRead, id)
+	return err
+}
+
+const updateChild = `-- name: UpdateChild :one
+UPDATE children
+SET nik = $2,
+    full_name = $3,
+    gender = $4,
+    birth_date = $5,
+    home_address = $6,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, parent_id, nik, full_name, gender, birth_date, home_address, created_at, updated_at
+`
+
+type UpdateChildParams struct {
+	ID          pgtype.UUID
+	Nik         *string
+	FullName    string
+	Gender      *string
+	BirthDate   pgtype.Date
+	HomeAddress *string
+}
+
+func (q *Queries) UpdateChild(ctx context.Context, arg UpdateChildParams) (Child, error) {
+	row := q.db.QueryRow(ctx, updateChild,
+		arg.ID,
+		arg.Nik,
+		arg.FullName,
+		arg.Gender,
+		arg.BirthDate,
+		arg.HomeAddress,
+	)
+	var i Child
+	err := row.Scan(
+		&i.ID,
+		&i.ParentID,
+		&i.Nik,
+		&i.FullName,
+		&i.Gender,
+		&i.BirthDate,
+		&i.HomeAddress,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateEducationMaterial = `-- name: UpdateEducationMaterial :one
+UPDATE education_material
+SET title = $2,
+    description = $3,
+    video_url = $4,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, creator_id, title, description, video_url, created_at, updated_at
+`
+
+type UpdateEducationMaterialParams struct {
+	ID          pgtype.UUID
+	Title       string
+	Description *string
+	VideoUrl    *string
+}
+
+func (q *Queries) UpdateEducationMaterial(ctx context.Context, arg UpdateEducationMaterialParams) (EducationMaterial, error) {
+	row := q.db.QueryRow(ctx, updateEducationMaterial,
+		arg.ID,
+		arg.Title,
+		arg.Description,
+		arg.VideoUrl,
+	)
+	var i EducationMaterial
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.Title,
+		&i.Description,
+		&i.VideoUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateMeasurement = `-- name: UpdateMeasurement :one
+UPDATE measurement
+SET weight = $2,
+    height = $3,
+    stunting_status = $4,
+    z_score = $5,
+    head_circumference = $6,
+    upper_arm_circumference = $7
+WHERE id = $1
+RETURNING id, measurer_id, measurer_role, children_id, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference
+`
+
+type UpdateMeasurementParams struct {
+	ID                    pgtype.UUID
+	Weight                pgtype.Numeric
+	Height                pgtype.Numeric
+	StuntingStatus        NullStuntingStatus
+	ZScore                pgtype.Numeric
+	HeadCircumference     pgtype.Numeric
+	UpperArmCircumference pgtype.Numeric
+}
+
+func (q *Queries) UpdateMeasurement(ctx context.Context, arg UpdateMeasurementParams) (Measurement, error) {
+	row := q.db.QueryRow(ctx, updateMeasurement,
+		arg.ID,
+		arg.Weight,
+		arg.Height,
+		arg.StuntingStatus,
+		arg.ZScore,
+		arg.HeadCircumference,
+		arg.UpperArmCircumference,
+	)
+	var i Measurement
+	err := row.Scan(
+		&i.ID,
+		&i.MeasurerID,
+		&i.MeasurerRole,
+		&i.ChildrenID,
+		&i.MeasuredAt,
+		&i.Weight,
+		&i.Height,
+		&i.StuntingStatus,
+		&i.ZScore,
+		&i.HeadCircumference,
+		&i.UpperArmCircumference,
+	)
+	return i, err
+}
+
+const updateQuiz = `-- name: UpdateQuiz :one
+UPDATE quiz
+SET title = $2,
+    description = $3,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, creator_id, title, description, created_at, updated_at
+`
+
+type UpdateQuizParams struct {
+	ID          pgtype.UUID
+	Title       string
+	Description *string
+}
+
+func (q *Queries) UpdateQuiz(ctx context.Context, arg UpdateQuizParams) (Quiz, error) {
+	row := q.db.QueryRow(ctx, updateQuiz, arg.ID, arg.Title, arg.Description)
+	var i Quiz
+	err := row.Scan(
+		&i.ID,
+		&i.CreatorID,
+		&i.Title,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateQuizQuestion = `-- name: UpdateQuizQuestion :one
+UPDATE quiz_questions
+SET question_text = $2,
+    question_type = $3,
+    options = $4,
+    correct_ans = $5
+WHERE id = $1
+RETURNING id, quiz_id, question_text, question_type, options, correct_ans
+`
+
+type UpdateQuizQuestionParams struct {
+	ID           pgtype.UUID
+	QuestionText string
+	QuestionType QuestionType
+	Options      []byte
+	CorrectAns   *string
+}
+
+func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestionParams) (QuizQuestion, error) {
+	row := q.db.QueryRow(ctx, updateQuizQuestion,
+		arg.ID,
+		arg.QuestionText,
+		arg.QuestionType,
+		arg.Options,
+		arg.CorrectAns,
+	)
+	var i QuizQuestion
+	err := row.Scan(
+		&i.ID,
+		&i.QuizID,
+		&i.QuestionText,
+		&i.QuestionType,
+		&i.Options,
+		&i.CorrectAns,
+	)
+	return i, err
+}
+
 const updateUserOTP = `-- name: UpdateUserOTP :exec
 UPDATE users
 SET reset_token = $2, reset_token_expiry = $3
@@ -162,7 +1234,7 @@ WHERE phone_number = $1
 `
 
 type UpdateUserOTPParams struct {
-	PhoneNumber      string
+	PhoneNumber      *string
 	ResetToken       *string
 	ResetTokenExpiry pgtype.Timestamptz
 }
@@ -172,6 +1244,48 @@ func (q *Queries) UpdateUserOTP(ctx context.Context, arg UpdateUserOTPParams) er
 	return err
 }
 
+const updateUserProfile = `-- name: UpdateUserProfile :one
+UPDATE users
+SET name = $2,
+    nik = $3,
+    phone_number = $4,
+    is_notification_enabled = $5
+WHERE id = $1
+RETURNING id, name, nik, phone_number, role, reset_token, reset_token_expiry, created_at, last_logged_in, is_notification_enabled
+`
+
+type UpdateUserProfileParams struct {
+	ID                    pgtype.UUID
+	Name                  string
+	Nik                   *string
+	PhoneNumber           *string
+	IsNotificationEnabled *bool
+}
+
+func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserProfile,
+		arg.ID,
+		arg.Name,
+		arg.Nik,
+		arg.PhoneNumber,
+		arg.IsNotificationEnabled,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Nik,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ResetToken,
+		&i.ResetTokenExpiry,
+		&i.CreatedAt,
+		&i.LastLoggedIn,
+		&i.IsNotificationEnabled,
+	)
+	return i, err
+}
+
 const updateUserRole = `-- name: UpdateUserRole :exec
 UPDATE users
 SET role = $2
@@ -179,8 +1293,8 @@ WHERE phone_number = $1
 `
 
 type UpdateUserRoleParams struct {
-	PhoneNumber string
-	Role        Roles
+	PhoneNumber *string
+	Role        UserRole
 }
 
 func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error {

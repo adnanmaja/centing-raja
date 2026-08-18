@@ -18,6 +18,12 @@ This document describes all HTTP endpoints provided by the Centing Backend REST 
   - [2. Register User](#2-register-user)
   - [3. Request OTP (Login)](#3-request-otp-login)
   - [4. Verify OTP (Login)](#4-verify-otp-login)
+  - [5. Create Child](#5-create-child)
+  - [6. List Children](#6-list-children)
+  - [7. Get Child by ID](#7-get-child-by-id)
+  - [8. Update Child](#8-update-child)
+  - [9. Delete Child](#9-delete-child)
+  - [10. Get Children by Parent](#10-get-children-by-parent)
 - [Protected Routes Context](#protected-routes-context)
 
 ---
@@ -101,16 +107,21 @@ Common HTTP status codes:
 ---
 
 ## Endpoints Summary
-
-| Method | Endpoint | Auth Required | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/` | No | Server health check |
-| `POST` | `/register` | No | Register a new user |
-| `POST` | `/login/request-otp` | No | Request a login OTP code |
-| `POST` | `/login/verify-otp` | No | Verify OTP code and obtain JWT token |
-
----
-
+| Method | Endpoint | Auth Required | Allowed Roles | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/` | No | Any | Server health check |
+| `POST` | `/register` | No | Any | Register a new user |
+| `POST` | `/login/request-otp` | No | Any | Request a login OTP code |
+| `POST` | `/login/verify-otp` | No | Any | Verify OTP code and obtain JWT token |
+| `POST` | `/children` | Yes (JWT) | All authenticated roles | Register child data |
+| `GET` | `/children` | Yes (JWT) | All authenticated roles | List children with pagination |
+| `GET` | `/children/:id` | Yes (JWT) | All authenticated roles | Get child by ID |
+| `PUT` | `/children/:id` | Yes (JWT) | All authenticated roles | Update child data |
+| `DELETE` | `/children/:id` | Yes (JWT) | All authenticated roles | Delete child by ID |
+| `GET` | `/ortu/child` | Yes (JWT) | `orang_tua` | Get children for the authenticated parent |
+| `GET` | `/nakes/dashboard` | Yes (JWT) | `tenaga_kesehatan` | Healthcare worker protected endpoint |
+| `GET` | `/kader`/* | Yes (JWT) | `kader` | Posyandu cadre protected endpoint |
+| `GET` | `/ortu`/* | Yes (JWT) | `orang_tua` | Parents/guardians protected endpoint |
 ## Endpoint Details
 
 ### 1. Health Check
@@ -316,6 +327,246 @@ Content-Type: application/json
 {
   "error": "Key: 'VerifyOTPRequest.OTP' Error:Field validation for 'OTP' failed on the 'required' tag"
 }
+
+---
+
+### 5. Create Child
+
+Registers a new child associated with the authenticated parent.
+
+- **Method**: `POST`
+- **Path**: `/children`
+- **Authentication**: Bearer JWT
+
+#### Request Body
+
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `nik` | `string` | **Yes** | Child's National Identity Number (NIK) |
+| `full_name` | `string` | **Yes** | Child's full name |
+| `gender` | `string` | **Yes** | Child's gender (`L` / `P`) |
+| `birth_date` | `string` (RFC3339) | **Yes** | Birth date (e.g. `2023-01-15T00:00:00Z`) |
+| `home_address` | `string` | **Yes** | Home address |
+
+#### Example Request
+
+```http
+POST /children HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+
+{
+  "nik": "3201234567890001",
+  "full_name": "Budi Santoso",
+  "gender": "L",
+  "birth_date": "2023-01-15T00:00:00Z",
+  "home_address": "Jl. Mawar No. 12, RT 01/RW 02"
+}
+```
+
+#### Response (`201 Created`)
+
+```json
+{
+  "ID": "01950d87-35fc-79c2-9014-464a69b76615",
+  "ParentID": "01950d87-35fc-79c2-9014-464a69b76610",
+  "Nik": "3201234567890001",
+  "FullName": "Budi Santoso",
+  "Gender": "L",
+  "BirthDate": "2023-01-15T00:00:00Z",
+  "HomeAddress": "Jl. Mawar No. 12, RT 01/RW 02",
+  "CreatedAt": "2024-01-01T00:00:00Z",
+  "UpdatedAt": "2024-01-01T00:00:00Z"
+}
+```
+
+---
+
+### 6. List Children
+
+Retrieves a paginated list of children.
+
+- **Method**: `GET`
+- **Path**: `/children`
+- **Authentication**: Bearer JWT
+- **Query Parameters**:
+  - `limit` (optional, default: `10`): Number of records to return.
+  - `offset` (optional, default: `0`): Number of records to skip.
+
+#### Example Request
+
+```http
+GET /children?limit=10&offset=0 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+```
+
+#### Response (`200 OK`)
+
+```json
+[
+  {
+    "ID": "01950d87-35fc-79c2-9014-464a69b76615",
+    "ParentID": "01950d87-35fc-79c2-9014-464a69b76610",
+    "Nik": "3201234567890001",
+    "FullName": "Budi Santoso",
+    "Gender": "L",
+    "BirthDate": "2023-01-15T00:00:00Z",
+    "HomeAddress": "Jl. Mawar No. 12, RT 01/RW 02",
+    "CreatedAt": "2024-01-01T00:00:00Z",
+    "UpdatedAt": "2024-01-01T00:00:00Z"
+  }
+]
+```
+
+---
+
+### 7. Get Child by ID
+
+Fetches details of a specific child by their UUID.
+
+- **Method**: `GET`
+- **Path**: `/children/:id`
+- **Authentication**: Bearer JWT
+
+#### Example Request
+
+```http
+GET /children/01950d87-35fc-79c2-9014-464a69b76615 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+```
+
+#### Response (`200 OK`)
+
+```json
+{
+  "ID": "01950d87-35fc-79c2-9014-464a69b76615",
+  "ParentID": "01950d87-35fc-79c2-9014-464a69b76610",
+  "Nik": "3201234567890001",
+  "FullName": "Budi Santoso",
+  "Gender": "L",
+  "BirthDate": "2023-01-15T00:00:00Z",
+  "HomeAddress": "Jl. Mawar No. 12, RT 01/RW 02",
+  "CreatedAt": "2024-01-01T00:00:00Z",
+  "UpdatedAt": "2024-01-01T00:00:00Z"
+}
+```
+
+---
+
+### 8. Update Child
+
+Updates data of an existing child.
+
+- **Method**: `PUT`
+- **Path**: `/children/:id`
+- **Authentication**: Bearer JWT
+
+#### Request Body
+
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `nik` | `string` | **Yes** | Updated National Identity Number (NIK) |
+| `full_name` | `string` | **Yes** | Updated child full name |
+| `gender` | `string` | **Yes** | Updated gender (`L` / `P`) |
+| `birth_date` | `string` (RFC3339) | **Yes** | Updated birth date |
+| `home_address` | `string` | **Yes** | Updated home address |
+
+#### Example Request
+
+```http
+PUT /children/01950d87-35fc-79c2-9014-464a69b76615 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+
+{
+  "nik": "3201234567890001",
+  "full_name": "Budi Santoso Updated",
+  "gender": "L",
+  "birth_date": "2023-01-15T00:00:00Z",
+  "home_address": "Jl. Anggrek No. 5, RT 02/RW 03"
+}
+```
+
+#### Response (`200 OK`)
+
+```json
+{
+  "ID": "01950d87-35fc-79c2-9014-464a69b76615",
+  "ParentID": "01950d87-35fc-79c2-9014-464a69b76610",
+  "Nik": "3201234567890001",
+  "FullName": "Budi Santoso Updated",
+  "Gender": "L",
+  "BirthDate": "2023-01-15T00:00:00Z",
+  "HomeAddress": "Jl. Anggrek No. 5, RT 02/RW 03",
+  "CreatedAt": "2024-01-01T00:00:00Z",
+  "UpdatedAt": "2024-01-02T00:00:00Z"
+}
+```
+
+---
+
+### 9. Delete Child
+
+Deletes a child record by ID.
+
+- **Method**: `DELETE`
+- **Path**: `/children/:id`
+- **Authentication**: Bearer JWT
+
+#### Example Request
+
+```http
+DELETE /children/01950d87-35fc-79c2-9014-464a69b76615 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+```
+
+#### Response (`200 OK`)
+
+```json
+{
+  "message": "child deleted successfully"
+}
+```
+
+---
+
+### 10. Get Children by Parent
+
+Retrieves all children registered by the currently authenticated parent.
+
+- **Method**: `GET`
+- **Path**: `/ortu/child`
+- **Authentication**: Bearer JWT (Role: `orang_tua`)
+
+#### Example Request
+
+```http
+GET /ortu/child HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+```
+
+#### Response (`200 OK`)
+
+```json
+[
+  {
+    "ID": "01950d87-35fc-79c2-9014-464a69b76615",
+    "ParentID": "01950d87-35fc-79c2-9014-464a69b76610",
+    "Nik": "3201234567890001",
+    "FullName": "Budi Santoso",
+    "Gender": "L",
+    "BirthDate": "2023-01-15T00:00:00Z",
+    "HomeAddress": "Jl. Mawar No. 12, RT 01/RW 02",
+    "CreatedAt": "2024-01-01T00:00:00Z",
+    "UpdatedAt": "2024-01-01T00:00:00Z"
+  }
+]
 ```
 
 ---
@@ -358,5 +609,41 @@ Inside handlers on protected routes, Gin's context (`*gin.Context`) exposes:
   ```json
   {
     "error": "Invalid or expired token"
+  }
+  ```
+
+---
+
+## Role-Based Route Protection
+
+Use `RequireRole` to restrict route groups or single endpoints to specific user roles:
+
+```go
+// Tenaga Kesehatan only
+nakes := protected.Group("/nakes")
+nakes.Use(RequireRole(db.UserRoleTenagaKesehatan))
+
+// Kader only
+kader := protected.Group("/kader")
+kader.Use(RequireRole(db.UserRoleKader))
+
+// Orang Tua only
+orangTua := protected.Group("/orang-tua")
+orangTua.Use(RequireRole(db.UserRoleOrangTua))
+
+// Multiple allowed roles
+staff := protected.Group("/staff")
+staff.Use(RequireRole(db.UserRoleTenagaKesehatan, db.UserRoleKader))
+```
+
+### Role Error Response
+
+When a user with an unauthorized role accesses a restricted endpoint:
+
+- **Status**: `403 Forbidden`
+- **Body**:
+  ```json
+  {
+    "error": "Forbidden: insufficient permissions"
   }
   ```

@@ -66,9 +66,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	phone := ""
+	if user.PhoneNumber != nil {
+		phone = *user.PhoneNumber
+	}
 	c.JSON(http.StatusCreated, User{
 		ID:          user.ID.String(),
-		PhoneNumber: user.PhoneNumber,
+		PhoneNumber: phone,
 		Role:        string(user.Role),
 		Name:        user.Name,
 	})
@@ -111,11 +115,15 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 		return
 	}
 
+	phone := ""
+	if user.PhoneNumber != nil {
+		phone = *user.PhoneNumber
+	}
 	c.JSON(http.StatusOK, AuthResponse{
 		Token: token,
 		User: User{
 			ID:          user.ID.String(),
-			PhoneNumber: user.PhoneNumber,
+			PhoneNumber: phone,
 			Role:        string(user.Role),
 			Name:        user.Name,
 		},
