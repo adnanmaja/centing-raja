@@ -22,7 +22,7 @@ func NewServer(svcs *service.Services) *Server {
 
 	authHandler := NewAuthHandler(svcs.Auth)
 	childrenHandler := NewChildrenHandler(svcs.Children)
-
+	measurementHandler := NewMeasurementHandler(svcs.Measurement)
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
 		AllowAllOrigins:  true,
@@ -47,8 +47,15 @@ func NewServer(svcs *service.Services) *Server {
 	protected.PUT("/children/:id", childrenHandler.UpdateChild)
 	protected.DELETE("/children/:id", childrenHandler.DeleteChild)
 
+	protected.POST("/measurements", measurementHandler.CreateMeasurement)
+	protected.GET("/measurements", measurementHandler.GetMeasurements)
+	protected.GET("/measurements/:id", measurementHandler.GetMeasurementByID)
+	protected.PUT("/measurements/:id", measurementHandler.UpdateMeasurement)
+	protected.DELETE("/measurements/:id", measurementHandler.DeleteMeasurement)
+
 	nakes := protected.Group("/nakes")
 	nakes.Use(RequireRole(db.UserRoleTenagaKesehatan))
+	nakes.GET("/children/:id/measurements", measurementHandler.ListMeasurementsByChildID)
 
 	kader := protected.Group("/kader")
 	kader.Use(RequireRole(db.UserRoleKader))
@@ -56,6 +63,7 @@ func NewServer(svcs *service.Services) *Server {
 	ortu := protected.Group("/ortu")
 	ortu.Use(RequireRole(db.UserRoleOrangTua))
 	ortu.GET("/child", childrenHandler.ChildrenByParent)
+	ortu.GET("/children/:id/measurements", measurementHandler.ListMeasurementsByChildID)
 
 	server.router = router
 	return server

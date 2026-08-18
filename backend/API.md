@@ -24,6 +24,12 @@ This document describes all HTTP endpoints provided by the Centing Backend REST 
   - [8. Update Child](#8-update-child)
   - [9. Delete Child](#9-delete-child)
   - [10. Get Children by Parent](#10-get-children-by-parent)
+  - [11. Create Measurement](#11-create-measurement)
+  - [12. Get Measurements (by Measurer)](#12-get-measurements-by-measurer)
+  - [13. Get Measurement by ID](#13-get-measurement-by-id)
+  - [14. List Measurements by Child ID](#14-list-measurements-by-child-id)
+  - [15. Update Measurement](#15-update-measurement)
+  - [16. Delete Measurement](#16-delete-measurement)
 - [Protected Routes Context](#protected-routes-context)
 
 ---
@@ -119,6 +125,12 @@ Common HTTP status codes:
 | `PUT` | `/children/:id` | Yes (JWT) | All authenticated roles | Update child data |
 | `DELETE` | `/children/:id` | Yes (JWT) | All authenticated roles | Delete child by ID |
 | `GET` | `/ortu/child` | Yes (JWT) | `orang_tua` | Get children for the authenticated parent |
+| `POST` | `/measurements` | Yes (JWT) | All authenticated roles | Create a measurement record (age inferred in days) |
+| `GET` | `/measurements` | Yes (JWT) | All authenticated roles | Get measurements performed by the current user |
+| `GET` | `/measurements/:id` | Yes (JWT) | All authenticated roles | Get measurement by ID |
+| `GET` | `/children/:id/measurements` | Yes (JWT) | All authenticated roles | List measurements for a specific child |
+| `PUT` | `/measurements/:id` | Yes (JWT) | All authenticated roles | Update measurement details |
+| `DELETE` | `/measurements/:id` | Yes (JWT) | All authenticated roles | Delete measurement by ID |
 | `GET` | `/nakes/dashboard` | Yes (JWT) | `tenaga_kesehatan` | Healthcare worker protected endpoint |
 | `GET` | `/kader`/* | Yes (JWT) | `kader` | Posyandu cadre protected endpoint |
 | `GET` | `/ortu`/* | Yes (JWT) | `orang_tua` | Parents/guardians protected endpoint |
@@ -569,6 +581,259 @@ Authorization: Bearer <jwt_token>
 ]
 ```
 
+
+### 11. Create Measurement
+
+Records child growth measurements. The system automatically infers child age (in days) using `(current time) - (children's date of birth)`.
+
+- **Method**: `POST`
+- **Path**: `/measurements`
+- **Authentication**: Bearer JWT
+- **Headers**:
+  - `Content-Type: application/json`
+
+#### Request Body
+
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `children_id` | `string` (UUID) | **Yes** | UUID of the child measured |
+| `weight` | `number` | **Yes** | Child's weight in kilograms (e.g. `12.5`) |
+| `height` | `number` | **Yes** | Child's height/length in centimeters (e.g. `85.0`) |
+| `head_circumference` | `number` | No | Child's head circumference in cm (e.g. `46.0`) |
+| `upper_arm_circumference` | `number` | No | Child's upper arm circumference (LiLA) in cm (e.g. `14.5`) |
+
+#### Example Request
+
+```http
+POST /measurements HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+
+{
+  "children_id": "01950d87-35fc-79c2-9014-464a69b76615",
+  "weight": 12.5,
+  "height": 85.0,
+  "head_circumference": 46.0,
+  "upper_arm_circumference": 14.5
+}
+```
+
+#### Response (`201 Created`)
+
+```json
+{
+  "ID": "01950d87-35fc-79c2-9014-464a69b76620",
+  "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
+  "MeasurerRole": "kader",
+  "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
+  "Age": 365,
+  "MeasuredAt": "2024-01-15T10:30:00Z",
+  "Weight": 12.5,
+  "Height": 85.0,
+  "StuntingStatus": "normal",
+  "ZScore": 0,
+  "HeadCircumference": 46.0,
+  "UpperArmCircumference": 14.5
+}
+```
+
+---
+
+### 12. Get Measurements (by Measurer)
+
+Retrieves all measurements recorded by the authenticated user.
+
+- **Method**: `GET`
+- **Path**: `/measurements`
+- **Authentication**: Bearer JWT
+
+#### Example Request
+
+```http
+GET /measurements HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+```
+
+#### Response (`200 OK`)
+
+```json
+[
+  {
+    "ID": "01950d87-35fc-79c2-9014-464a69b76620",
+    "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
+    "MeasurerRole": "kader",
+    "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
+    "Age": 365,
+    "MeasuredAt": "2024-01-15T10:30:00Z",
+    "Weight": 12.5,
+    "Height": 85.0,
+    "StuntingStatus": "normal",
+    "ZScore": 0,
+    "HeadCircumference": 46.0,
+    "UpperArmCircumference": 14.5
+  }
+]
+```
+
+---
+
+### 13. Get Measurement by ID
+
+Retrieves a single measurement by its ID.
+
+- **Method**: `GET`
+- **Path**: `/measurements/:id`
+- **Authentication**: Bearer JWT
+
+#### Example Request
+
+```http
+GET /measurements/01950d87-35fc-79c2-9014-464a69b76620 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+```
+
+#### Response (`200 OK`)
+
+```json
+{
+  "ID": "01950d87-35fc-79c2-9014-464a69b76620",
+  "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
+  "MeasurerRole": "kader",
+  "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
+  "Age": 365,
+  "MeasuredAt": "2024-01-15T10:30:00Z",
+  "Weight": 12.5,
+  "Height": 85.0,
+  "StuntingStatus": "normal",
+  "ZScore": 0,
+  "HeadCircumference": 46.0,
+  "UpperArmCircumference": 14.5
+}
+```
+
+---
+
+### 14. List Measurements by Child ID
+
+Retrieves measurement history for a specific child.
+
+- **Method**: `GET`
+- **Path**: `/children/:id/measurements`
+- **Authentication**: Bearer JWT
+
+#### Example Request
+
+```http
+GET /children/01950d87-35fc-79c2-9014-464a69b76615/measurements HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+```
+
+#### Response (`200 OK`)
+
+```json
+[
+  {
+    "ID": "01950d87-35fc-79c2-9014-464a69b76620",
+    "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
+    "MeasurerRole": "kader",
+    "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
+    "Age": 365,
+    "MeasuredAt": "2024-01-15T10:30:00Z",
+    "Weight": 12.5,
+    "Height": 85.0,
+    "StuntingStatus": "normal",
+    "ZScore": 0,
+    "HeadCircumference": 46.0,
+    "UpperArmCircumference": 14.5
+  }
+]
+```
+
+---
+
+### 15. Update Measurement
+
+Updates data of an existing measurement.
+
+- **Method**: `PUT`
+- **Path**: `/measurements/:id`
+- **Authentication**: Bearer JWT
+- **Headers**:
+  - `Content-Type: application/json`
+
+#### Request Body
+
+| Field | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `weight` | `number` | **Yes** | Updated weight in kg |
+| `height` | `number` | **Yes** | Updated height in cm |
+| `head_circumference` | `number` | No | Updated head circumference in cm |
+| `upper_arm_circumference` | `number` | No | Updated upper arm circumference in cm |
+
+#### Example Request
+
+```http
+PUT /measurements/01950d87-35fc-79c2-9014-464a69b76620 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+
+{
+  "weight": 13.0,
+  "height": 86.5,
+  "head_circumference": 46.5,
+  "upper_arm_circumference": 15.0
+}
+```
+
+#### Response (`200 OK`)
+
+```json
+{
+  "ID": "01950d87-35fc-79c2-9014-464a69b76620",
+  "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
+  "MeasurerRole": "kader",
+  "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
+  "Age": 365,
+  "MeasuredAt": "2024-01-15T10:30:00Z",
+  "Weight": 13.0,
+  "Height": 86.5,
+  "StuntingStatus": "normal",
+  "ZScore": 0,
+  "HeadCircumference": 46.5,
+  "UpperArmCircumference": 15.0
+}
+```
+
+---
+
+### 16. Delete Measurement
+
+Deletes a measurement record by ID.
+
+- **Method**: `DELETE`
+- **Path**: `/measurements/:id`
+- **Authentication**: Bearer JWT
+
+#### Example Request
+
+```http
+DELETE /measurements/01950d87-35fc-79c2-9014-464a69b76620 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer <jwt_token>
+```
+
+#### Response (`200 OK`)
+
+```json
+{
+  "message": "measurement deleted successfully"
+}
+```
 ---
 
 ## Protected Routes Context

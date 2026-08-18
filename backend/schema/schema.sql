@@ -32,6 +32,7 @@ CREATE TABLE measurement (
     measurer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     measurer_role user_role NOT NULL,
     children_id UUID NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+    age NUMERIC(5, 2) NOT NULL,
     measured_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     weight NUMERIC(5, 2) NOT NULL,
     height NUMERIC(5, 2) NOT NULL,

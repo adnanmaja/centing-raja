@@ -167,6 +167,7 @@ type Measurement struct {
 	MeasurerID            pgtype.UUID
 	MeasurerRole          UserRole
 	ChildrenID            pgtype.UUID
+	Age                   pgtype.Numeric
 	MeasuredAt            pgtype.Timestamptz
 	Weight                pgtype.Numeric
 	Height                pgtype.Numeric

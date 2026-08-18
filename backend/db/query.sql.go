@@ -104,6 +104,7 @@ INSERT INTO measurement (
     measurer_id,
     measurer_role,
     children_id,
+    age,
     weight,
     height,
     stunting_status,
@@ -111,14 +112,15 @@ INSERT INTO measurement (
     head_circumference,
     upper_arm_circumference
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, measurer_id, measurer_role, children_id, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, measurer_id, measurer_role, children_id, age, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference
 `
 
 type CreateMeasurementParams struct {
 	MeasurerID            pgtype.UUID
 	MeasurerRole          UserRole
 	ChildrenID            pgtype.UUID
+	Age                   pgtype.Numeric
 	Weight                pgtype.Numeric
 	Height                pgtype.Numeric
 	StuntingStatus        NullStuntingStatus
@@ -133,6 +135,7 @@ func (q *Queries) CreateMeasurement(ctx context.Context, arg CreateMeasurementPa
 		arg.MeasurerID,
 		arg.MeasurerRole,
 		arg.ChildrenID,
+		arg.Age,
 		arg.Weight,
 		arg.Height,
 		arg.StuntingStatus,
@@ -146,6 +149,7 @@ func (q *Queries) CreateMeasurement(ctx context.Context, arg CreateMeasurementPa
 		&i.MeasurerID,
 		&i.MeasurerRole,
 		&i.ChildrenID,
+		&i.Age,
 		&i.MeasuredAt,
 		&i.Weight,
 		&i.Height,
@@ -443,7 +447,7 @@ func (q *Queries) GetEducationMaterialByID(ctx context.Context, id pgtype.UUID) 
 }
 
 const getMeasurementByID = `-- name: GetMeasurementByID :one
-SELECT id, measurer_id, measurer_role, children_id, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference FROM measurement
+SELECT id, measurer_id, measurer_role, children_id, age, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference FROM measurement
 WHERE id = $1
 LIMIT 1
 `
@@ -456,6 +460,7 @@ func (q *Queries) GetMeasurementByID(ctx context.Context, id pgtype.UUID) (Measu
 		&i.MeasurerID,
 		&i.MeasurerRole,
 		&i.ChildrenID,
+		&i.Age,
 		&i.MeasuredAt,
 		&i.Weight,
 		&i.Height,
@@ -468,7 +473,7 @@ func (q *Queries) GetMeasurementByID(ctx context.Context, id pgtype.UUID) (Measu
 }
 
 const getMeasurements = `-- name: GetMeasurements :many
-SELECT id, measurer_id, measurer_role, children_id, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference FROM measurement
+SELECT id, measurer_id, measurer_role, children_id, age, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference FROM measurement
 WHERE measurer_id = $1
 ORDER BY measured_at DESC
 `
@@ -487,6 +492,7 @@ func (q *Queries) GetMeasurements(ctx context.Context, measurerID pgtype.UUID) (
 			&i.MeasurerID,
 			&i.MeasurerRole,
 			&i.ChildrenID,
+			&i.Age,
 			&i.MeasuredAt,
 			&i.Weight,
 			&i.Height,
@@ -766,7 +772,7 @@ func (q *Queries) ListEducationMaterials(ctx context.Context, arg ListEducationM
 }
 
 const listMeasurementsByChildID = `-- name: ListMeasurementsByChildID :many
-SELECT id, measurer_id, measurer_role, children_id, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference FROM measurement
+SELECT id, measurer_id, measurer_role, children_id, age, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference FROM measurement
 WHERE children_id = $1
 ORDER BY measured_at DESC
 `
@@ -785,6 +791,7 @@ func (q *Queries) ListMeasurementsByChildID(ctx context.Context, childrenID pgty
 			&i.MeasurerID,
 			&i.MeasurerRole,
 			&i.ChildrenID,
+			&i.Age,
 			&i.MeasuredAt,
 			&i.Weight,
 			&i.Height,
@@ -1120,7 +1127,7 @@ SET weight = $2,
     head_circumference = $6,
     upper_arm_circumference = $7
 WHERE id = $1
-RETURNING id, measurer_id, measurer_role, children_id, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference
+RETURNING id, measurer_id, measurer_role, children_id, age, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference
 `
 
 type UpdateMeasurementParams struct {
@@ -1149,6 +1156,7 @@ func (q *Queries) UpdateMeasurement(ctx context.Context, arg UpdateMeasurementPa
 		&i.MeasurerID,
 		&i.MeasurerRole,
 		&i.ChildrenID,
+		&i.Age,
 		&i.MeasuredAt,
 		&i.Weight,
 		&i.Height,
