@@ -58,10 +58,19 @@ backend/
 │   ├── db.go             # DBTX interface and DB connection helpers
 │   ├── models.go         # Generated model structs and enum types
 │   └── query.sql.go      # Type-safe query implementations
+├── docs/                 # Modular API & system documentation
+│   ├── README.md         # API overview, status codes, and endpoint directory
+│   ├── auth.md           # Authentication, OTP flows, and JWT specifications
+│   ├── children.md       # Children profiles CRUD & parent endpoints
+│   ├── measurements.md   # Growth measurements, child history & auto age logic
+│   └── middleware.md     # Middleware context keys, role protection & errors
 ├── handler/              # HTTP delivery layer (Gin handlers & middleware)
 │   ├── auth.go           # Authentication endpoints (register, request/verify OTP)
 │   ├── auth_test.go      # Handler unit & validation tests
-│   ├── middleware.go     # JWT authentication middleware
+│   ├── children.go       # Children management endpoints
+│   ├── measurement.go    # Measurement tracking endpoints
+│   ├── middleware.go     # JWT authentication & role-based middleware
+│   ├── middleware_test.go# Middleware test suite
 │   └── server.go         # Gin router setup and CORS configuration
 ├── schema/               # Database definitions & queries
 │   ├── query.sql         # Raw SQL queries for sqlc
@@ -69,13 +78,15 @@ backend/
 ├── service/              # Core business logic layer
 │   ├── auth.go           # User registration, OTP handling, and JWT management
 │   ├── auth_test.go      # Unit tests for JWT signing and verification
+│   ├── children.go       # Children service logic
+│   ├── measurement.go    # Measurement service & age calculation logic
 │   └── service.go        # Service registry / dependency injection
 ├── .env                  # Environment configuration (local)
 ├── docker-compose.yml    # PostgreSQL container specification
 ├── go.mod / go.sum       # Go module dependencies
 ├── main.go               # Application entrypoint
 ├── sqlc.yaml             # sqlc configuration
-├── API.md                # Comprehensive API & payload documentation
+├── API.md                # API documentation entry point
 └── README.md             # Project documentation
 ```
 
@@ -185,17 +196,36 @@ go test -v ./...
 
 ---
 
-## 📚 API Documentation
+Detailed endpoint specifications, request/response headers, status codes, and JSON payload examples are organized by domain in the [`docs/`](docs/README.md) directory:
 
-Detailed endpoint specifications, request/response headers, status codes, and JSON payload examples are available in **[API.md](API.md)**.
+### 📑 Documentation by Domain
+
+- 📖 **[API Overview & Directory](docs/README.md)** — Base URL, CORS, standard errors, and full routing index.
+- 🔐 **[Authentication & Core API](docs/auth.md)** — Registration, OTP-based passwordless login, and JWT format.
+- 👶 **[Children Management API](docs/children.md)** — Child profiles CRUD and parent-child associations (`/children`, `/ortu/child`).
+- 📏 **[Measurements & Growth Tracking API](docs/measurements.md)** — Growth tracking, measurements CRUD, and child measurement history.
+- 🛡️ **[Middleware & Security (RBAC)](docs/middleware.md)** — JWT verification, Gin context claims, and role-based route protection (`RequireRole`).
 
 ### Quick Reference
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/` | Health check (`{"status": "aman"}`) |
-| `POST` | `/register` | Register a new user (`tenaga_kesehatan`, `kader`, or `orang_tua`) |
-| `POST` | `/login/request-otp` | Request a 6-digit OTP code for a phone number |
-| `POST` | `/login/verify-otp` | Verify OTP code and receive a JWT Bearer token |
+| Method | Endpoint | Auth Required | Allowed Roles | Documentation |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/` | No | Any | [Health Check](docs/auth.md#1-health-check) |
+| `POST` | `/register` | No | Any | [Register User](docs/auth.md#2-register-user) |
+| `POST` | `/login/request-otp` | No | Any | [Request OTP](docs/auth.md#3-request-otp-login) |
+| `POST` | `/login/verify-otp` | No | Any | [Verify OTP](docs/auth.md#4-verify-otp-login) |
+| `POST` | `/children` | Yes (JWT) | All roles | [Create Child](docs/children.md#1-create-child) |
+| `GET` | `/children` | Yes (JWT) | All roles | [List Children](docs/children.md#2-list-children) |
+| `GET` | `/children/:id` | Yes (JWT) | All roles | [Get Child by ID](docs/children.md#3-get-child-by-id) |
+| `PUT` | `/children/:id` | Yes (JWT) | All roles | [Update Child](docs/children.md#4-update-child) |
+| `DELETE` | `/children/:id` | Yes (JWT) | All roles | [Delete Child](docs/children.md#5-delete-child) |
+| `GET` | `/ortu/child` | Yes (JWT) | `orang_tua` | [Get Parent's Children](docs/children.md#6-get-children-by-parent) |
+| `POST` | `/measurements` | Yes (JWT) | All roles | [Create Measurement](docs/measurements.md#1-create-measurement) |
+| `GET` | `/measurements` | Yes (JWT) | All roles | [Get Measurements (Measurer)](docs/measurements.md#2-get-measurements-by-measurer) |
+| `GET` | `/measurements/:id` | Yes (JWT) | All roles | [Get Measurement by ID](docs/measurements.md#3-get-measurement-by-id) |
+| `GET` | `/nakes/children/:id/measurements` | Yes (JWT) | `tenaga_kesehatan` | [Child Measurements (Nakes)](docs/measurements.md#4-list-measurements-by-child-id) |
+| `GET` | `/ortu/children/:id/measurements` | Yes (JWT) | `orang_tua` | [Child Measurements (Ortu)](docs/measurements.md#4-list-measurements-by-child-id) |
+| `PUT` | `/measurements/:id` | Yes (JWT) | All roles | [Update Measurement](docs/measurements.md#5-update-measurement) |
+| `DELETE` | `/measurements/:id` | Yes (JWT) | All roles | [Delete Measurement](docs/measurements.md#6-delete-measurement) |
 
-For full request and response schemas, see **[API.md](API.md)**.
+For complete schemas and payload examples, see the full **[API Documentation Index](docs/README.md)**.
