@@ -197,54 +197,16 @@ Run all unit and handler tests across packages:
 go test -v ./...
 ```
 
----
+## 📖 API Documentation
 
-Detailed endpoint specifications, request/response headers, status codes, and JSON payload examples are organized by domain in the [`docs/`](docs/README.md) directory:
+API specifications, endpoint schemas, request/response payloads, and authentication rules are maintained in the [`docs/`](docs/README.md) directory.
 
-### 📑 Documentation by Domain
+### Modules:
+- 📖 **[API Overview & Complete Endpoints Index](docs/README.md)**
+- 🔐 **[Authentication & User Management](docs/auth.md)**
+- 👶 **[Children Management API](docs/children.md)**
+- 📏 **[Measurements & Growth Tracking API](docs/measurements.md)**
+- 🛡️ **[Middleware & Role-Based Access Control](docs/middleware.md)**
+- 📝 **[Quizzes & Submissions API](docs/quiz.md)**
 
-- 📖 **[API Overview & Directory](docs/README.md)** — Base URL, CORS, standard errors, and full routing index.
-- 🔐 **[Authentication & Core API](docs/auth.md)** — Registration, OTP-based passwordless login, and JWT format.
-- 👶 **[Children Management API](docs/children.md)** — Child profiles CRUD and parent-child associations (`/children`, `/ortu/child`).
-- 📏 **[Measurements & Growth Tracking API](docs/measurements.md)** — Growth tracking, measurements CRUD, and child measurement history.
-- 🛡️ **[Middleware & Security (RBAC)](docs/middleware.md)** — JWT verification, Gin context claims, and role-based route protection (`RequireRole`).
-- 📝 **[Quizzes & Submissions API](docs/quiz.md)** — Quizzes, questions management, and cadre quiz submissions.
-
-### Quick Reference
-
-| Method | Endpoint | Auth Required | Allowed Roles | Documentation |
-| :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/` | No | Any | [Health Check](docs/auth.md#1-health-check) |
-| `POST` | `/register` | No | Any | [Register User](docs/auth.md#2-register-user) |
-| `POST` | `/login/request-otp` | No | Any | [Request OTP](docs/auth.md#3-request-otp-login) |
-| `POST` | `/login/verify-otp` | No | Any | [Verify OTP](docs/auth.md#4-verify-otp-login) |
-| `POST` | `/children` | Yes (JWT) | All roles | [Create Child](docs/children.md#1-create-child) |
-| `GET` | `/children` | Yes (JWT) | All roles | [List Children](docs/children.md#2-list-children) |
-| `GET` | `/children/:id` | Yes (JWT) | All roles | [Get Child by ID](docs/children.md#3-get-child-by-id) |
-| `PUT` | `/children/:id` | Yes (JWT) | All roles | [Update Child](docs/children.md#4-update-child) |
-| `DELETE` | `/children/:id` | Yes (JWT) | All roles | [Delete Child](docs/children.md#5-delete-child) |
-| `GET` | `/ortu/child` | Yes (JWT) | `orang_tua` | [Get Parent's Children](docs/children.md#6-get-children-by-parent) |
-| `POST` | `/measurements` | Yes (JWT) | All roles | [Create Measurement](docs/measurements.md#1-create-measurement) |
-| `GET` | `/measurements` | Yes (JWT) | All roles | [Get Measurements (Measurer)](docs/measurements.md#2-get-measurements-by-measurer) |
-| `GET` | `/measurements/:id` | Yes (JWT) | All roles | [Get Measurement by ID](docs/measurements.md#3-get-measurement-by-id) |
-| `GET` | `/nakes/children/:id/measurements` | Yes (JWT) | `tenaga_kesehatan` | [Child Measurements (Nakes)](docs/measurements.md#4-list-measurements-by-child-id) |
-| `GET` | `/ortu/children/:id/measurements` | Yes (JWT) | `orang_tua` | [Child Measurements (Ortu)](docs/measurements.md#4-list-measurements-by-child-id) |
-| `PUT` | `/measurements/:id` | Yes (JWT) | All roles | [Update Measurement](docs/measurements.md#5-update-measurement) |
-| `DELETE` | `/measurements/:id` | Yes (JWT) | All roles | [Delete Measurement](docs/measurements.md#6-delete-measurement) |
-| `POST` | `/quizzes` | Yes (JWT) | All roles | [Create Quiz](docs/quiz.md#1-create-quiz) |
-| `GET` | `/quizzes` | Yes (JWT) | All roles | [List Quizzes](docs/quiz.md#2-list-quizzes) |
-| `GET` | `/quizzes/:id` | Yes (JWT) | All roles | [Get Quiz by ID](docs/quiz.md#3-get-quiz-by-id) |
-| `PUT` | `/quizzes/:id` | Yes (JWT) | All roles | [Update Quiz](docs/quiz.md#4-update-quiz) |
-| `DELETE` | `/quizzes/:id` | Yes (JWT) | All roles | [Delete Quiz](docs/quiz.md#5-delete-quiz) |
-| `POST` | `/quizzes/:id/questions` | Yes (JWT) | All roles | [Create Quiz Question](docs/quiz.md#6-create-quiz-question) |
-| `GET` | `/quizzes/:id/questions` | Yes (JWT) | All roles | [List Quiz Questions](docs/quiz.md#7-list-quiz-questions-by-quiz-id) |
-| `GET` | `/quizzes/:id/questions/:question_id` | Yes (JWT) | All roles | [Get Quiz Question](docs/quiz.md#8-get-quiz-question-by-id) |
-| `PUT` | `/quizzes/:id/questions/:question_id` | Yes (JWT) | All roles | [Update Quiz Question](docs/quiz.md#9-update-quiz-question) |
-| `DELETE` | `/quizzes/:id/questions/:question_id` | Yes (JWT) | All roles | [Delete Quiz Question](docs/quiz.md#10-delete-quiz-question) |
-| `POST` | `/quizzes/:id/submissions` | Yes (JWT) | All roles | [Create Submission](docs/quiz.md#11-create-quiz-submission) |
-| `GET` | `/quizzes/:id/submissions` | Yes (JWT) | All roles | [List Submissions](docs/quiz.md#12-list-quiz-submissions-by-quiz-id) |
-| `GET` | `/quizzes/:id/submissions/:submission_id` | Yes (JWT) | All roles | [Get Submission](docs/quiz.md#13-get-quiz-submission-by-id) |
-| `GET` | `/kader/submissions` | Yes (JWT) | `kader` | [Cadre Submissions](docs/quiz.md#14-list-quiz-submissions-by-kader) |
-| `DELETE` | `/quizzes/:id/submissions/:submission_id` | Yes (JWT) | All roles | [Delete Submission](docs/quiz.md#15-delete-quiz-submission) |
-
-For complete schemas and payload examples, see the full **[API Documentation Index](docs/README.md)**.
+For complete schemas, request/response headers, and payload examples, please refer to the **[API Documentation Index](docs/README.md)**.
