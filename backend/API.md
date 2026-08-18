@@ -11,6 +11,7 @@ The Centing Backend API documentation has been organized into modular documents 
 - 👶 **[Children Management API](docs/children.md)** — Child profiles CRUD (`/children`, `/children/:id`) and parent-specific child listings (`/ortu/child`).
 - 📏 **[Measurements & Growth Tracking API](docs/measurements.md)** — Anthropometric measurements CRUD (`/measurements`, `/measurements/:id`), child measurement history (`/:role/children/:id/measurements`), and auto-calculated age.
 - 🛡️ **[Middleware & Role-Based Access Control](docs/middleware.md)** — JWT `AuthMiddleware`, Gin context injection, `RequireRole` route protection, and error payloads.
+- 📝 **[Quizzes & Submissions API](docs/quiz.md)** — Quizzes CRUD (`/quizzes`, `/quizzes/:id`), questions (`/quizzes/:id/questions`), and submissions (`/quizzes/:id/submissions`, `/kader/submissions`).
 
 ---
 

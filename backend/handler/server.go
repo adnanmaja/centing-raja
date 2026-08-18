@@ -23,6 +23,7 @@ func NewServer(svcs *service.Services) *Server {
 	authHandler := NewAuthHandler(svcs.Auth)
 	childrenHandler := NewChildrenHandler(svcs.Children)
 	measurementHandler := NewMeasurementHandler(svcs.Measurement)
+	quizHandler := NewQuizHandler(svcs.Quiz)
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
 		AllowAllOrigins:  true,
@@ -52,6 +53,22 @@ func NewServer(svcs *service.Services) *Server {
 	protected.GET("/measurements/:id", measurementHandler.GetMeasurementByID)
 	protected.PUT("/measurements/:id", measurementHandler.UpdateMeasurement)
 	protected.DELETE("/measurements/:id", measurementHandler.DeleteMeasurement)
+	protected.POST("/quizzes", quizHandler.CreateQuiz)
+	protected.GET("/quizzes", quizHandler.ListQuizzes)
+	protected.GET("/quizzes/:id", quizHandler.GetQuizByID)
+	protected.PUT("/quizzes/:id", quizHandler.UpdateQuiz)
+	protected.DELETE("/quizzes/:id", quizHandler.DeleteQuiz)
+
+	protected.POST("/quizzes/:id/questions", quizHandler.CreateQuizQuestion)
+	protected.GET("/quizzes/:id/questions", quizHandler.ListQuizQuestionsByQuizID)
+	protected.GET("/quizzes/:id/questions/:question_id", quizHandler.GetQuizQuestionByID)
+	protected.PUT("/quizzes/:id/questions/:question_id", quizHandler.UpdateQuizQuestion)
+	protected.DELETE("/quizzes/:id/questions/:question_id", quizHandler.DeleteQuizQuestion)
+
+	protected.POST("/quizzes/:id/submissions", quizHandler.CreateQuizSubmission)
+	protected.GET("/quizzes/:id/submissions", quizHandler.ListQuizSubmissionsByQuizID)
+	protected.GET("/quizzes/:id/submissions/:submission_id", quizHandler.GetQuizSubmissionByID)
+	protected.DELETE("/quizzes/:id/submissions/:submission_id", quizHandler.DeleteQuizSubmission)
 
 	nakes := protected.Group("/nakes")
 	nakes.Use(RequireRole(db.UserRoleTenagaKesehatan))
@@ -60,6 +77,7 @@ func NewServer(svcs *service.Services) *Server {
 	kader := protected.Group("/kader")
 	kader.Use(RequireRole(db.UserRoleKader))
 
+	kader.GET("/submissions", quizHandler.ListQuizSubmissionsByKader)
 	ortu := protected.Group("/ortu")
 	ortu.Use(RequireRole(db.UserRoleOrangTua))
 	ortu.GET("/child", childrenHandler.ChildrenByParent)

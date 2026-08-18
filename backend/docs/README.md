@@ -12,6 +12,7 @@ Welcome to the Centing Backend REST API documentation. The documentation is orga
 | 👶 **[Children Management](children.md)** | Child profiles, demographic data, and parent-child associations. | `POST /children`, `GET /children`, `GET /children/:id`, `PUT /children/:id`, `DELETE /children/:id`, `GET /ortu/child` |
 | 📏 **[Measurements & Growth Tracking](measurements.md)** | Child anthropometric measurements (height, weight, head/arm circumference) & history. | `POST /measurements`, `GET /measurements`, `GET /measurements/:id`, `GET /:role/children/:id/measurements`, `PUT /measurements/:id`, `DELETE /measurements/:id` |
 | 🛡️ **[Middleware & Role-Based Access Control](middleware.md)** | JWT verification, Gin context injection, and role enforcement (`RequireRole`). | Middleware details, context keys, `401`/`403` error payloads |
+| 📝 **[Quizzes & Submissions](quiz.md)** | Educational quizzes, question management, and kader quiz submissions tracking. | `POST/GET/PUT/DELETE /quizzes`, `/quizzes/:id/questions`, `/quizzes/:id/submissions`, `GET /kader/submissions` |
 
 ---
 
@@ -91,3 +92,18 @@ All API errors return JSON formatted with an `error` message string:
 | `GET` | `/ortu/children/:id/measurements` | Yes (JWT) | `orang_tua` | [Measurements](measurements.md#4-list-measurements-by-child-id) |
 | `PUT` | `/measurements/:id` | Yes (JWT) | All authenticated roles | [Measurements](measurements.md#5-update-measurement) |
 | `DELETE` | `/measurements/:id` | Yes (JWT) | All authenticated roles | [Measurements](measurements.md#6-delete-measurement) |
+| `POST` | `/quizzes` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#1-create-quiz) |
+| `GET` | `/quizzes` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#2-list-quizzes) |
+| `GET` | `/quizzes/:id` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#3-get-quiz-by-id) |
+| `PUT` | `/quizzes/:id` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#4-update-quiz) |
+| `DELETE` | `/quizzes/:id` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#5-delete-quiz) |
+| `POST` | `/quizzes/:id/questions` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#6-create-quiz-question) |
+| `GET` | `/quizzes/:id/questions` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#7-list-quiz-questions-by-quiz-id) |
+| `GET` | `/quizzes/:id/questions/:question_id` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#8-get-quiz-question-by-id) |
+| `PUT` | `/quizzes/:id/questions/:question_id` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#9-update-quiz-question) |
+| `DELETE` | `/quizzes/:id/questions/:question_id` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#10-delete-quiz-question) |
+| `POST` | `/quizzes/:id/submissions` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#11-create-quiz-submission) |
+| `GET` | `/quizzes/:id/submissions` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#12-list-quiz-submissions-by-quiz-id) |
+| `GET` | `/quizzes/:id/submissions/:submission_id` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#13-get-quiz-submission-by-id) |
+| `GET` | `/kader/submissions` | Yes (JWT) | `kader` | [Quizzes](quiz.md#14-list-quiz-submissions-by-kader) |
+| `DELETE` | `/quizzes/:id/submissions/:submission_id` | Yes (JWT) | All authenticated roles | [Quizzes](quiz.md#15-delete-quiz-submission) |

@@ -63,12 +63,14 @@ backend/
 │   ├── auth.md           # Authentication, OTP flows, and JWT specifications
 │   ├── children.md       # Children profiles CRUD & parent endpoints
 │   ├── measurements.md   # Growth measurements, child history & auto age logic
-│   └── middleware.md     # Middleware context keys, role protection & errors
+│   ├── middleware.md     # Middleware context keys, role protection & errors
+│   └── quiz.md           # Quizzes, questions & cadre submissions
 ├── handler/              # HTTP delivery layer (Gin handlers & middleware)
 │   ├── auth.go           # Authentication endpoints (register, request/verify OTP)
 │   ├── auth_test.go      # Handler unit & validation tests
 │   ├── children.go       # Children management endpoints
 │   ├── measurement.go    # Measurement tracking endpoints
+│   ├── quiz.go           # Quiz, questions & submission endpoints
 │   ├── middleware.go     # JWT authentication & role-based middleware
 │   ├── middleware_test.go# Middleware test suite
 │   └── server.go         # Gin router setup and CORS configuration
@@ -80,6 +82,7 @@ backend/
 │   ├── auth_test.go      # Unit tests for JWT signing and verification
 │   ├── children.go       # Children service logic
 │   ├── measurement.go    # Measurement service & age calculation logic
+│   ├── quiz.go           # Quiz management & scoring service logic
 │   └── service.go        # Service registry / dependency injection
 ├── .env                  # Environment configuration (local)
 ├── docker-compose.yml    # PostgreSQL container specification
@@ -205,6 +208,7 @@ Detailed endpoint specifications, request/response headers, status codes, and JS
 - 👶 **[Children Management API](docs/children.md)** — Child profiles CRUD and parent-child associations (`/children`, `/ortu/child`).
 - 📏 **[Measurements & Growth Tracking API](docs/measurements.md)** — Growth tracking, measurements CRUD, and child measurement history.
 - 🛡️ **[Middleware & Security (RBAC)](docs/middleware.md)** — JWT verification, Gin context claims, and role-based route protection (`RequireRole`).
+- 📝 **[Quizzes & Submissions API](docs/quiz.md)** — Quizzes, questions management, and cadre quiz submissions.
 
 ### Quick Reference
 
@@ -227,5 +231,20 @@ Detailed endpoint specifications, request/response headers, status codes, and JS
 | `GET` | `/ortu/children/:id/measurements` | Yes (JWT) | `orang_tua` | [Child Measurements (Ortu)](docs/measurements.md#4-list-measurements-by-child-id) |
 | `PUT` | `/measurements/:id` | Yes (JWT) | All roles | [Update Measurement](docs/measurements.md#5-update-measurement) |
 | `DELETE` | `/measurements/:id` | Yes (JWT) | All roles | [Delete Measurement](docs/measurements.md#6-delete-measurement) |
+| `POST` | `/quizzes` | Yes (JWT) | All roles | [Create Quiz](docs/quiz.md#1-create-quiz) |
+| `GET` | `/quizzes` | Yes (JWT) | All roles | [List Quizzes](docs/quiz.md#2-list-quizzes) |
+| `GET` | `/quizzes/:id` | Yes (JWT) | All roles | [Get Quiz by ID](docs/quiz.md#3-get-quiz-by-id) |
+| `PUT` | `/quizzes/:id` | Yes (JWT) | All roles | [Update Quiz](docs/quiz.md#4-update-quiz) |
+| `DELETE` | `/quizzes/:id` | Yes (JWT) | All roles | [Delete Quiz](docs/quiz.md#5-delete-quiz) |
+| `POST` | `/quizzes/:id/questions` | Yes (JWT) | All roles | [Create Quiz Question](docs/quiz.md#6-create-quiz-question) |
+| `GET` | `/quizzes/:id/questions` | Yes (JWT) | All roles | [List Quiz Questions](docs/quiz.md#7-list-quiz-questions-by-quiz-id) |
+| `GET` | `/quizzes/:id/questions/:question_id` | Yes (JWT) | All roles | [Get Quiz Question](docs/quiz.md#8-get-quiz-question-by-id) |
+| `PUT` | `/quizzes/:id/questions/:question_id` | Yes (JWT) | All roles | [Update Quiz Question](docs/quiz.md#9-update-quiz-question) |
+| `DELETE` | `/quizzes/:id/questions/:question_id` | Yes (JWT) | All roles | [Delete Quiz Question](docs/quiz.md#10-delete-quiz-question) |
+| `POST` | `/quizzes/:id/submissions` | Yes (JWT) | All roles | [Create Submission](docs/quiz.md#11-create-quiz-submission) |
+| `GET` | `/quizzes/:id/submissions` | Yes (JWT) | All roles | [List Submissions](docs/quiz.md#12-list-quiz-submissions-by-quiz-id) |
+| `GET` | `/quizzes/:id/submissions/:submission_id` | Yes (JWT) | All roles | [Get Submission](docs/quiz.md#13-get-quiz-submission-by-id) |
+| `GET` | `/kader/submissions` | Yes (JWT) | `kader` | [Cadre Submissions](docs/quiz.md#14-list-quiz-submissions-by-kader) |
+| `DELETE` | `/quizzes/:id/submissions/:submission_id` | Yes (JWT) | All roles | [Delete Submission](docs/quiz.md#15-delete-quiz-submission) |
 
 For complete schemas and payload examples, see the full **[API Documentation Index](docs/README.md)**.
