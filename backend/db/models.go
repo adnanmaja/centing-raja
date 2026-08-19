@@ -103,6 +103,7 @@ const (
 	UserRoleTenagaKesehatan UserRole = "tenaga_kesehatan"
 	UserRoleKader           UserRole = "kader"
 	UserRoleOrangTua        UserRole = "orang_tua"
+	UserRoleAdmin           UserRole = "admin"
 )
 
 func (e *UserRole) Scan(src interface{}) error {

@@ -77,7 +77,7 @@ type CreateEducationMaterialParams struct {
 	VideoUrl    *string
 }
 
-// Education measurements --
+// Education materials --
 func (q *Queries) CreateEducationMaterial(ctx context.Context, arg CreateEducationMaterialParams) (EducationMaterial, error) {
 	row := q.db.QueryRow(ctx, createEducationMaterial,
 		arg.CreatorID,

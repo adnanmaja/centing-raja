@@ -22,7 +22,9 @@ func NewServer(svcs *service.Services) *Server {
 
 	authHandler := NewAuthHandler(svcs.Auth)
 	childrenHandler := NewChildrenHandler(svcs.Children)
+	educationHandler := NewEducationMaterialHandler(svcs.EducationMaterial)
 	measurementHandler := NewMeasurementHandler(svcs.Measurement)
+	notificationHandler := NewNotificationHandler(svcs.Notification)
 	quizHandler := NewQuizHandler(svcs.Quiz)
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
@@ -42,42 +44,56 @@ func NewServer(svcs *service.Services) *Server {
 	protected := router.Group("/")
 	protected.Use(authHandler.AuthMiddleware())
 
-	protected.POST("/children", childrenHandler.CreateChildren)
-	protected.GET("/children", childrenHandler.ListChildren)
-	protected.GET("/children/:id", childrenHandler.GetChildByID)
-	protected.PUT("/children/:id", childrenHandler.UpdateChild)
-	protected.DELETE("/children/:id", childrenHandler.DeleteChild)
-
-	protected.POST("/measurements", measurementHandler.CreateMeasurement)
-	protected.GET("/measurements", measurementHandler.GetMeasurements)
-	protected.GET("/measurements/:id", measurementHandler.GetMeasurementByID)
-	protected.PUT("/measurements/:id", measurementHandler.UpdateMeasurement)
-	protected.DELETE("/measurements/:id", measurementHandler.DeleteMeasurement)
-	protected.POST("/quizzes", quizHandler.CreateQuiz)
+	protected.GET("/education-materials", educationHandler.ListEducationMaterials)
+	protected.GET("/education-materials/:id", educationHandler.GetEducationMaterialByID)
 	protected.GET("/quizzes", quizHandler.ListQuizzes)
 	protected.GET("/quizzes/:id", quizHandler.GetQuizByID)
-	protected.PUT("/quizzes/:id", quizHandler.UpdateQuiz)
-	protected.DELETE("/quizzes/:id", quizHandler.DeleteQuiz)
-
-	protected.POST("/quizzes/:id/questions", quizHandler.CreateQuizQuestion)
 	protected.GET("/quizzes/:id/questions", quizHandler.ListQuizQuestionsByQuizID)
-	protected.GET("/quizzes/:id/questions/:question_id", quizHandler.GetQuizQuestionByID)
-	protected.PUT("/quizzes/:id/questions/:question_id", quizHandler.UpdateQuizQuestion)
-	protected.DELETE("/quizzes/:id/questions/:question_id", quizHandler.DeleteQuizQuestion)
-
 	protected.POST("/quizzes/:id/submissions", quizHandler.CreateQuizSubmission)
-	protected.GET("/quizzes/:id/submissions", quizHandler.ListQuizSubmissionsByQuizID)
-	protected.GET("/quizzes/:id/submissions/:submission_id", quizHandler.GetQuizSubmissionByID)
-	protected.DELETE("/quizzes/:id/submissions/:submission_id", quizHandler.DeleteQuizSubmission)
+
+	protected.GET("/notifications", notificationHandler.ListNotifications)
+	protected.GET("/notifications/:id", notificationHandler.GetNotificationByID)
+	protected.PATCH("/notifications/:id/read", notificationHandler.MarkNotificationAsRead)
 
 	nakes := protected.Group("/nakes")
 	nakes.Use(RequireRole(db.UserRoleTenagaKesehatan))
+
+	nakes.GET("/children", childrenHandler.ListChildren)
+	nakes.POST("/children", childrenHandler.CreateChildren)
+	nakes.GET("/children/:id", childrenHandler.GetChildByID)
+	nakes.PUT("/children/:id", childrenHandler.UpdateChild)
+	nakes.DELETE("/children/:id", childrenHandler.DeleteChild)
 	nakes.GET("/children/:id/measurements", measurementHandler.ListMeasurementsByChildID)
+
+	nakes.GET("/measurements", measurementHandler.GetMeasurements)
+	nakes.POST("/measurements", measurementHandler.CreateMeasurement)
+	nakes.GET("/measurements/:id", measurementHandler.GetMeasurementByID)
+	nakes.PUT("/measurements/:id", measurementHandler.UpdateMeasurement)
+	nakes.DELETE("/measurements/:id", measurementHandler.DeleteMeasurement)
+
+	nakes.POST("/education-materials", educationHandler.CreateEducationMaterial)
+	nakes.PUT("/education-materials/:id", educationHandler.UpdateEducationMaterial)
+	nakes.DELETE("/education-materials/:id", educationHandler.DeleteEducationMaterial)
+
+	nakes.POST("/quizzes", quizHandler.CreateQuiz)
+	nakes.PUT("/quizzes/:id", quizHandler.UpdateQuiz)
+	nakes.DELETE("/quizzes/:id", quizHandler.DeleteQuiz)
+	nakes.POST("/quizzes/:id/questions", quizHandler.CreateQuizQuestion)
+	nakes.GET("/quizzes/:id/questions/:question_id", quizHandler.GetQuizQuestionByID)
+	nakes.PUT("/quizzes/:id/questions/:question_id", quizHandler.UpdateQuizQuestion)
+	nakes.DELETE("/quizzes/:id/questions/:question_id", quizHandler.DeleteQuizQuestion)
+
+	nakes.GET("/quizzes/:id/submissions", quizHandler.ListQuizSubmissionsByQuizID)
+	nakes.GET("/quizzes/:id/submissions/:submission_id", quizHandler.GetQuizSubmissionByID)
+	nakes.DELETE("/quizzes/:id/submissions/:submission_id", quizHandler.DeleteQuizSubmission)
+
+	nakes.POST("/notifications", notificationHandler.CreateNotification)
+	nakes.DELETE("/notifications/:id", notificationHandler.DeleteNotification)
 
 	kader := protected.Group("/kader")
 	kader.Use(RequireRole(db.UserRoleKader))
-
 	kader.GET("/submissions", quizHandler.ListQuizSubmissionsByKader)
+
 	ortu := protected.Group("/ortu")
 	ortu.Use(RequireRole(db.UserRoleOrangTua))
 	ortu.GET("/child", childrenHandler.ChildrenByParent)

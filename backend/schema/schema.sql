@@ -1,4 +1,4 @@
-CREATE TYPE user_role AS ENUM ('tenaga_kesehatan', 'kader', 'orang_tua');
+CREATE TYPE user_role AS ENUM ('tenaga_kesehatan', 'kader', 'orang_tua', 'admin');
 CREATE TYPE stunting_status AS ENUM ('severely_stunted', 'stunted', 'normal', 'tall');
 CREATE TYPE question_type AS ENUM ('multiple_choice', 'true_false');
 

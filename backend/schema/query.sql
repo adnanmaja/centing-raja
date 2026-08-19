@@ -225,7 +225,7 @@ DELETE FROM quiz_submissions
 WHERE id = $1;
 
 
--- Education measurements --
+-- Education materials --
 
 -- name: CreateEducationMaterial :one
 INSERT INTO education_material (creator_id, title, description, video_url)

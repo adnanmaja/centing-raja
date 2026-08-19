@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/adnanmaja/centing-raja/db"
+	"github.com/adnanmaja/centing-raja/service/helpers"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -32,13 +33,13 @@ func (s *MeasurementService) CreateMeasurement(ctx context.Context, measurerID u
 		return db.Measurement{}, err
 	}
 
-	ageInDays := time.Since(child.BirthDate.Time).Hours() / 24
+	now := time.Now()
+	birthDate := child.BirthDate.Time
+	ageInDays := now.Sub(birthDate).Hours() / 24
+	ageMonths := helpers.CalculateAgeMonths(birthDate, now)
 
-	zScore := 0.0
-	stuntingStatus := db.NullStuntingStatus{
-		StuntingStatus: db.StuntingStatusNormal,
-		Valid:          true,
-	}
+	zScore := helpers.CalculateZScore(child.Gender, ageMonths, height)
+	stuntingStatus := helpers.DetermineStuntingStatus(zScore)
 
 	return s.db.CreateMeasurement(ctx, db.CreateMeasurementParams{
 		MeasurerID:            pgtype.UUID{Bytes: measurerID, Valid: true},
@@ -67,11 +68,25 @@ func (s *MeasurementService) ListMeasurementsByChildID(ctx context.Context, chil
 }
 
 func (s *MeasurementService) UpdateMeasurement(ctx context.Context, id uuid.UUID, weight, height, headCircumference, upperArmCircumference float64) (db.Measurement, error) {
-	zScore := 0.0
-	stuntingStatus := db.NullStuntingStatus{
-		StuntingStatus: db.StuntingStatusNormal,
-		Valid:          true,
+	existing, err := s.db.GetMeasurementByID(ctx, pgtype.UUID{Bytes: id, Valid: true})
+	if err != nil {
+		return db.Measurement{}, err
 	}
+
+	child, err := s.db.GetChildByID(ctx, existing.ChildrenID)
+	if err != nil {
+		return db.Measurement{}, err
+	}
+
+	measuredAt := existing.MeasuredAt.Time
+	if !existing.MeasuredAt.Valid {
+		measuredAt = time.Now()
+	}
+	birthDate := child.BirthDate.Time
+
+	ageMonths := helpers.CalculateAgeMonths(birthDate, measuredAt)
+	zScore := helpers.CalculateZScore(child.Gender, ageMonths, height)
+	stuntingStatus := helpers.DetermineStuntingStatus(zScore)
 
 	return s.db.UpdateMeasurement(ctx, db.UpdateMeasurementParams{
 		ID:                    pgtype.UUID{Bytes: id, Valid: true},
