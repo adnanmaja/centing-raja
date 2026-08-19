@@ -35,6 +35,20 @@ func NewEducationMaterialHandler(materialService *service.EducationMaterialServi
 	}
 }
 
+// CreateEducationMaterial godoc
+// @Summary Create education material (Nakes only)
+// @Description Create a new education material with title, description, and optional video URL
+// @Tags Education Materials
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body CreateEducationMaterialRequest true "Create Education Material Payload"
+// @Success 201 {object} db.EducationMaterial
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/education-materials [post]
 func (h *EducationMaterialHandler) CreateEducationMaterial(c *gin.Context) {
 	var req CreateEducationMaterialRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -57,6 +71,18 @@ func (h *EducationMaterialHandler) CreateEducationMaterial(c *gin.Context) {
 	c.JSON(http.StatusCreated, material)
 }
 
+// GetEducationMaterialByID godoc
+// @Summary Get education material by ID
+// @Description Retrieve details of an education material by ID
+// @Tags Education Materials
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Education Material ID (UUID)"
+// @Success 200 {object} db.EducationMaterial
+// @Failure 400 {object} ErrorResponse "Invalid ID format"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /education-materials/{id} [get]
 func (h *EducationMaterialHandler) GetEducationMaterialByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -73,6 +99,19 @@ func (h *EducationMaterialHandler) GetEducationMaterialByID(c *gin.Context) {
 	c.JSON(http.StatusOK, material)
 }
 
+// ListEducationMaterials godoc
+// @Summary List education materials
+// @Description Retrieve paginated list of education materials
+// @Tags Education Materials
+// @Security BearerAuth
+// @Produce json
+// @Param limit query int false "Limit (default 10)"
+// @Param offset query int false "Offset (default 0)"
+// @Success 200 {array} db.EducationMaterial
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /education-materials [get]
 func (h *EducationMaterialHandler) ListEducationMaterials(c *gin.Context) {
 	var req ListEducationMaterialsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -96,6 +135,21 @@ func (h *EducationMaterialHandler) ListEducationMaterials(c *gin.Context) {
 	c.JSON(http.StatusOK, materials)
 }
 
+// UpdateEducationMaterial godoc
+// @Summary Update education material (Nakes only)
+// @Description Update an existing education material
+// @Tags Education Materials
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Education Material ID (UUID)"
+// @Param request body UpdateEducationMaterialRequest true "Update Education Material Payload"
+// @Success 200 {object} db.EducationMaterial
+// @Failure 400 {object} ErrorResponse "Validation error or invalid ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/education-materials/{id} [put]
 func (h *EducationMaterialHandler) UpdateEducationMaterial(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -118,6 +172,19 @@ func (h *EducationMaterialHandler) UpdateEducationMaterial(c *gin.Context) {
 	c.JSON(http.StatusOK, material)
 }
 
+// DeleteEducationMaterial godoc
+// @Summary Delete education material (Nakes only)
+// @Description Delete an education material by ID
+// @Tags Education Materials
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Education Material ID (UUID)"
+// @Success 200 {object} MessageResponse
+// @Failure 400 {object} ErrorResponse "Invalid ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/education-materials/{id} [delete]
 func (h *EducationMaterialHandler) DeleteEducationMaterial(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

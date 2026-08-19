@@ -20,13 +20,14 @@ When `AuthMiddleware` verifies a valid JWT, it attaches user identity claims to 
 | :--- | :--- | :--- |
 | `user_id` | `string` | Authenticated user's UUID string |
 | `phone` | `string` | Authenticated user's registered phone number |
-| `role` | `db.Roles` | User's role enum (`tenaga_kesehatan`, `kader`, `orang_tua`) |
+| `role` | `db.UserRole` | User's role enum (`tenaga_kesehatan`, `kader`, `orang_tua`) |
 
 ### Example Handler Context Retrieval
 
 ```go
-userID, exists := c.Get("user_id")
-role, exists := c.Get("role")
+userIDStr := c.GetString("user_id")
+userUUID, err := uuid.Parse(userIDStr)
+roleVal, exists := c.Get("role")
 ```
 
 ---
@@ -47,10 +48,6 @@ kader.Use(RequireRole(db.UserRoleKader))
 // Parents (Orang Tua) only
 ortu := protected.Group("/ortu")
 ortu.Use(RequireRole(db.UserRoleOrangTua))
-
-// Multiple allowed roles (e.g. medical staff)
-staff := protected.Group("/staff")
-staff.Use(RequireRole(db.UserRoleTenagaKesehatan, db.UserRoleKader))
 ```
 
 ---

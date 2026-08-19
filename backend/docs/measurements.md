@@ -6,12 +6,11 @@ This document details all endpoints for recording and tracking child growth meas
 
 ## 📖 Overview
 
-The measurement module records physical anthropometric metrics for children to monitor growth and screen for stunting.
+The measurement module records physical anthropometric metrics for children to monitor growth, track historical trends, and screen for stunting.
 
-- **Automatic Age Calculation**: When creating a measurement, the backend automatically infers the child's age in days as `(measurement timestamp) - (child birth date)`.
 - **Role Permissions**:
-  - Healthcare workers (`tenaga_kesehatan`) and Posyandu cadres (`kader`) record measurements during posyandu checkups.
-  - Parents (`orang_tua`) can review measurements for their children.
+  - Healthcare workers (`tenaga_kesehatan`): Can record, view, list, update, and delete measurements (`/nakes/measurements`, `/nakes/children/:id/measurements`).
+  - Parents (`orang_tua`): Can view measurement history for their registered children (`/ortu/children/:id/measurements`).
 - All endpoints require JWT Bearer authentication:
   ```http
   Authorization: Bearer <jwt_token>
@@ -21,22 +20,22 @@ The measurement module records physical anthropometric metrics for children to m
 
 ## 📌 Endpoints
 
-- [1. Create Measurement](#1-create-measurement)
-- [2. Get Measurements (by Measurer)](#2-get-measurements-by-measurer)
-- [3. Get Measurement by ID](#3-get-measurement-by-id)
-- [4. List Measurements by Child ID](#4-list-measurements-by-child-id)
-- [5. Update Measurement](#5-update-measurement)
-- [6. Delete Measurement](#6-delete-measurement)
+- [1. Create Measurement (Nakes)](#1-create-measurement-nakes)
+- [2. Get Measurements by Measurer (Nakes)](#2-get-measurements-by-measurer-nakes)
+- [3. Get Measurement by ID (Nakes)](#3-get-measurement-by-id-nakes)
+- [4. List Measurements by Child ID (Nakes / Ortu)](#4-list-measurements-by-child-id-nakes--ortu)
+- [5. Update Measurement (Nakes)](#5-update-measurement-nakes)
+- [6. Delete Measurement (Nakes)](#6-delete-measurement-nakes)
 
 ---
 
-### 1. Create Measurement
+### 1. Create Measurement (Nakes)
 
-Records a new child growth measurement. Age (in days) is calculated automatically from the child's birth date.
+Records a new child growth measurement. Calculates age automatically.
 
 - **Method**: `POST`
-- **Path**: `/measurements`
-- **Authentication**: Bearer JWT (All roles)
+- **Path**: `/nakes/measurements`
+- **Authentication**: Bearer JWT (`tenaga_kesehatan` role required)
 - **Headers**:
   - `Content-Type: application/json`
 
@@ -53,7 +52,7 @@ Records a new child growth measurement. Age (in days) is calculated automaticall
 #### Example Request
 
 ```http
-POST /measurements HTTP/1.1
+POST /nakes/measurements HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
@@ -73,7 +72,7 @@ Content-Type: application/json
 {
   "ID": "01950d87-35fc-79c2-9014-464a69b76620",
   "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
-  "MeasurerRole": "kader",
+  "MeasurerRole": "tenaga_kesehatan",
   "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
   "Age": 365,
   "MeasuredAt": "2024-01-15T10:30:00Z",
@@ -88,18 +87,18 @@ Content-Type: application/json
 
 ---
 
-### 2. Get Measurements (by Measurer)
+### 2. Get Measurements by Measurer (Nakes)
 
-Retrieves all measurements recorded by the currently authenticated user.
+Retrieves all measurements recorded by the currently authenticated healthcare worker.
 
 - **Method**: `GET`
-- **Path**: `/measurements`
-- **Authentication**: Bearer JWT (All roles)
+- **Path**: `/nakes/measurements`
+- **Authentication**: Bearer JWT (`tenaga_kesehatan` role required)
 
 #### Example Request
 
 ```http
-GET /measurements HTTP/1.1
+GET /nakes/measurements HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <jwt_token>
 ```
@@ -111,7 +110,7 @@ Authorization: Bearer <jwt_token>
   {
     "ID": "01950d87-35fc-79c2-9014-464a69b76620",
     "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
-    "MeasurerRole": "kader",
+    "MeasurerRole": "tenaga_kesehatan",
     "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
     "Age": 365,
     "MeasuredAt": "2024-01-15T10:30:00Z",
@@ -127,18 +126,18 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-### 3. Get Measurement by ID
+### 3. Get Measurement by ID (Nakes)
 
 Retrieves a single measurement record by its UUID.
 
 - **Method**: `GET`
-- **Path**: `/measurements/:id`
-- **Authentication**: Bearer JWT (All roles)
+- **Path**: `/nakes/measurements/:id`
+- **Authentication**: Bearer JWT (`tenaga_kesehatan` role required)
 
 #### Example Request
 
 ```http
-GET /measurements/01950d87-35fc-79c2-9014-464a69b76620 HTTP/1.1
+GET /nakes/measurements/01950d87-35fc-79c2-9014-464a69b76620 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <jwt_token>
 ```
@@ -149,7 +148,7 @@ Authorization: Bearer <jwt_token>
 {
   "ID": "01950d87-35fc-79c2-9014-464a69b76620",
   "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
-  "MeasurerRole": "kader",
+  "MeasurerRole": "tenaga_kesehatan",
   "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
   "Age": 365,
   "MeasuredAt": "2024-01-15T10:30:00Z",
@@ -164,14 +163,14 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-### 4. List Measurements by Child ID
+### 4. List Measurements by Child ID (Nakes / Ortu)
 
-Retrieves historical measurements for a specific child. Accessed via role-specific route prefixes.
+Retrieves historical measurements for a specific child. Accessible by healthcare workers or the child's parents.
 
 - **Methods & Paths**:
-  - `GET /nakes/children/:id/measurements` (Healthcare worker role: `tenaga_kesehatan`)
-  - `GET /ortu/children/:id/measurements` (Parent role: `orang_tua`)
-- **Authentication**: Bearer JWT with matching role
+  - `GET /nakes/children/:id/measurements` (Healthcare worker: `tenaga_kesehatan`)
+  - `GET /ortu/children/:id/measurements` (Parent: `orang_tua`)
+- **Authentication**: Bearer JWT
 
 #### Example Request
 
@@ -188,7 +187,7 @@ Authorization: Bearer <jwt_token>
   {
     "ID": "01950d87-35fc-79c2-9014-464a69b76620",
     "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
-    "MeasurerRole": "kader",
+    "MeasurerRole": "tenaga_kesehatan",
     "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
     "Age": 365,
     "MeasuredAt": "2024-01-15T10:30:00Z",
@@ -204,13 +203,13 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-### 5. Update Measurement
+### 5. Update Measurement (Nakes)
 
 Updates anthropometric data of an existing measurement record.
 
 - **Method**: `PUT`
-- **Path**: `/measurements/:id`
-- **Authentication**: Bearer JWT (All roles)
+- **Path**: `/nakes/measurements/:id`
+- **Authentication**: Bearer JWT (`tenaga_kesehatan` role required)
 - **Headers**:
   - `Content-Type: application/json`
 
@@ -226,7 +225,7 @@ Updates anthropometric data of an existing measurement record.
 #### Example Request
 
 ```http
-PUT /measurements/01950d87-35fc-79c2-9014-464a69b76620 HTTP/1.1
+PUT /nakes/measurements/01950d87-35fc-79c2-9014-464a69b76620 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
@@ -245,7 +244,7 @@ Content-Type: application/json
 {
   "ID": "01950d87-35fc-79c2-9014-464a69b76620",
   "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
-  "MeasurerRole": "kader",
+  "MeasurerRole": "tenaga_kesehatan",
   "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
   "Age": 365,
   "MeasuredAt": "2024-01-15T10:30:00Z",
@@ -260,18 +259,18 @@ Content-Type: application/json
 
 ---
 
-### 6. Delete Measurement
+### 6. Delete Measurement (Nakes)
 
 Deletes a measurement record by its UUID.
 
 - **Method**: `DELETE`
-- **Path**: `/measurements/:id`
-- **Authentication**: Bearer JWT (All roles)
+- **Path**: `/nakes/measurements/:id`
+- **Authentication**: Bearer JWT (`tenaga_kesehatan` role required)
 
 #### Example Request
 
 ```http
-DELETE /measurements/01950d87-35fc-79c2-9014-464a69b76620 HTTP/1.1
+DELETE /nakes/measurements/01950d87-35fc-79c2-9014-464a69b76620 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <jwt_token>
 ```

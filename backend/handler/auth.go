@@ -45,6 +45,18 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 	}
 }
 
+// Register godoc
+// @Summary Register a new user
+// @Description Register a new user with phone number, role, and full name
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Register Payload"
+// @Success 201 {object} User
+// @Failure 400 {object} ErrorResponse "Validation error or invalid role"
+// @Failure 409 {object} ErrorResponse "User already exists"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -78,6 +90,18 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	})
 }
 
+// RequestOTP godoc
+// @Summary Request OTP for login
+// @Description Request an OTP code sent to the registered phone number
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body RequestOTPRequest true "Request OTP Payload"
+// @Success 200 {object} MessageResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 404 {object} ErrorResponse "User not found"
+// @Failure 500 {object} ErrorResponse "Failed to send OTP"
+// @Router /login/request-otp [post]
 func (h *AuthHandler) RequestOTP(c *gin.Context) {
 	var req RequestOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -98,6 +122,18 @@ func (h *AuthHandler) RequestOTP(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("OTP Sent. %s", otpCode)})
 }
 
+// VerifyOTP godoc
+// @Summary Verify OTP and login
+// @Description Verify the OTP code sent to phone number and receive JWT authentication token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body VerifyOTPRequest true "Verify OTP Payload"
+// @Success 200 {object} AuthResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Invalid or expired OTP"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /login/verify-otp [post]
 func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	var req VerifyOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

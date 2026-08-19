@@ -1,3 +1,11 @@
+// @title Centing API
+// @version 1.0
+// @description Backend REST API for Centing (Stunting Prevention & Monitoring System).
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 package main
 
 import (

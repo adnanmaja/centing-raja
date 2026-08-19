@@ -6,34 +6,35 @@ This document details all endpoints for managing child profiles and records in C
 
 ## 📖 Overview
 
-Child management allows authenticated healthcare workers (`tenaga_kesehatan`), cadres (`kader`), and parents (`orang_tua`) to register, retrieve, update, and remove child records.
+Child management allows authenticated healthcare workers (`tenaga_kesehatan`) to register, retrieve, update, and remove child records, while parents (`orang_tua`) can view their own registered children.
 
 - All endpoints in this module require JWT Bearer authentication:
   ```http
   Authorization: Bearer <jwt_token>
   ```
-- When creating a child record, the system links the child to the authenticated user's ID as `parent_id`.
+- Endpoints prefixed with `/nakes` require the `tenaga_kesehatan` role.
+- Endpoints prefixed with `/ortu` require the `orang_tua` role.
 
 ---
 
 ## 📌 Endpoints
 
-- [1. Create Child](#1-create-child)
-- [2. List Children](#2-list-children)
-- [3. Get Child by ID](#3-get-child-by-id)
-- [4. Update Child](#4-update-child)
-- [5. Delete Child](#5-delete-child)
-- [6. Get Children by Parent](#6-get-children-by-parent)
+- [1. Create Child (Nakes)](#1-create-child-nakes)
+- [2. List All Children (Nakes)](#2-list-all-children-nakes)
+- [3. Get Child by ID (Nakes)](#3-get-child-by-id-nakes)
+- [4. Update Child (Nakes)](#4-update-child-nakes)
+- [5. Delete Child (Nakes)](#5-delete-child-nakes)
+- [6. Get Children by Parent (Orang Tua)](#6-get-children-by-parent-orang-tua)
 
 ---
 
-### 1. Create Child
+### 1. Create Child (Nakes)
 
-Registers a new child associated with the authenticated parent.
+Registers a new child associated with the user ID in the JWT token.
 
 - **Method**: `POST`
-- **Path**: `/children`
-- **Authentication**: Bearer JWT (All roles)
+- **Path**: `/nakes/children`
+- **Authentication**: Bearer JWT (`tenaga_kesehatan` role required)
 - **Headers**:
   - `Content-Type: application/json`
 
@@ -50,7 +51,7 @@ Registers a new child associated with the authenticated parent.
 #### Example Request
 
 ```http
-POST /children HTTP/1.1
+POST /nakes/children HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
@@ -73,7 +74,7 @@ Content-Type: application/json
   "Nik": "3201234567890001",
   "FullName": "Budi Santoso",
   "Gender": "L",
-  "BirthDate": "2023-01-15T00:00:00Z",
+  "BirthDate": "2023-01-15",
   "HomeAddress": "Jl. Mawar No. 12, RT 01/RW 02",
   "CreatedAt": "2024-01-01T00:00:00Z",
   "UpdatedAt": "2024-01-01T00:00:00Z"
@@ -82,13 +83,13 @@ Content-Type: application/json
 
 ---
 
-### 2. List Children
+### 2. List All Children (Nakes)
 
 Retrieves a paginated list of all children registered in the system.
 
 - **Method**: `GET`
-- **Path**: `/children`
-- **Authentication**: Bearer JWT (All roles)
+- **Path**: `/nakes/children`
+- **Authentication**: Bearer JWT (`tenaga_kesehatan` role required)
 - **Query Parameters**:
   - `limit` (optional, default: `10`): Number of records to return.
   - `offset` (optional, default: `0`): Number of records to skip.
@@ -96,7 +97,7 @@ Retrieves a paginated list of all children registered in the system.
 #### Example Request
 
 ```http
-GET /children?limit=10&offset=0 HTTP/1.1
+GET /nakes/children?limit=10&offset=0 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <jwt_token>
 ```
@@ -111,7 +112,7 @@ Authorization: Bearer <jwt_token>
     "Nik": "3201234567890001",
     "FullName": "Budi Santoso",
     "Gender": "L",
-    "BirthDate": "2023-01-15T00:00:00Z",
+    "BirthDate": "2023-01-15",
     "HomeAddress": "Jl. Mawar No. 12, RT 01/RW 02",
     "CreatedAt": "2024-01-01T00:00:00Z",
     "UpdatedAt": "2024-01-01T00:00:00Z"
@@ -121,18 +122,18 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-### 3. Get Child by ID
+### 3. Get Child by ID (Nakes)
 
 Fetches full details of a specific child by their UUID.
 
 - **Method**: `GET`
-- **Path**: `/children/:id`
-- **Authentication**: Bearer JWT (All roles)
+- **Path**: `/nakes/children/:id`
+- **Authentication**: Bearer JWT (`tenaga_kesehatan` role required)
 
 #### Example Request
 
 ```http
-GET /children/01950d87-35fc-79c2-9014-464a69b76615 HTTP/1.1
+GET /nakes/children/01950d87-35fc-79c2-9014-464a69b76615 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <jwt_token>
 ```
@@ -146,7 +147,7 @@ Authorization: Bearer <jwt_token>
   "Nik": "3201234567890001",
   "FullName": "Budi Santoso",
   "Gender": "L",
-  "BirthDate": "2023-01-15T00:00:00Z",
+  "BirthDate": "2023-01-15",
   "HomeAddress": "Jl. Mawar No. 12, RT 01/RW 02",
   "CreatedAt": "2024-01-01T00:00:00Z",
   "UpdatedAt": "2024-01-01T00:00:00Z"
@@ -155,13 +156,13 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-### 4. Update Child
+### 4. Update Child (Nakes)
 
 Updates the demographic and profile information of an existing child.
 
 - **Method**: `PUT`
-- **Path**: `/children/:id`
-- **Authentication**: Bearer JWT (All roles)
+- **Path**: `/nakes/children/:id`
+- **Authentication**: Bearer JWT (`tenaga_kesehatan` role required)
 - **Headers**:
   - `Content-Type: application/json`
 
@@ -178,7 +179,7 @@ Updates the demographic and profile information of an existing child.
 #### Example Request
 
 ```http
-PUT /children/01950d87-35fc-79c2-9014-464a69b76615 HTTP/1.1
+PUT /nakes/children/01950d87-35fc-79c2-9014-464a69b76615 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <jwt_token>
 Content-Type: application/json
@@ -201,7 +202,7 @@ Content-Type: application/json
   "Nik": "3201234567890001",
   "FullName": "Budi Santoso Updated",
   "Gender": "L",
-  "BirthDate": "2023-01-15T00:00:00Z",
+  "BirthDate": "2023-01-15",
   "HomeAddress": "Jl. Anggrek No. 5, RT 02/RW 03",
   "CreatedAt": "2024-01-01T00:00:00Z",
   "UpdatedAt": "2024-01-02T00:00:00Z"
@@ -210,18 +211,18 @@ Content-Type: application/json
 
 ---
 
-### 5. Delete Child
+### 5. Delete Child (Nakes)
 
 Deletes a child record by ID.
 
 - **Method**: `DELETE`
-- **Path**: `/children/:id`
-- **Authentication**: Bearer JWT (All roles)
+- **Path**: `/nakes/children/:id`
+- **Authentication**: Bearer JWT (`tenaga_kesehatan` role required)
 
 #### Example Request
 
 ```http
-DELETE /children/01950d87-35fc-79c2-9014-464a69b76615 HTTP/1.1
+DELETE /nakes/children/01950d87-35fc-79c2-9014-464a69b76615 HTTP/1.1
 Host: localhost:8080
 Authorization: Bearer <jwt_token>
 ```
@@ -236,13 +237,13 @@ Authorization: Bearer <jwt_token>
 
 ---
 
-### 6. Get Children by Parent
+### 6. Get Children by Parent (Orang Tua)
 
-Retrieves all children registered by the currently authenticated parent.
+Retrieves all children registered for the currently authenticated parent.
 
 - **Method**: `GET`
 - **Path**: `/ortu/child`
-- **Authentication**: Bearer JWT (Role: `orang_tua`)
+- **Authentication**: Bearer JWT (`orang_tua` role required)
 
 #### Example Request
 
@@ -262,7 +263,7 @@ Authorization: Bearer <jwt_token>
     "Nik": "3201234567890001",
     "FullName": "Budi Santoso",
     "Gender": "L",
-    "BirthDate": "2023-01-15T00:00:00Z",
+    "BirthDate": "2023-01-15",
     "HomeAddress": "Jl. Mawar No. 12, RT 01/RW 02",
     "CreatedAt": "2024-01-01T00:00:00Z",
     "UpdatedAt": "2024-01-01T00:00:00Z"

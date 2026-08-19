@@ -4,10 +4,13 @@ import (
 	"net/http"
 	"time"
 
+	_ "github.com/adnanmaja/centing-raja/docs"
 	"github.com/adnanmaja/centing-raja/db"
 	"github.com/adnanmaja/centing-raja/service"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type Server struct {
@@ -37,6 +40,7 @@ func NewServer(svcs *service.Services) *Server {
 	}))
 
 	router.GET("/", healthCheck)
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	router.POST("/register", authHandler.Register)
 	router.POST("/login/request-otp", authHandler.RequestOTP)
 	router.POST("/login/verify-otp", authHandler.VerifyOTP)
@@ -103,6 +107,13 @@ func NewServer(svcs *service.Services) *Server {
 	return server
 }
 
+// healthCheck godoc
+// @Summary Health check
+// @Description Check server operational status
+// @Tags Health
+// @Produce json
+// @Success 200 {object} StatusResponse
+// @Router / [get]
 func healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "aman"})
 }
