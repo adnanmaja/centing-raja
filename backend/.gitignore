@@ -1,0 +1,6 @@
+.env
+*.exe
+
+#personal notes
+prd.md
+project_overview.md
