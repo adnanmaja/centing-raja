@@ -94,7 +94,6 @@ Client → Gin Router → JWT/RBAC Middleware → Handler → Service → Databa
 | TypeScript | JavaScript dengan type safety |
 | Vite | Development server dan build tool |
 | Tailwind CSS 4 | Styling antarmuka |
-| Figma Make | Sumber dan pipeline prototype desain |
 
 ## Peran Pengguna
 
@@ -124,7 +123,7 @@ Centing Raja/
 │   │   ├── App.tsx               # Aplikasi dan navigasi prototype saat ini
 │   │   ├── main.tsx              # Entry point React
 │   │   ├── index.css             # Global style dan Tailwind
-│   │   └── imports/              # Asset dan komponen hasil Figma Make
+│   │   └── imports/
 │   └── package.json
 └── README.md
 ```
@@ -260,7 +259,7 @@ ReactDOM.createRoot(...)
    ├── Komponen halaman / screen
    ├── Komponen reusable kecil
    ├── State form dan interaksi UI
-   └── Asset dari Figma Make
+   
 ```
 
 | Bagian | Implementasi Saat Ini | Tanggung Jawab |
@@ -268,7 +267,7 @@ ReactDOM.createRoot(...)
 | Entry point | `frontend/src/main.tsx` | Membuat React root, mengaktifkan `StrictMode`, merender `App`, dan memuat CSS global |
 | Root component | `frontend/src/App.tsx` | Menampung screen, navigasi, data tampilan, dan state UI prototype |
 | Global style | `frontend/src/index.css` | Memuat Tailwind CSS, font, responsive style, dan animasi |
-| Design asset | `frontend/src/imports/` | Gambar, SVG path, dan komponen hasil Figma Make |
+| Design asset | `frontend/src/imports/`
 | Build tooling | Vite | Development server, HMR, dan production build |
 
 ### Konsep React yang Digunakan
@@ -349,7 +348,6 @@ frontend/src/
 
 - UI menggunakan **Tailwind CSS utility classes** langsung pada JSX.
 - `index.css` menyimpan font-face, animasi, dan style global.
-- Asset visual dan sebagian SVG berasal dari **Figma Make**.
 - Komponen prototype telah memakai elemen semantik, `aria-label`, `aria-live`, `aria-selected`, serta dukungan `prefers-reduced-motion` untuk mengurangi animasi sesuai preferensi pengguna.
 
 Fokus frontend saat ini:
