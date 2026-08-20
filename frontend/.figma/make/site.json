@@ -1,0 +1,10 @@
+{
+  "description": "This responsive web application enhances user experience across all devices, providing seamless access to essential features for individuals and businesses.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
