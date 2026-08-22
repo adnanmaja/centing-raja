@@ -76,7 +76,8 @@ jobs:
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
             set -e
-            sudo rsync -av --delete /tmp/centing_temp/ /var/www/centing/
+            sudo rm -rf /var/www/centing/*
+            sudo cp -a /tmp/centing_temp/. /var/www/centing/
             sudo chown -R www-data:www-data /var/www/centing || sudo chmod -R 755 /var/www/centing
             rm -rf /tmp/centing_temp
             test -f /var/www/centing/index.html
