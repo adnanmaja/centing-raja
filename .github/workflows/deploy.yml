@@ -4,11 +4,18 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Build & Deploy to Debian VPS
+    name: Build & Deploy to BE
     runs-on: ubuntu-latest
 
     steps:
@@ -20,12 +27,17 @@ jobs:
         with:
           go-version: 'stable'
           check-latest: true
+          cache-dependency-path: backend/go.sum
+
+      - name: Run tests
+        working-directory: backend
+        run: |
+          go test -v ./...
 
       - name: Build Go binary
         working-directory: backend
         run: |
-          # Build a static x86_64 Linux binary stripped of debug symbols
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o centing-bin .
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o centing-bin.new .
 
       - name: Transfer binary to VPS
         uses: appleboy/scp-action@v0.1.7
@@ -34,11 +46,11 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          source: "backend/centing-bin"
+          source: "backend/centing-bin.new"
           target: "/opt/centingservice/"
           strip_components: 1
 
-      - name: Restart Centing Service
+      - name: Restart Centing Service & Health Check
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -46,5 +58,10 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
-            chmod +x /opt/centingservice/centing-bin
+            set -e
+            chmod +x /opt/centingservice/centing-bin.new
+            mv /opt/centingservice/centing-bin.new /opt/centingservice/centing-bin
             sudo systemctl restart centingservice.service
+            sleep 2
+            sudo systemctl is-active --quiet centingservice.service
+            curl -f http://127.0.0.1:8080/
