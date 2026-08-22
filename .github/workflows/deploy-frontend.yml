@@ -36,13 +36,14 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'frontend/pnpm-lock.yaml'
 
-      - name: Install dependencies & Build
+      - name: Install dependencies & Typecheck & Build
         working-directory: frontend
         run: |
           pnpm install --frozen-lockfile
+          pnpm run typecheck
           pnpm run build
 
-      - name: Prepare directories on VPS
+      - name: Prepare clean temp directory on VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -50,6 +51,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
+            set -e
+            rm -rf /tmp/centing_temp
             mkdir -p /tmp/centing_temp
             sudo mkdir -p /var/www/centing
 
@@ -60,11 +63,11 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          source: "frontend/dist/*"
+          source: "frontend/dist/**"
           target: "/tmp/centing_temp/"
           strip_components: 2
 
-      - name: Sync static files and cleanup
+      - name: Sync static files and verify
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -72,5 +75,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
+            set -e
             sudo rsync -av --delete /tmp/centing_temp/ /var/www/centing/
+            sudo chown -R www-data:www-data /var/www/centing || sudo chmod -R 755 /var/www/centing
             rm -rf /tmp/centing_temp
+            test -f /var/www/centing/index.html
