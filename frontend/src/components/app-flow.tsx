@@ -48,6 +48,15 @@ import { ChangePasswordParentScreen } from "../features/parent/change-password-p
 import { HelpParentScreen } from "../features/parent/help-parent-screen"
 import { PrivacyParentScreen } from "../features/parent/privacy-parent-screen"
 
+import { BerandaNakesScreen } from "../features/nakes/beranda-nakes-screen"
+import { RekapitulasiDataBalitaScreen } from "../features/nakes/rekapitulasi-data-balita-screen"
+import { AnalisisSebaranStuntingScreen } from "../features/nakes/analisis-sebaran-stunting-screen"
+import { DataWilayahScreen } from "../features/nakes/data-wilayah-screen"
+import { DataAnakRtScreen } from "../features/nakes/data-anak-rt-screen"
+import { InputDataAnakNakesScreen } from "../features/nakes/input-data-anak-nakes-screen"
+import { InputDataAnakBerhasilScreen } from "../features/nakes/input-data-anak-berhasil-screen"
+import { AkunNakesScreen } from "../features/nakes/akun-nakes-screen"
+
 function SplashGate() {
   const navigate = useNavigate()
 
@@ -218,9 +227,11 @@ function Flow() {
               navigate(
                 role === "Kader"
                   ? "/kader"
-                  : role === "Orang Tua"
-                    ? "/orang-tua"
-                    : "/auth",
+                  : role === "Nakes"
+                    ? "/nakes"
+                    : role === "Orang Tua"
+                      ? "/orang-tua"
+                      : "/auth",
               )
             }
           />
@@ -468,7 +479,25 @@ function Flow() {
           />
         }
       />
+      <Route path="/nakes" element={<BerandaNakesScreen />} />
+      <Route path="/nakes/data" element={<DataWilayahScreen />} />
+      <Route
+        path="/nakes/rekapitulasi"
+        element={<RekapitulasiDataBalitaScreen />}
+      />
+      <Route
+        path="/nakes/sebaran-stunting"
+        element={<AnalisisSebaranStuntingScreen />}
+      />
+      <Route path="/nakes/data/rt" element={<DataAnakRtScreen />} />
+      <Route path="/nakes/input" element={<InputDataAnakNakesScreen />} />
+      <Route
+        path="/nakes/input/berhasil"
+        element={<InputDataAnakBerhasilScreen />}
+      />
+      <Route path="/nakes/akun" element={<AkunNakesScreen />} />
       <Route path="*" element={<Navigate to="/" replace />} />
+
     </Routes>
   )
 }
