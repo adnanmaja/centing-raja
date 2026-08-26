@@ -234,3 +234,16 @@ body {
 }
 
 /* Vite cache refresh: CSS syntax verified. */
+
+@keyframes parentChartDraw {
+  from { stroke-dashoffset: 300; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes parentChartFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.parent-chart-line { stroke-dasharray: 300; animation: parentChartDraw 850ms cubic-bezier(.22,1,.36,1) both; }
+.parent-chart-area, .parent-chart-dots { transform-box: fill-box; transform-origin: bottom; animation: parentChartFade 520ms ease-out both; }
+.parent-chart-dots { animation-delay: 300ms; }
+@media (prefers-reduced-motion: reduce) { .parent-chart-line, .parent-chart-area, .parent-chart-dots { animation: none; } }
