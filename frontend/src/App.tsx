@@ -1,3 +1,3 @@
-import AppFlow from "./components/AppFlow"
+import AppFlow from "./components/app-flow"
 
 export default AppFlow
