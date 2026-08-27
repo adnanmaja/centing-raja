@@ -13,8 +13,7 @@ import {
 
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
-
-type Role = "Kader" | "Orang Tua"
+import { AkunBaruModal, type AkunBaruData, type Role } from "./akun-baru-modal"
 
 type Akun = {
   nama: string
@@ -58,6 +57,13 @@ const roleBadgeStyle: Record<Role, string> = {
   "Orang Tua": "bg-zinc-200 text-neutral-700",
 }
 
+const avatarPalette = [
+  { bg: "bg-transparent", text: "text-emerald-800" },
+  { bg: "bg-orange-300", text: "text-yellow-900" },
+  { bg: "bg-rose-200", text: "text-red-800" },
+  { bg: "bg-blue-100", text: "text-slate-600" },
+]
+
 type RoleFilter = "Semua" | Role
 
 export function AkunNakesScreen() {
@@ -66,6 +72,7 @@ export function AkunNakesScreen() {
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("Semua")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const filteredAkun = useMemo(() => {
     return akunList.filter((akun) => {
@@ -86,6 +93,29 @@ export function AkunNakesScreen() {
     // TODO: kirim ke DELETE /api/akun/{id}
     setAkunList((prev) => prev.filter((item) => item.nik !== akun.nik))
     window.alert(`Akun "${akun.nama}" berhasil dihapus.`)
+  }
+
+  const handleCreateAkun = (data: AkunBaruData) => {
+    const isDuplicate = akunList.some((akun) => akun.nik === data.nik)
+    if (isDuplicate) {
+      window.alert("NIK ini sudah terdaftar. Gunakan NIK lain.")
+      return
+    }
+
+    // TODO: kirim ke POST /api/akun
+    const palette = avatarPalette[akunList.length % avatarPalette.length]
+    const newAkun: Akun = {
+      nama: data.nama,
+      nik: data.nik,
+      role: data.role,
+      initial: data.nama.charAt(0).toUpperCase(),
+      avatarBg: palette.bg,
+      avatarText: palette.text,
+    }
+
+    setAkunList((prev) => [newAkun, ...prev])
+    setIsModalOpen(false)
+    window.alert(`Akun "${data.nama}" berhasil ditambahkan sebagai ${data.role}.`)
   }
 
   const roleFilterOptions: RoleFilter[] = ["Semua", "Kader", "Orang Tua"]
@@ -112,7 +142,7 @@ export function AkunNakesScreen() {
             </h2>
             <button
               type="button"
-              onClick={() => navigate("/nakes/akun/baru")}
+              onClick={() => setIsModalOpen(true)}
               className="px-4 py-2 bg-emerald-800 rounded-full shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center gap-2 cursor-pointer transition-transform hover:scale-[1.03] active:scale-95"
             >
               <Plus className="size-2.5 text-white" />
@@ -338,6 +368,10 @@ export function AkunNakesScreen() {
           </div>
         </section>
       </div>
+
+      {isModalOpen && (
+        <AkunBaruModal onClose={() => setIsModalOpen(false)} onSubmit={handleCreateAkun} />
+      )}
 
       <NakesBottomNav
         active="Akun"
