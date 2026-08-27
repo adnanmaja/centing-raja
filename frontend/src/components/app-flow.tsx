@@ -60,6 +60,9 @@ import { InputPengukuranNakesScreen } from "../features/nakes/input-pengukuran-n
 import { HasilPengukuranNakesScreen } from "../features/nakes/hasil-pengukuran-nakes-screen"
 import { DetailPertumbuhanNakesScreen } from "../features/nakes/detail-pertumbuhan-nakes-screen"
 import { GrafikPertumbuhanNakesScreen } from "../features/nakes/grafik-pertumbuhan-nakes-screen"
+import { TugasBaruScreen } from "../features/nakes/tugas-baru-screen"
+import { MateriBaruScreen } from "../features/nakes/materi-baru-screen"
+import { KuisBaruScreen } from "../features/nakes/kuis-baru-screen"
 
 function SplashGate() {
   const navigate = useNavigate()
@@ -504,6 +507,10 @@ function Flow() {
       <Route path="/nakes/pertumbuhan" element={<DetailPertumbuhanNakesScreen />} />
       <Route path="/nakes/grafik-pertumbuhan" element={<GrafikPertumbuhanNakesScreen />} />
       <Route path="/nakes/akun" element={<AkunNakesScreen />} />
+      <Route path="/nakes/tugas/baru" element={<TugasBaruScreen />} />
+      <Route path="/nakes/edukasi/materi/baru" element={<MateriBaruScreen />} />
+      <Route path="/nakes/edukasi/kuis/baru" element={<KuisBaruScreen />} />
+      
       <Route path="*" element={<Navigate to="/" replace />} />
 
     </Routes>
