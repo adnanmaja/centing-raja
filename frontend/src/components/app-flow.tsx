@@ -56,6 +56,10 @@ import { DataAnakRtScreen } from "../features/nakes/data-anak-rt-screen"
 import { InputDataAnakNakesScreen } from "../features/nakes/input-data-anak-nakes-screen"
 import { InputDataAnakBerhasilScreen } from "../features/nakes/input-data-anak-berhasil-screen"
 import { AkunNakesScreen } from "../features/nakes/akun-nakes-screen"
+import { InputPengukuranNakesScreen } from "../features/nakes/input-pengukuran-nakes-screen"
+import { HasilPengukuranNakesScreen } from "../features/nakes/hasil-pengukuran-nakes-screen"
+import { DetailPertumbuhanNakesScreen } from "../features/nakes/detail-pertumbuhan-nakes-screen"
+import { GrafikPertumbuhanNakesScreen } from "../features/nakes/grafik-pertumbuhan-nakes-screen"
 
 function SplashGate() {
   const navigate = useNavigate()
@@ -495,6 +499,10 @@ function Flow() {
         path="/nakes/input/berhasil"
         element={<InputDataAnakBerhasilScreen />}
       />
+      <Route path="/nakes/pengukuran" element={<InputPengukuranNakesScreen />} />
+      <Route path="/nakes/pengukuran/berhasil" element={<HasilPengukuranNakesScreen />} />
+      <Route path="/nakes/pertumbuhan" element={<DetailPertumbuhanNakesScreen />} />
+      <Route path="/nakes/grafik-pertumbuhan" element={<GrafikPertumbuhanNakesScreen />} />
       <Route path="/nakes/akun" element={<AkunNakesScreen />} />
       <Route path="*" element={<Navigate to="/" replace />} />
 

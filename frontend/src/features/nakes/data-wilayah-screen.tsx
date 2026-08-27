@@ -21,15 +21,15 @@ export function DataWilayahScreen() {
     }
 
   const handleSave = () => {
-  // TODO: kirim ke POST /api/wilayah dulu, baru navigate setelah sukses
-  navigate("/nakes/data/rt", {
-    state: {
-      kecamatan: form.kecamatan,
-      rw: form.jumlahRw,
-      rt: form.jumlahRt,
-    },
-  })
-}
+    // TODO: kirim ke POST /api/wilayah dulu, baru navigate setelah sukses
+    navigate("/nakes/data/rt", {
+      state: {
+        kecamatan: form.kecamatan,
+        rw: form.jumlahRw,
+        rt: form.jumlahRt,
+      },
+    })
+  }
 
   const isValid =
     form.kecamatan.trim().length > 0 &&
@@ -41,7 +41,7 @@ export function DataWilayahScreen() {
     <main className="min-h-svh bg-gray-50 pb-24 flex flex-col">
       <NakesHeader title="Data" />
 
-      <div className="flex-1 px-5 py-6 flex flex-col gap-6">
+      <div className="flex-1 mx-auto w-full max-w-6xl px-5 sm:px-8 py-6 flex flex-col gap-6">
         <div className="flex flex-col gap-3">
           <h1 className="text-zinc-900 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-8">
             Data Wilayah Administratif
@@ -51,7 +51,7 @@ export function DataWilayahScreen() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 w-full">
           <Field
             label="Nama Kecamatan"
             placeholder="Masukkan nama kecamatan"

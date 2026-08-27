@@ -64,7 +64,7 @@ export function InputDataAnakBerhasilScreen() {
       <div className="w-full flex flex-col gap-3">
         <button
           type="button"
-          onClick={() => navigate("/nakes/input")}
+          onClick={() => navigate("/nakes/pengukuran")}
           className="h-12 bg-emerald-800 rounded-full shadow-[0px_4px_6px_-1px_rgba(0,109,66,0.20)] flex justify-center items-center gap-2 cursor-pointer transition-transform hover:scale-[1.02] active:scale-95"
         >
           <Ruler className="size-3.5 text-white" />
