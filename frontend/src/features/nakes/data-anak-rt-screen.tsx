@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { AlertTriangle, ChevronDown, ChevronRight, Search } from "lucide-react"
+import { AlertTriangle, ChevronDown, Search } from "lucide-react"
 
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
@@ -51,7 +51,25 @@ const anakList: AnakData[] = [
   { nama: "Rina Melati", umurBulan: 12, jenisKelamin: "P", status: "aman", zScore: 0.2 },
 ]
 
+// TODO: ganti dengan fetch agregat per RW dari GET /api/wilayah/{kecamatan}/rw
+type RwSummary = { rw: string; totalAnak: number; stuntingRate: number }
+const rwList: RwSummary[] = [
+  { rw: "01", totalAnak: 42, stuntingRate: 9.5 },
+  { rw: "02", totalAnak: 38, stuntingRate: 15.8 },
+  { rw: "03", totalAnak: 55, stuntingRate: 12.7 },
+  { rw: "04", totalAnak: 30, stuntingRate: 6.7 },
+]
+
+// TODO: ganti dengan fetch agregat per RT dari GET /api/wilayah/{kecamatan}/{rw}/rt
+type RtSummary = { rt: string; totalAnak: number; stuntingRate: number }
+const rtList: RtSummary[] = [
+  { rt: "01", totalAnak: 12, stuntingRate: 16.7 },
+  { rt: "02", totalAnak: 10, stuntingRate: 10.0 },
+  { rt: "03", totalAnak: 15, stuntingRate: 6.7 },
+]
+
 type FilterOption = "semua" | StatusAnak
+type ViewLevel = "kecamatan" | "rw" | "rt"
 
 export function DataAnakRtScreen() {
   const navigate = useNavigate()
@@ -64,8 +82,10 @@ export function DataAnakRtScreen() {
   }
 
   const kecamatan = state.kecamatan ?? "Kebayoran Baru"
-  const rw = state.rw ?? "03"
-  const rt = state.rt ?? "01"
+
+  const [view, setView] = useState<ViewLevel>("rt")
+  const [selectedRw, setSelectedRw] = useState(state.rw ?? "03")
+  const [selectedRt, setSelectedRt] = useState(state.rt ?? "01")
 
   const [searchQuery, setSearchQuery] = useState("")
   const [filter, setFilter] = useState<FilterOption>("semua")
@@ -109,6 +129,35 @@ export function DataAnakRtScreen() {
     return "bg-zinc-100 text-neutral-700"
   }
 
+  const tabs: { key: ViewLevel; label: string }[] = [
+    { key: "kecamatan", label: "Kecamatan" },
+    { key: "rw", label: "RW" },
+    { key: "rt", label: "RT View" },
+  ]
+
+  const headerSubtitle =
+    view === "kecamatan" ? null : view === "rw" ? (
+      <span className="h-10 px-3 flex items-center gap-1 bg-zinc-100 rounded-lg outline outline-1 outline-offset-[-1px] outline-stone-300 text-zinc-900 text-sm font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif]">
+        RW {selectedRw}
+        <ChevronDown className="size-3 text-neutral-700" />
+      </span>
+    ) : (
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setView("rw")}
+          className="h-10 px-3 flex items-center gap-1 bg-zinc-100 rounded-lg outline outline-1 outline-offset-[-1px] outline-stone-300 text-zinc-900 text-sm font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] cursor-pointer"
+        >
+          RW {selectedRw}
+          <ChevronDown className="size-3 text-neutral-700" />
+        </button>
+        <span className="h-10 px-3 flex items-center gap-1 bg-zinc-100 rounded-lg outline outline-1 outline-offset-[-1px] outline-stone-300 text-zinc-900 text-sm font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
+          RT {selectedRt}
+          <ChevronDown className="size-3 text-neutral-700" />
+        </span>
+      </div>
+    )
+
   return (
     <main className="min-h-svh bg-gray-50 pb-24 flex flex-col">
       <NakesHeader title="Data" />
@@ -120,16 +169,7 @@ export function DataAnakRtScreen() {
             <h1 className="text-zinc-900 text-xl sm:text-2xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] leading-7 sm:leading-8">
               Kecamatan: {kecamatan}
             </h1>
-            <div className="pt-2 flex items-center gap-3">
-              <span className="h-10 px-3 flex items-center gap-1 bg-zinc-100 rounded-lg outline outline-1 outline-offset-[-1px] outline-stone-300 text-zinc-900 text-sm font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif]">
-                RW {rw}
-                <ChevronDown className="size-3 text-neutral-700" />
-              </span>
-              <span className="h-10 px-3 flex items-center gap-1 bg-zinc-100 rounded-lg outline outline-1 outline-offset-[-1px] outline-stone-300 text-zinc-900 text-sm font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
-                RT {rt}
-                <ChevronDown className="size-3 text-neutral-700" />
-              </span>
-            </div>
+            {headerSubtitle && <div className="pt-2">{headerSubtitle}</div>}
           </div>
 
           <span className="h-9 px-3 py-1 rounded-full flex items-center gap-2 shrink-0">
@@ -140,205 +180,254 @@ export function DataAnakRtScreen() {
           </span>
         </div>
 
-        {/* Tab level wilayah */}
+        {/* Tab level wilayah — switchable */}
         <div className="px-5 sm:px-8">
           <div className="p-1 bg-zinc-100 rounded-xl flex max-w-md">
-            <button
-              type="button"
-              onClick={() => navigate("/nakes/data")}
-              className="flex-1 py-2 flex justify-center cursor-pointer"
-            >
-              <span className="text-center text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
-                Kecamatan
-              </span>
-            </button>
-            <button
-              type="button"
-              className="flex-1 py-2 flex justify-center cursor-pointer"
-            >
-              <span className="text-center text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
-                RW
-              </span>
-            </button>
-            <button
-              type="button"
-              className="flex-1 py-2 bg-white rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex justify-center cursor-pointer"
-            >
-              <span className="text-center text-emerald-800 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
-                RT View
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Search & filter */}
-        <div className="px-5 sm:px-8 flex flex-col gap-3">
-          <div className="relative max-w-xl">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-700" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari data anak (Real-time)..."
-              className="w-full h-12 pl-10 pr-3 bg-zinc-100 rounded-xl text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] placeholder:text-gray-400 focus:outline focus:outline-2 focus:outline-emerald-800"
-            />
-          </div>
-
-          <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none]">
-            {filterChips.map((chip) => (
+            {tabs.map((tab) => (
               <button
-                key={chip.key}
+                key={tab.key}
                 type="button"
-                onClick={() => setFilter(chip.key)}
-                className={`shrink-0 px-4 py-2 rounded-full shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer transition-colors ${chipStyle(chip.key)}`}
+                onClick={() => setView(tab.key)}
+                className={`flex-1 py-2 flex justify-center cursor-pointer rounded-lg transition-colors ${
+                  view === tab.key ? "bg-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]" : ""
+                }`}
               >
-                <span className="text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-4 whitespace-nowrap">
-                  {chip.label}
+                <span
+                  className={`text-center text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] ${
+                    view === tab.key ? "text-emerald-800" : "text-neutral-700"
+                  }`}
+                >
+                  {tab.label}
                 </span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* List anak */}
-        <div className="px-5 sm:px-8">
-          {visibleList.length === 0 && (
-            <div className="py-10 flex flex-col items-center gap-2 text-center">
-              <AlertTriangle className="size-6 text-neutral-400" />
-              <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
-                Tidak ada data yang cocok.
-              </span>
-            </div>
-          )}
+        {/* KECAMATAN VIEW — list semua RW */}
+        {view === "kecamatan" && (
+          <div className="px-5 sm:px-8 flex flex-col gap-3">
+            {rwList.map((item) => (
+              <button
+                key={item.rw}
+                type="button"
+                onClick={() => {
+                  setSelectedRw(item.rw)
+                  setView("rw")
+                }}
+                className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex justify-between items-center text-left cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99]"
+              >
+                <span className="text-zinc-900 text-lg font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
+                  RW {item.rw}
+                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                    {item.totalAnak} anak
+                  </span>
+                  <span className="text-red-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
+                    {item.stuntingRate}% stunting
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
 
-          {visibleList.length > 0 && (
-            <>
-              {/* Mobile: stacked cards */}
-              <div className="flex flex-col gap-3 sm:hidden">
-                {visibleList.map((anak) => {
-                  const status = statusConfig[anak.status]
-                  return (
-                    <button
-                      key={anak.nama}
-                      type="button"
-                      className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex justify-between items-center text-left cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99]"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="relative size-12 bg-gray-100 rounded-full flex items-center justify-center shrink-0">
-                          <span
-                            className={`absolute -top-1 right-0 size-4 rounded-full border-2 border-white ${status.dot}`}
-                          />
-                          <span className="text-zinc-900 text-lg font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
-                            {anak.nama.charAt(0)}
-                          </span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-zinc-900 text-xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-7">
-                            {anak.nama}
-                          </span>
-                          <span className="text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] leading-5">
-                            {anak.umurBulan} Bulan • {anak.jenisKelamin}
-                          </span>
-                        </div>
-                      </div>
+        {/* RW VIEW — list semua RT dalam RW terpilih */}
+        {view === "rw" && (
+          <div className="px-5 sm:px-8 flex flex-col gap-3">
+            {rtList.map((item) => (
+              <button
+                key={item.rt}
+                type="button"
+                onClick={() => {
+                  setSelectedRt(item.rt)
+                  setView("rt")
+                }}
+                className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex justify-between items-center text-left cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99]"
+              >
+                <span className="text-zinc-900 text-lg font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
+                  RT {item.rt}
+                </span>
+                <div className="flex flex-col items-end">
+                  <span className="text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                    {item.totalAnak} anak
+                  </span>
+                  <span className="text-yellow-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
+                    {item.stuntingRate}% stunting
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
 
-                      <div className="flex flex-col items-end gap-0.5 shrink-0">
-                        <span
-                          className={`text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-4 ${status.badgeText}`}
-                        >
-                          {status.label}
-                        </span>
-                        <span className="text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] leading-5">
-                          Z-Score: {anak.zScore.toFixed(1)}
-                        </span>
-                      </div>
-                    </button>
-                  )
-                })}
+        {/* RT VIEW — list anak (search, filter, table/cards) */}
+        {view === "rt" && (
+          <>
+            <div className="px-5 sm:px-8 flex flex-col gap-3">
+              <div className="relative max-w-xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-700" />
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari data anak (Real-time)..."
+                  className="w-full h-12 pl-10 pr-3 bg-zinc-100 rounded-xl text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] placeholder:text-gray-400 focus:outline focus:outline-2 focus:outline-emerald-800"
+                />
               </div>
 
-              {/* Desktop/tablet: table */}
-              <div className="hidden sm:block bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] overflow-hidden">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-zinc-100">
-                      <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
-                        Nama
-                      </th>
-                      <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
-                        Usia / JK
-                      </th>
-                      <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
-                        Status
-                      </th>
-                      <th className="p-4 text-right text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
-                        Z-Score
-                      </th>
-                      <th className="p-4 w-10" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleList.map((anak, i) => {
+              <div className="flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none]">
+                {filterChips.map((chip) => (
+                  <button
+                    key={chip.key}
+                    type="button"
+                    onClick={() => setFilter(chip.key)}
+                    className={`shrink-0 px-4 py-2 rounded-full shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] cursor-pointer transition-colors ${chipStyle(chip.key)}`}
+                  >
+                    <span className="text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-4 whitespace-nowrap">
+                      {chip.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="px-5 sm:px-8">
+              {visibleList.length === 0 && (
+                <div className="py-10 flex flex-col items-center gap-2 text-center">
+                  <AlertTriangle className="size-6 text-neutral-400" />
+                  <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                    Tidak ada data yang cocok.
+                  </span>
+                </div>
+              )}
+
+              {visibleList.length > 0 && (
+                <>
+                  {/* Mobile: stacked cards */}
+                  <div className="flex flex-col gap-3 sm:hidden">
+                    {visibleList.map((anak) => {
                       const status = statusConfig[anak.status]
                       return (
-                        <tr
+                        <button
                           key={anak.nama}
-                          className={`border-t border-zinc-200 cursor-pointer transition-colors hover:bg-emerald-50 ${
-                            i % 2 === 1 ? "bg-gray-50" : ""
-                          }`}
+                          type="button"
+                          className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex justify-between items-center text-left cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99]"
                         >
-                          <td className="p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="relative size-10 bg-gray-100 rounded-full flex items-center justify-center shrink-0">
-                                <span
-                                  className={`absolute -top-1 right-0 size-3.5 rounded-full border-2 border-white ${status.dot}`}
-                                />
-                                <span className="text-zinc-900 text-sm font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
-                                  {anak.nama.charAt(0)}
-                                </span>
-                              </div>
-                              <span className="text-zinc-900 text-base font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
-                                {anak.nama}
+                          <div className="flex items-center gap-4">
+                            <div className="relative size-12 bg-gray-100 rounded-full flex items-center justify-center shrink-0">
+                              <span
+                                className={`absolute -top-1 right-0 size-4 rounded-full border-2 border-white ${status.dot}`}
+                              />
+                              <span className="text-zinc-900 text-lg font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
+                                {anak.nama.charAt(0)}
                               </span>
                             </div>
-                          </td>
-                          <td className="p-4 text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif]">
-                            {anak.umurBulan} Bulan • {anak.jenisKelamin}
-                          </td>
-                          <td className="p-4">
+                            <div className="flex flex-col">
+                              <span className="text-zinc-900 text-xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-7">
+                                {anak.nama}
+                              </span>
+                              <span className="text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] leading-5">
+                                {anak.umurBulan} Bulan • {anak.jenisKelamin}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end gap-0.5 shrink-0">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] ${status.badgeBg} ${status.badgeText}`}
+                              className={`text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-4 ${status.badgeText}`}
                             >
                               {status.label}
                             </span>
-                          </td>
-                          <td className="p-4 text-right text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif]">
-                            {anak.zScore.toFixed(1)}
-                          </td>
-                          <td className="p-4 text-right">
-                            <ChevronRight className="size-4 text-neutral-400 ml-auto" />
-                          </td>
-                        </tr>
+                            <span className="text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] leading-5">
+                              Z-Score: {anak.zScore.toFixed(1)}
+                            </span>
+                          </div>
+                        </button>
                       )
                     })}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
+                  </div>
 
-          {hasMore && (
-            <button
-              type="button"
-              onClick={() => setVisibleCount((prev) => prev + 4)}
-              className="w-full mt-3 py-4 rounded-xl flex justify-center items-center gap-2 cursor-pointer transition-colors hover:bg-zinc-100"
-            >
-              <span className="text-center text-emerald-800 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-4">
-                Muat Lebih Banyak
-              </span>
-              <ChevronRight className="size-3 text-emerald-800 rotate-90" />
-            </button>
-          )}
-        </div>
+                  {/* Desktop/tablet: table */}
+                  <div className="hidden sm:block bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] overflow-hidden">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-zinc-100">
+                          <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
+                            Nama
+                          </th>
+                          <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
+                            Usia / JK
+                          </th>
+                          <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
+                            Status
+                          </th>
+                          <th className="p-4 text-right text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
+                            Z-Score
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {visibleList.map((anak, i) => {
+                          const status = statusConfig[anak.status]
+                          return (
+                            <tr
+                              key={anak.nama}
+                              className={`border-t border-zinc-200 cursor-pointer transition-colors hover:bg-emerald-50 ${
+                                i % 2 === 1 ? "bg-gray-50" : ""
+                              }`}
+                            >
+                              <td className="p-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="relative size-10 bg-gray-100 rounded-full flex items-center justify-center shrink-0">
+                                    <span
+                                      className={`absolute -top-1 right-0 size-3.5 rounded-full border-2 border-white ${status.dot}`}
+                                    />
+                                    <span className="text-zinc-900 text-sm font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
+                                      {anak.nama.charAt(0)}
+                                    </span>
+                                  </div>
+                                  <span className="text-zinc-900 text-base font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
+                                    {anak.nama}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="p-4 text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                                {anak.umurBulan} Bulan • {anak.jenisKelamin}
+                              </td>
+                              <td className="p-4">
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] ${status.badgeBg} ${status.badgeText}`}
+                                >
+                                  {status.label}
+                                </span>
+                              </td>
+                              <td className="p-4 text-right text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                                {anak.zScore.toFixed(1)}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+
+              {hasMore && (
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + 4)}
+                  className="w-full mt-3 py-4 rounded-xl flex justify-center items-center gap-2 cursor-pointer transition-colors hover:bg-zinc-100"
+                >
+                  <span className="text-center text-emerald-800 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-4">
+                    Muat Lebih Banyak
+                  </span>
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       <NakesBottomNav

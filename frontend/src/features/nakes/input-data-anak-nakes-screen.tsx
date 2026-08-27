@@ -45,13 +45,13 @@ export function InputDataAnakNakesScreen() {
     <main className="min-h-svh bg-gray-50 pb-32 flex flex-col">
       <NakesHeader title="Input" />
 
-      <div className="relative">
-        <div className="h-48 relative bg-gray-200 rounded-bl-3xl rounded-br-3xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] overflow-hidden">
+      <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 pt-0 sm:pt-6 flex flex-col gap-6">
+        <div className="h-40 sm:h-48 relative bg-gray-200 rounded-bl-3xl rounded-br-3xl sm:rounded-3xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] overflow-hidden -mx-5 sm:mx-0">
           <img src={heroImage} alt="" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-l from-white/80 to-white/0" />
         </div>
 
-        <div className="px-5 -mt-6 flex flex-col gap-6">
+        <div className="-mt-10 sm:mt-0 flex flex-col gap-6 w-full">
           <div className="p-4 bg-white rounded-2xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex flex-col gap-2">
             <h1 className="text-emerald-800 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-8">
               Input Data Anak
@@ -61,7 +61,7 @@ export function InputDataAnakNakesScreen() {
             </p>
           </div>
 
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 w-full">
             {/* Identitas Anak */}
             <div className="p-4 bg-white rounded-2xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex flex-col gap-4">
               <div className="flex items-center gap-2">
@@ -89,9 +89,9 @@ export function InputDataAnakNakesScreen() {
                     value={form.usiaBulan}
                     onChange={handleChange("usiaBulan")}
                     placeholder="0"
-                    className="flex-1 h-12 px-4 bg-transparent text-base font-normal font-['Manrope:Regular',sans-serif] placeholder:text-stone-300 focus:outline focus:outline-2 focus:outline-emerald-800 rounded-xl"
+                    className="flex-1 min-w-0 h-12 px-4 bg-transparent text-base font-normal font-['Manrope:Regular',sans-serif] placeholder:text-stone-300 focus:outline focus:outline-2 focus:outline-emerald-800 rounded-xl"
                   />
-                  <span className="pr-4 text-neutral-500 text-xs font-semibold font-['Manrope:SemiBold',sans-serif]">
+                  <span className="pr-4 text-neutral-500 text-xs font-semibold font-['Manrope:SemiBold',sans-serif] shrink-0">
                     Bulan
                   </span>
                 </div>
@@ -101,19 +101,19 @@ export function InputDataAnakNakesScreen() {
                 <label className="px-1 text-neutral-700 text-xs font-semibold font-['Manrope:SemiBold',sans-serif] leading-4">
                   Jenis Kelamin
                 </label>
-                <div className="flex gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {(["Laki-laki", "Perempuan"] as JenisKelamin[]).map((jk) => (
                     <button
                       key={jk}
                       type="button"
                       onClick={() => setForm((prev) => ({ ...prev, jenisKelamin: jk }))}
-                      className={`flex-1 px-2 py-3 rounded-xl flex justify-center items-center gap-2 cursor-pointer transition-colors ${
+                      className={`min-w-0 px-2 py-3 rounded-xl flex justify-center items-center gap-2 cursor-pointer transition-colors ${
                         form.jenisKelamin === jk
                           ? "bg-emerald-800 text-white"
                           : "bg-zinc-100 text-zinc-900 hover:bg-zinc-200"
                       }`}
                     >
-                      <span className="text-center text-xs font-semibold font-['Manrope:SemiBold',sans-serif] leading-4">
+                      <span className="text-center text-xs font-semibold font-['Manrope:SemiBold',sans-serif] leading-4 truncate">
                         {jk}
                       </span>
                     </button>
@@ -131,7 +131,7 @@ export function InputDataAnakNakesScreen() {
                 </h2>
               </div>
 
-              <div className="flex gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <FieldText
                   label="RT"
                   placeholder="001"
@@ -155,7 +155,7 @@ export function InputDataAnakNakesScreen() {
                   onChange={handleChange("alamat")}
                   placeholder="Nama jalan, nomor rumah, kelurahan..."
                   rows={3}
-                  className="px-4 py-3 bg-zinc-100 rounded-xl text-base font-normal font-['Manrope:Regular',sans-serif] placeholder:text-stone-300 resize-none focus:outline focus:outline-2 focus:outline-emerald-800"
+                  className="w-full px-4 py-3 bg-zinc-100 rounded-xl text-base font-normal font-['Manrope:Regular',sans-serif] placeholder:text-stone-300 resize-none focus:outline focus:outline-2 focus:outline-emerald-800"
                 />
               </div>
             </div>
@@ -200,7 +200,7 @@ function FieldText({
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
 }) {
   return (
-    <div className="flex-1 flex flex-col gap-2">
+    <div className="min-w-0 flex flex-col gap-2">
       <label className="px-1 text-neutral-700 text-xs font-semibold font-['Manrope:SemiBold',sans-serif] leading-4">
         {label}
       </label>
@@ -208,7 +208,7 @@ function FieldText({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="h-12 px-4 bg-zinc-100 rounded-xl text-base font-normal font-['Manrope:Regular',sans-serif] placeholder:text-stone-300 focus:outline focus:outline-2 focus:outline-emerald-800"
+        className="w-full min-w-0 h-12 px-4 bg-zinc-100 rounded-xl text-base font-normal font-['Manrope:Regular',sans-serif] placeholder:text-stone-300 focus:outline focus:outline-2 focus:outline-emerald-800"
       />
     </div>
   )
