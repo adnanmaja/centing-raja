@@ -19,7 +19,7 @@
 - [Menjalankan Proyek](#menjalankan-proyek)
 - [Environment Variables](#environment-variables)
 
-## Fitur Utama
+## Fitur Utama Centing Raja
 
 - Registrasi pengguna berdasarkan peran.
 - Login tanpa password menggunakan OTP melalui nomor telepon.
