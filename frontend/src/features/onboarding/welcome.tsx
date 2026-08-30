@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { motion } from "framer-motion"
 
-const welcomeIllustration =
-  "/images/ilustrasi-panduan-singkat.png"
-
-const centingRajaLogo =
-  "/logo/logo-centing-raja.png"
+const welcomeIllustration = "/images/ilustrasi-ibu-anak.png"
+const centingRajaLogo = "/logo/logo-centing-raja.png"
 
 const slides = [
   {
@@ -13,22 +11,29 @@ const slides = [
       "Bersama kita pantau tumbuh kembang anak untuk masa depan yang lebih cerah dan sehat.",
     visual: "illustration",
   },
-
   { title: "Apa itu Centing Raja ?", description: "", visual: "logo" },
 ]
 
-export function Welcome({ onComplete }: { onComplete: () => void }) {
+export function Welcome({
+  onComplete,
+  onSkip,
+}: {
+  onComplete: () => void
+  onSkip?: () => void
+}) {
   const [activeSlide, setActiveSlide] = useState(0)
 
   const slide = slides[activeSlide]
-
   const isLastSlide = activeSlide === slides.length - 1
 
   const advance = () =>
     isLastSlide ? onComplete() : setActiveSlide((current) => current + 1)
 
   return (
-    <main
+    <motion.main
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
       className="flex min-h-svh w-full flex-col overflow-hidden bg-[#f8f9fa]"
       aria-label="Pengenalan Centing Raja"
     >
@@ -43,9 +48,7 @@ export function Welcome({ onComplete }: { onComplete: () => void }) {
             }`}
           >
             <img
-              src={
-                slide.visual === "logo" ? centingRajaLogo : welcomeIllustration
-              }
+              src={slide.visual === "logo" ? centingRajaLogo : welcomeIllustration}
               alt={
                 slide.visual === "logo"
                   ? "Logo Centing Raja"
@@ -83,36 +86,34 @@ export function Welcome({ onComplete }: { onComplete: () => void }) {
       >
         <Pagination activeSlide={activeSlide} onSelect={setActiveSlide} />
         <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onComplete}
-            className="min-h-11 px-1 font-['Manrope:Regular',sans-serif] text-sm text-[#63747a] transition-colors hover:text-[#006d42]"
-          >
-            Lewati
-          </button>
-          <button
-            type="button"
-            onClick={advance}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#006d42] px-5 font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-white shadow-[0_3px_7px_rgba(0,109,66,0.22)] transition-transform hover:-translate-y-0.5 active:translate-y-0"
-          >
-            {isLastSlide ? "Mulai" : "Lanjut"}
-            <span aria-hidden="true" className="text-lg leading-none">
-              →
-            </span>
-          </button>
-        </div>
+  <button
+    type="button"
+    onClick={onSkip}
+    className="min-h-11 px-1 font-['Manrope:Regular',sans-serif] text-sm text-[#63747a] transition-colors hover:text-[#006d42]"
+  >
+    Lewati
+  </button>
+  <button
+    type="button"
+    onClick={advance}
+    className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#006d42] px-5 font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-white shadow-[0_3px_7px_rgba(0,109,66,0.22)] transition-transform hover:-translate-y-0.5 active:translate-y-0"
+  >
+    {isLastSlide ? "Mulai" : "Lanjut"}
+    <span aria-hidden="true" className="text-lg leading-none">
+      →
+    </span>
+  </button>
+</div>
       </nav>
-    </main>
+    </motion.main>
   )
 }
 
 function Pagination({
   activeSlide,
-
   onSelect,
 }: {
   activeSlide: number
-
   onSelect: (index: number) => void
 }) {
   return (

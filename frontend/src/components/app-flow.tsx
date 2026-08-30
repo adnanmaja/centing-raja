@@ -178,6 +178,7 @@ function Flow() {
         element={
           <Welcome
             onComplete={() => navigate("/welcome-pages/tentang")}
+            onSkip={() => navigate("/auth")}
           />
         }
       />
@@ -193,6 +194,8 @@ function Flow() {
           <Panduan
             guideIndex={0}
             onNext={() => navigate("/welcome-pages/panduan/nakes")}
+            onSkip={() => navigate("/auth")}
+          onBack={() => navigate("/welcome-pages/tentang")}
           />
         }
       />
@@ -203,6 +206,8 @@ function Flow() {
             nakes
             guideIndex={1}
             onNext={() => navigate("/welcome-pages/panduan/kader")}
+             onSkip={() => navigate("/auth")}
+        onBack={() => navigate("/welcome-pages/panduan")}
           />
         }
       />
@@ -213,6 +218,8 @@ function Flow() {
             kader
             guideIndex={2}
             onNext={() => navigate("/auth")}
+             onSkip={() => navigate("/auth")}
+          onBack={() => navigate("/welcome-pages/panduan/nakes")}
           />
         }
       />
@@ -222,6 +229,7 @@ function Flow() {
           <CentingRajaAuth
             onLogin={() => navigate("/auth/login")}
             onRegister={() => navigate("/auth/register")}
+            onTutorial={() => navigate("/welcome-pages/panduan")}
           />
         }
       />

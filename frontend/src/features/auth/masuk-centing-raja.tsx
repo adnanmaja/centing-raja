@@ -157,11 +157,15 @@ export function MasukCentingRaja({
         </button>
       </section>
       <p className="absolute bottom-8 left-1/2 z-10 w-full -translate-x-1/2 text-center font-['Manrope:Regular',sans-serif] text-sm text-[#3e4941]">
-        Kendala masuk?{" "}
-        <a href="tel:0895397306279" className="text-[#006d42] hover:underline">
-          Hubungi Tim IT Posyandu
-        </a>
-      </p>
+  Kendala masuk?{" "}
+  <button
+    type="button"
+    onClick={() => window.open("https://wa.me/62895397306279", "_blank")}
+    className="text-[#006d42] hover:underline"
+  >
+    Hubungi Tim IT Posyandu
+  </button>
+</p>
     </main>
   )
 }

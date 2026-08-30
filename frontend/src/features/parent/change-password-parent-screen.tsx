@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Eye, EyeOff, Hash, Lock, ShieldCheck } from "lucide-react"
-
+import { ArrowLeft, Eye, EyeOff, Hash, Lock, ShieldCheck } from "lucide-react"
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
 import { ParentBottomNav } from "../../components/parent/parent-bottom-nav"
 
@@ -36,10 +35,13 @@ export function ChangePasswordParentScreen() {
 
   return (
     <div className="w-full min-h-screen bg-gray-50 flex flex-col">
-      <ParentInputHeader logo={logo} title="Profile" />
-
-      <div className="flex-1 px-5 pt-6 pb-32 flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
+      <ParentInputHeader
+        logo={logo}
+      title="Profile"
+       onBack={() => navigate("/orang-tua/profil")}
+    />
+      <div className="flex-1 px-5 pt-6 pb-32 flex flex-col gap-6 mx-auto w-full max-w-6xl sm:px-8">
+      <div className="flex flex-col gap-2">
           <h1 className="text-black text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
             Ubah Kata Sandi
           </h1>

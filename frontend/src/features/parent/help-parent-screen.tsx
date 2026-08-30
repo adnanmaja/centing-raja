@@ -14,15 +14,15 @@ export function HelpParentScreen() {
   }
 
   const handleEmail = () => {
-    window.location.href = "mailto:bantuan@centingraja.id"
+    window.location.href = "mailto:gauzamf22@gmail.com"
   }
 
   return (
     <div className="w-full min-h-screen bg-gray-50 flex flex-col">
-      <ParentInputHeader logo={logo} title="Profile" />
+      <ParentInputHeader logo={logo} title="Profile" onBack={() => navigate("/orang-tua/profil")} />
 
-      <div className="flex-1 px-5 py-6 pb-32">
-        <div className="relative p-6 bg-emerald-300 rounded-3xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col items-center gap-2">
+      <div className="flex-1 px-5 py-6 pb-32 mx-auto w-full max-w-6xl sm:px-8">
+        <div className="relative p-6 bg-emerald-300 rounded-3xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col items-center gap-2 sm:max-w-2xl sm:mx-auto">
           <div className="absolute inset-0 opacity-10 overflow-hidden">
             <div className="w-full h-44 absolute left-0 top-[60px] bg-emerald-800" />
           </div>
