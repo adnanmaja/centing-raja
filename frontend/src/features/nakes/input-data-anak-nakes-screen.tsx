@@ -5,7 +5,7 @@ import { Baby, Check, MapPin } from "lucide-react"
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 
-const heroImage = "https://placehold.co/390x192"
+const heroImage = "/images/ibu-dan-anak-bermain.png"
 
 type JenisKelamin = "Laki-laki" | "Perempuan"
 

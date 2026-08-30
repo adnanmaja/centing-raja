@@ -24,18 +24,24 @@ export function InputPengukuranNakesScreen() {
   const [posisiUkur, setPosisiUkur] = useState<PosisiUkur>("Berdiri")
   const [tinggiBadan, setTinggiBadan] = useState("")
   const [lingkarKepala, setLingkarKepala] = useState("")
-  const [lila, setLila] = useState("")
+  const [lingkarLenganAtas, setLingkarLenganAtas] = useState("")
   const [catatan, setCatatan] = useState("")
 
   const isValid = beratBadan.trim().length > 0 && tinggiBadan.trim().length > 0
 
   const handleSave = () => {
     if (!isValid) return
-    // TODO: kirim ke POST /api/pengukuran
     navigate("/nakes/pengukuran/berhasil", {
       state: {
         anak,
-        pengukuran: { beratBadan, tinggiBadan, posisiUkur, lingkarKepala, lila, catatan },
+        pengukuran: {
+          beratBadan,
+          tinggiBadan,
+          posisiUkur,
+          lingkarKepala,
+          lila: lingkarLenganAtas,
+          catatan,
+        },
       },
     })
   }
@@ -59,7 +65,6 @@ export function InputPengukuranNakesScreen() {
       </header>
 
       <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 py-4 flex flex-col gap-6">
-        {/* Kartu anak */}
         <div className="p-4 bg-zinc-100 rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="size-12 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden shrink-0">
@@ -83,7 +88,6 @@ export function InputPengukuranNakesScreen() {
         </div>
 
         <div className="grid sm:grid-cols-2 gap-6">
-          {/* Berat Badan */}
           <div className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <span className="size-8 bg-emerald-800/10 rounded-full flex items-center justify-center shrink-0">
@@ -115,7 +119,6 @@ export function InputPengukuranNakesScreen() {
             </div>
           </div>
 
-          {/* Tinggi / Panjang */}
           <div className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <span className="size-8 bg-emerald-800/10 rounded-full flex items-center justify-center shrink-0">
@@ -165,8 +168,7 @@ export function InputPengukuranNakesScreen() {
           </div>
         </div>
 
-        {/* Lingkar Kepala & LiLA */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           <div className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <span className="text-zinc-900 text-xs font-normal font-['Manrope:Regular',sans-serif] leading-5">
@@ -192,7 +194,7 @@ export function InputPengukuranNakesScreen() {
           <div className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <span className="text-zinc-900 text-xs font-normal font-['Manrope:Regular',sans-serif] leading-5">
-                LiLA
+                Lingkar Lengan Atas
               </span>
             </div>
             <div className="relative flex items-center bg-gray-50 rounded-lg">
@@ -200,8 +202,8 @@ export function InputPengukuranNakesScreen() {
                 type="number"
                 step="0.1"
                 min={0}
-                value={lila}
-                onChange={(e) => setLila(e.target.value)}
+                value={lingkarLenganAtas}
+                onChange={(e) => setLingkarLenganAtas(e.target.value)}
                 placeholder="0.0"
                 className="flex-1 min-w-0 h-11 px-3 bg-transparent text-base font-normal font-['Manrope:Regular',sans-serif] placeholder:text-stone-300 focus:outline focus:outline-2 focus:outline-emerald-800 rounded-lg"
               />
@@ -212,7 +214,6 @@ export function InputPengukuranNakesScreen() {
           </div>
         </div>
 
-        {/* Catatan */}
         <textarea
           value={catatan}
           onChange={(e) => setCatatan(e.target.value)}
