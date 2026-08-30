@@ -1,125 +1,71 @@
-import React, { useEffect, useRef, useState } from "react"
+import { motion } from "framer-motion"
 
+import { ProfileHeader } from "../../components/kader/profile-header"
+import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
 import { SvgIcon } from "../../components/ui/svg-icon"
 
 import kaderNavPaths from "../../assets/icon-kader-nav"
-
 import kaderActionPaths from "../../assets/icon-kader-action"
-
 import kaderReminderPaths from "../../assets/icon-kader-reminder"
-
-import kaderProfilePaths from "../../assets/icon-kader-profile"
-
 import kaderTaskPaths from "../../assets/icon-kader-task"
 
-import bottomProfilePaths from "../../assets/icon-bottom-profile"
-
-const kaderLogo =
-  "/logo/logo-centing-raja.png"
-
-const kaderEducationImage =
-  "/images/poster-protein-hewani-cegah-stunting.png"
-
-const kaderNewsImage =
-  "/images/kegiatan-posyandu.png"
+const kaderEducationImage = "/images/poster-protein-hewani-cegah-stunting.png"
+const kaderNewsImage = "/images/kegiatan-posyandu.png"
 
 export function BerandaKader({
   onMaterial,
-
   onTasks,
-
   onProfile,
+  onInput,
 }: {
   onMaterial: () => void
-
   onTasks: () => void
-
   onProfile: () => void
+  onInput: () => void
 }) {
   const news = [
     {
       image: kaderEducationImage,
-
       category: "Gizi",
-
       categoryClass: "bg-[#cfe1f8] text-[#536478]",
-
       title: "Pentingnya Protein Hewani untuk Mencegah Stunting",
-
       time: "2 jam yang lalu",
     },
-
     {
       image: kaderNewsImage,
-
       category: "Kegiatan",
-
       categoryClass: "bg-[#e9f7ef] text-[#006d42]",
-
       title: "Jadwal Kelas Ibu Balita Desa Suka Maju Bulan November",
-
       time: "1 hari yang lalu",
     },
-
     {
       image:
         "https://images.unsplash.com/photo-1681378128359-a5c2492a3535?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=80&w=900",
-
       category: "Resep",
-
       categoryClass: "bg-[#fbefc8] text-[#765b06]",
-
       title: "Menu Seimbang untuk Mendukung Tumbuh Kembang Anak",
-
       time: "2 hari yang lalu",
     },
-
     {
       image:
         "https://images.unsplash.com/photo-1655740005902-2436216b82b8?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=80&w=900",
-
       category: "Edukasi",
-
       categoryClass: "bg-[#e9f7ef] text-[#006d42]",
-
       title: "Ide Bekal Bergizi yang Disukai Anak",
-
       time: "3 hari yang lalu",
     },
   ]
 
   return (
-    <main
-      data-reveal-page
-      className="min-h-svh overflow-x-hidden bg-[#f8f9fa] pb-28 text-[#191c1d]"
-    >
-      <header className="fixed inset-x-0 top-0 z-30 border-b border-black/[0.03] bg-[#f8f9fa]/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-5 xl:px-10">
-          <div className="flex items-center gap-2">
-            <img
-              src={kaderLogo}
-              alt="Centing Raja"
-              className="size-8 rounded-full object-cover"
-            />
-            <span className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold text-[#006d42]">
-              Beranda
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onProfile}
-            aria-label="Profil Kader"
-            className="grid size-8 place-items-center rounded-full bg-[#006d42] text-white shadow-[0_2px_5px_rgba(0,109,66,0.24)]"
-          >
-            <SvgIcon
-              path={kaderProfilePaths.p3189a600}
-              viewBox="0 0 12 12"
-              className="size-3"
-            />
-          </button>
-        </div>
-      </header>
-      <div className="mx-auto w-full max-w-7xl px-5 pb-10 pt-[88px] sm:px-8 xl:px-10 xl:pt-24">
+    <main className="min-h-svh overflow-x-hidden bg-[#f8f9fa] pb-28 pt-16 text-[#191c1d]">
+      <ProfileHeader title="Beranda" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="mx-auto w-full max-w-6xl px-5 pb-10 pt-6 sm:px-8"
+      >
         <section className="kader-hero rounded-2xl bg-[#e9f7ef] p-5 shadow-[0_8px_26px_rgba(0,109,66,0.06)] xl:flex xl:items-center xl:justify-between xl:gap-10 xl:p-8">
           <div>
             <h1 className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold leading-7 xl:text-2xl">
@@ -140,11 +86,7 @@ export function BerandaKader({
             </div>
             <div className="flex min-w-0 items-center gap-3">
               <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#cfe1f8] text-[#536478]">
-                <SvgIcon
-                  path={kaderTaskPaths.p411f900}
-                  viewBox="0 0 8 20"
-                  className="h-5 w-2"
-                />
+                <SvgIcon path={kaderTaskPaths.p411f900} viewBox="0 0 8 20" className="h-5 w-2" />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-['Manrope:SemiBold',sans-serif] text-sm font-semibold">
@@ -154,18 +96,16 @@ export function BerandaKader({
               </div>
               <button
                 type="button"
-                className="grid size-8 shrink-0 place-items-center rounded-full bg-[#006d42] text-white"
+                onClick={onTasks}
+                className="grid size-8 shrink-0 place-items-center rounded-full bg-[#006d42] text-white transition hover:bg-[#005c38] active:scale-95"
                 aria-label="Buka tugas"
               >
-                <SvgIcon
-                  path={kaderTaskPaths.p4874b00}
-                  viewBox="0 0 5.55 9"
-                  className="h-2.5 w-1.5"
-                />
+                <SvgIcon path={kaderTaskPaths.p4874b00} viewBox="0 0 5.55 9" className="h-2.5 w-1.5" />
               </button>
             </div>
           </div>
         </section>
+
         <div className="mt-6 grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] xl:gap-8">
           <div className="space-y-6 xl:space-y-8">
             <section>
@@ -178,16 +118,14 @@ export function BerandaKader({
               <div className="mt-3 grid w-full max-w-[350px] grid-cols-2 gap-3 lg:max-w-none">
                 <button
                   type="button"
-                  className="quick-action group min-w-0 rounded-xl bg-white px-2 py-4 text-center shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:p-4"
+                  onClick={onMaterial}
+                  className="quick-action group relative min-w-0 overflow-hidden rounded-xl bg-white px-2 py-4 text-center shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:p-4"
                 >
-                  <span className="mx-auto grid size-12 place-items-center rounded-full bg-[#76d69f] text-[#005c38] transition-transform group-hover:scale-110">
-                    <SvgIcon
-                      path={kaderNavPaths.pd44dd40}
-                      viewBox="0 0 18 18"
-                      className="size-[18px]"
-                    />
+                  <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                  <span className="relative mx-auto grid size-12 place-items-center rounded-full bg-[#76d69f] text-[#005c38] transition-transform group-hover:scale-110">
+                    <SvgIcon path={kaderNavPaths.pd44dd40} viewBox="0 0 18 18" className="size-[18px]" />
                   </span>
-                  <span className="mt-3 block font-['Manrope:SemiBold',sans-serif] text-sm font-semibold">
+                  <span className="relative mt-3 block font-['Manrope:SemiBold',sans-serif] text-sm font-semibold">
                     Edukasi
                     <br />
                     Kader
@@ -195,14 +133,11 @@ export function BerandaKader({
                 </button>
                 <button
                   type="button"
+                  onClick={onInput}
                   className="quick-action group min-w-0 rounded-xl bg-white px-2 py-4 text-center shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:p-4"
                 >
                   <span className="mx-auto grid size-12 place-items-center rounded-full bg-[#e3bf66] text-[#654000] transition-transform group-hover:scale-110">
-                    <SvgIcon
-                      path={kaderActionPaths.p1eac3d80}
-                      viewBox="0 0 18 18"
-                      className="size-[18px]"
-                    />
+                    <SvgIcon path={kaderActionPaths.p1eac3d80} viewBox="0 0 18 18" className="size-[18px]" />
                   </span>
                   <span className="mt-3 block font-['Manrope:SemiBold',sans-serif] text-sm font-semibold">
                     Input
@@ -212,37 +147,31 @@ export function BerandaKader({
                 </button>
               </div>
             </section>
+
             <section className="relative w-full max-w-[350px] overflow-hidden rounded-xl bg-[#f3f4f5] p-4 pl-6 shadow-[0_1px_2px_rgba(0,0,0,0.05)] lg:max-w-none">
               <div className="absolute inset-y-0 left-0 w-2 bg-[#ba1a1a]" />
               <div className="flex min-w-0 gap-4">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#ba1a1a]/10 text-[#ba1a1a]">
-                  <SvgIcon
-                    path={kaderReminderPaths.p3f50100}
-                    viewBox="0 0 20 20.05"
-                    className="h-5 w-5"
-                  />
+                  <SvgIcon path={kaderReminderPaths.p3f50100} viewBox="0 0 20 20.05" className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">
                   <h2 className="font-['Manrope:SemiBold',sans-serif] text-sm font-semibold">
                     Pengingat Penting
                   </h2>
                   <p className="mt-1 break-words text-sm leading-5 text-[#3e4941]">
-                    Ada 5 balita di wilayah Anda yang belum melakukan pengukuran
-                    bulan ini.
+                    Ada 5 balita di wilayah Anda yang belum melakukan pengukuran bulan ini.
                   </p>
                 </div>
               </div>
             </section>
           </div>
+
           <section className="min-w-0 max-w-full xl:row-span-2">
             <div className="flex items-end justify-between">
               <h2 className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold">
                 Berita &amp; Edukasi
               </h2>
-              <button
-                type="button"
-                className="font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#006d42]"
-              >
+              <button type="button" className="font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#006d42]">
                 Lihat Semua
               </button>
             </div>
@@ -252,15 +181,9 @@ export function BerandaKader({
                   key={item.title}
                   className="news-card w-[78vw] max-w-[280px] shrink-0 snap-start overflow-hidden rounded-xl bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] xl:w-[360px]"
                 >
-                  <img
-                    src={item.image}
-                    alt=""
-                    className="h-36 w-full object-cover"
-                  />
+                  <img src={item.image} alt="" className="h-36 w-full object-cover" />
                   <div className="p-3">
-                    <span
-                      className={`inline-flex rounded px-2 py-0.5 font-['Manrope:Regular',sans-serif] text-[10px] ${item.categoryClass}`}
-                    >
+                    <span className={`inline-flex rounded px-2 py-0.5 font-['Manrope:Regular',sans-serif] text-[10px] ${item.categoryClass}`}>
                       {item.category}
                     </span>
                     <h3 className="mt-2 font-['Manrope:SemiBold',sans-serif] text-sm font-semibold leading-5">
@@ -273,66 +196,15 @@ export function BerandaKader({
             </div>
           </section>
         </div>
-      </div>
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-black/[0.04] bg-[#f8f9fa]/90 shadow-[0_-1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl">
-        <div className="mx-auto grid h-16 w-full max-w-7xl grid-cols-4 px-2 sm:max-w-md xl:max-w-3xl xl:px-8">
-          <button
-            type="button"
-            className="flex min-w-0 flex-col items-center justify-center gap-1 text-[#006d42]"
-          >
-            <SvgIcon
-              path={kaderNavPaths.p12a32500}
-              viewBox="0 0 16 18"
-              className="h-[18px] w-4"
-            />
-            <span className="font-['Manrope:SemiBold',sans-serif] text-[11px] font-semibold">
-              Beranda
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={onMaterial}
-            className="flex min-w-0 flex-col items-center justify-center gap-1 text-[#3e4941] transition hover:text-[#006d42]"
-          >
-            <SvgIcon
-              path={kaderNavPaths.p378800}
-              viewBox="0 0 22 16"
-              className="h-4 w-[22px]"
-            />
-            <span className="font-['Manrope:SemiBold',sans-serif] text-[11px] font-semibold">
-              Materi
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={onTasks}
-            className="flex min-w-0 flex-col items-center justify-center gap-1 text-[#3e4941] transition hover:text-[#006d42]"
-          >
-            <SvgIcon
-              path={kaderNavPaths.p1de35f80}
-              viewBox="0 0 18 20"
-              className="h-5 w-[18px]"
-            />
-            <span className="font-['Manrope:SemiBold',sans-serif] text-[11px] font-semibold">
-              Tugas
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={onProfile}
-            className="flex min-w-0 flex-col items-center justify-center gap-1 text-[#3e4941] transition hover:text-[#006d42]"
-          >
-            <SvgIcon
-              path={bottomProfilePaths.p3de21300}
-              viewBox="0 0 20 20"
-              className="size-5"
-            />
-            <span className="font-['Manrope:SemiBold',sans-serif] text-[11px] font-semibold">
-              Profil
-            </span>
-          </button>
-        </div>
-      </nav>
+      </motion.div>
+
+      <ProfileBottomNav
+        active="Beranda"
+        onHome={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        onMaterial={onMaterial}
+        onTasks={onTasks}
+        onProfile={onProfile}
+      />
     </main>
   )
 }

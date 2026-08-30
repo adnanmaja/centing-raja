@@ -369,13 +369,14 @@ function Flow() {
         }
       />
       <Route path="/orang-tua/materi/:id" element={<MaterialDetailRoute />} />
-      <Route
+            <Route
         path="/kader"
         element={
           <BerandaKader
             onMaterial={() => navigate("/kader/materi")}
             onTasks={() => navigate("/kader/tugas")}
             onProfile={() => navigate("/kader/profil")}
+            onInput={() => navigate("/kader/tugas/input")}
           />
         }
       />
@@ -387,6 +388,7 @@ function Flow() {
             onMaterial={() => navigate("/kader/materi")}
             onViewData={() => navigate("/kader/tugas/data")}
             onInput={() => navigate("/kader/tugas/input")}
+            onProfile={() => navigate("/kader/profil")}
           />
         }
       />
@@ -397,6 +399,7 @@ function Flow() {
             onBack={() => navigate("/kader/tugas")}
             onHome={() => navigate("/kader")}
             onMaterial={() => navigate("/kader/materi")}
+            onProfile={() => navigate("/kader/profil")}
           />
         }
       />
@@ -416,6 +419,7 @@ function Flow() {
             onHome={() => navigate("/kader")}
             onDetails={() => navigate("/kader/tugas/data")}
             onMaterial={() => navigate("/kader/materi")}
+            onProfile={() => navigate("/kader/profil")}
           />
         }
       />

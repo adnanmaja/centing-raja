@@ -2,20 +2,13 @@ import React, { useEffect, useRef, useState } from "react"
 
 import { SvgIcon } from "../../components/ui/svg-icon"
 
-import logoutPaths from "../../assets/icon-logout"
-
-import tasksPaths from "../../assets/icon-tasks"
-
-import taskProfilePaths from "../../assets/icon-profile-badge"
-
-import bottomProfilePaths from "../../assets/icon-bottom-profile"
-
-import bottomMaterialPaths from "../../assets/icon-bottom-material"
-
 import profilePagePaths from "../../assets/icon-profile-page"
 
-const kaderProfileLogo =
-  "/logo/logo-centing-raja.png"
+import logoutPaths from "../../assets/icon-logout"
+
+import { ProfileHeader } from "../../components/kader/profile-header"
+
+import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
 
 const kaderProfilePhoto =
   "/images/foto-kader.png"
@@ -70,31 +63,8 @@ export function ProfileKader({
       className="min-h-svh bg-[#f8f9fa] pb-24 pt-16 text-[#191c1d]"
       aria-label="Profil Kader"
     >
-      <header className="fixed inset-x-0 top-0 z-30 border-b border-black/[0.03] bg-[#f8f9fa]/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:px-8 xl:px-10">
-          <div className="flex items-center gap-2">
-            <img
-              src={kaderProfileLogo}
-              alt="Logo Centing Raja"
-              className="size-8 object-cover"
-            />
-            <span className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold text-[#007c4a]">
-              Profile
-            </span>
-          </div>
-          <button
-            type="button"
-            className="grid size-8 place-items-center rounded-full bg-[#007c4a] text-white"
-            aria-label="Profil"
-          >
-            <SvgIcon
-              path={taskProfilePaths.p3189a600}
-              viewBox="0 0 12 12"
-              className="size-4"
-            />
-          </button>
-        </div>
-      </header>
+      <ProfileHeader title="Profile" />
+
       <div className="mx-auto w-full max-w-5xl px-5 py-7 sm:px-8 xl:px-10 xl:py-10">
         <section className="flex flex-col items-center text-center">
           <div className="relative">
@@ -229,57 +199,14 @@ export function ProfileKader({
           Keluar
         </button>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-black/[0.04] bg-[#f8f9fa]/90 shadow-[0_-1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl">
-        <div className="mx-auto grid h-16 w-full max-w-7xl grid-cols-4 px-2 sm:max-w-md xl:max-w-3xl xl:px-8">
-          <button
-            type="button"
-            onClick={onHome}
-            className="flex flex-col items-center justify-center gap-1 text-[#3e4941]"
-          >
-            <SvgIcon
-              path={tasksPaths.p12a32500}
-              viewBox="0 0 16 18"
-              className="h-[18px] w-4"
-            />
-            <span className="text-[11px] font-semibold">Beranda</span>
-          </button>
-          <button
-            type="button"
-            onClick={onMaterial}
-            className="flex flex-col items-center justify-center gap-1 text-[#3e4941]"
-          >
-            <SvgIcon
-              path={bottomMaterialPaths.p378800}
-              viewBox="0 0 22 16"
-              className="h-4 w-[22px]"
-            />
-            <span className="text-[11px] font-semibold">Materi</span>
-          </button>
-          <button
-            type="button"
-            onClick={onHome}
-            className="flex flex-col items-center justify-center gap-1 text-[#3e4941]"
-          >
-            <SvgIcon
-              path={tasksPaths.p1de35f80}
-              viewBox="0 0 18 20"
-              className="h-5 w-[18px]"
-            />
-            <span className="text-[11px] font-semibold">Kuis</span>
-          </button>
-          <button
-            type="button"
-            className="flex flex-col items-center justify-center gap-1 text-[#007c4a]"
-          >
-            <SvgIcon
-              path={bottomProfilePaths.p3de21300}
-              viewBox="0 0 20 20"
-              className="size-5"
-            />
-            <span className="text-[11px] font-semibold">Profil</span>
-          </button>
-        </div>
-      </nav>
+
+      <ProfileBottomNav
+        onHome={onHome}
+        onMaterial={onMaterial}
+        onTasks={onHome}
+        onProfile={() => {}}
+        active="Profil"
+      />
     </main>
   )
 }

@@ -1,9 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom"
+import { motion } from "framer-motion"
 import { ArrowRight, Check, Ruler, Scale } from "lucide-react"
 
 import { NakesHeader } from "../../components/nakes/nakes-header"
-
-const avatarImage = "https://placehold.co/128x128"
 
 export function HasilPengukuranNakesScreen() {
   const navigate = useNavigate()
@@ -28,26 +27,38 @@ export function HasilPengukuranNakesScreen() {
       <NakesHeader title="Beranda" />
 
       <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 py-8 sm:py-12 flex flex-col items-center gap-8">
-        <div className="relative size-32 flex items-center justify-center shrink-0">
+        <motion.div
+          initial={{ scale: 0.4, opacity: 0, rotate: -12 }}
+          animate={{ scale: 1, opacity: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 260, damping: 18 }}
+          className="relative size-32 flex items-center justify-center shrink-0"
+        >
           <div className="absolute inset-0 bg-emerald-300/20 rounded-full" />
-          <div className="absolute inset-2 bg-green-300/40 rounded-full" />
-          <img src={avatarImage} alt="" className="relative size-28 rounded-full object-cover shadow-md" />
-          <span className="absolute size-2 bg-orange-300 rounded-full" style={{ left: "20%", top: "10%" }} />
-          <span className="absolute size-2 bg-emerald-800 rounded-full" style={{ right: "10%", top: "30%" }} />
-          <span className="absolute size-2 bg-yellow-800 rounded-full" style={{ left: "30%", bottom: "10%" }} />
-          <span className="absolute size-2 bg-green-300 rounded-full" style={{ right: "20%", bottom: "20%" }} />
-        </div>
+          <div className="absolute inset-2 bg-emerald-800 rounded-full flex items-center justify-center">
+            <Check className="size-14 text-white" strokeWidth={3} />
+          </div>
+        </motion.div>
 
-        <div className="flex flex-col items-center gap-2 max-w-md">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          className="flex flex-col items-center gap-2 max-w-2xl"
+        >
           <h1 className="text-center text-zinc-900 text-2xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] leading-8">
             Data Berhasil Disimpan!
           </h1>
           <p className="text-center text-neutral-700 text-sm font-normal font-['Manrope:Regular',sans-serif] leading-5">
             Terima kasih telah melakukan pengukuran. Data ini sangat berharga untuk memantau status tumbuh kembang si kecil.
           </p>
-        </div>
+        </motion.div>
 
-        <div className="w-full max-w-md p-4 bg-white rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex flex-col gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.4 }}
+          className="w-full max-w-2xl p-4 bg-white rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex flex-col gap-4"
+        >
           <span className="text-neutral-700 text-xs font-semibold font-['Manrope:SemiBold',sans-serif] uppercase leading-4 tracking-wide">
             Ringkasan Data
           </span>
@@ -112,9 +123,14 @@ export function HasilPengukuranNakesScreen() {
               </span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="w-full max-w-md flex flex-col gap-3">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+          className="w-full max-w-2xl flex flex-col gap-3"
+        >
           <button
             type="button"
             onClick={() => navigate("/nakes/pertumbuhan", { state: { anak, pengukuran } })}
@@ -135,7 +151,7 @@ export function HasilPengukuranNakesScreen() {
               Kembali ke Beranda
             </span>
           </button>
-        </div>
+        </motion.div>
       </div>
     </main>
   )

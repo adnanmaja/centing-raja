@@ -13,6 +13,7 @@ import {
 
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
+import { ConfirmDeleteModal } from "../../components/ui/confirm-delete-modal"
 import { AkunBaruModal, type AkunBaruData, type Role } from "./akun-baru-modal"
 
 type Akun = {
@@ -24,7 +25,6 @@ type Akun = {
   avatarText: string
 }
 
-// TODO: ganti dengan fetch ke GET /api/akun
 const initialAkunList: Akun[] = [
   {
     nama: "Siti Rahmawati",
@@ -66,6 +66,29 @@ const avatarPalette = [
 
 type RoleFilter = "Semua" | Role
 
+type MateriHistoryItem = {
+  id: string
+  judul: string
+  kategori: string
+  tanggal: string
+}
+
+type KuisHistoryItem = {
+  id: string
+  judul: string
+  durasi: string
+  jumlahSoal: number
+}
+
+const initialMateriHistory: MateriHistoryItem[] = [
+  { id: "1", judul: "Pentingnya MPASI 6 Bulan", kategori: "Nutrisi", tanggal: "12 Agu 2026" },
+  { id: "2", judul: "Deteksi Dini Stunting", kategori: "Kesehatan", tanggal: "5 Agu 2026" },
+]
+
+const initialKuisHistory: KuisHistoryItem[] = [
+  { id: "1", judul: "Deteksi Dini Stunting Balita", durasi: "15 Menit", jumlahSoal: 5 },
+]
+
 export function AkunNakesScreen() {
   const navigate = useNavigate()
   const [akunList, setAkunList] = useState<Akun[]>(initialAkunList)
@@ -73,6 +96,10 @@ export function AkunNakesScreen() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("Semua")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const [materiHistory, setMateriHistory] = useState<MateriHistoryItem[]>(initialMateriHistory)
+  const [kuisHistory] = useState<KuisHistoryItem[]>(initialKuisHistory)
+  const [materiToDelete, setMateriToDelete] = useState<MateriHistoryItem | null>(null)
 
   const filteredAkun = useMemo(() => {
     return akunList.filter((akun) => {
@@ -90,7 +117,6 @@ export function AkunNakesScreen() {
     )
     if (!confirmed) return
 
-    // TODO: kirim ke DELETE /api/akun/{id}
     setAkunList((prev) => prev.filter((item) => item.nik !== akun.nik))
     window.alert(`Akun "${akun.nama}" berhasil dihapus.`)
   }
@@ -102,7 +128,6 @@ export function AkunNakesScreen() {
       return
     }
 
-    // TODO: kirim ke POST /api/akun
     const palette = avatarPalette[akunList.length % avatarPalette.length]
     const newAkun: Akun = {
       nama: data.nama,
@@ -134,7 +159,6 @@ export function AkunNakesScreen() {
           </p>
         </div>
 
-        {/* Kelola Akun */}
         <section className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-zinc-900 text-xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-7">
@@ -206,7 +230,6 @@ export function AkunNakesScreen() {
 
             {filteredAkun.length > 0 && (
               <>
-                {/* Mobile: stacked list */}
                 <div className="sm:hidden">
                   {filteredAkun.map((akun, i) => (
                     <div
@@ -216,9 +239,7 @@ export function AkunNakesScreen() {
                       }`}
                     >
                       <div className="flex items-center gap-4 min-w-0">
-                        <div
-                          className={`size-12 ${akun.avatarBg} rounded-full flex items-center justify-center shrink-0`}
-                        >
+                        <div className={`size-12 ${akun.avatarBg} rounded-full flex items-center justify-center shrink-0`}>
                           <span className={`text-xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] leading-7 ${akun.avatarText}`}>
                             {akun.initial}
                           </span>
@@ -233,9 +254,7 @@ export function AkunNakesScreen() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`px-2 py-1 rounded-md text-[10px] font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] uppercase leading-4 tracking-wide ${roleBadgeStyle[akun.role]}`}
-                        >
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] uppercase leading-4 tracking-wide ${roleBadgeStyle[akun.role]}`}>
                           {akun.role}
                         </span>
                         <button
@@ -251,35 +270,21 @@ export function AkunNakesScreen() {
                   ))}
                 </div>
 
-                {/* Desktop/tablet: table */}
                 <table className="hidden sm:table w-full border-collapse">
                   <thead>
                     <tr className="bg-zinc-100">
-                      <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
-                        Nama
-                      </th>
-                      <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
-                        NIK
-                      </th>
-                      <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
-                        Role
-                      </th>
+                      <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">Nama</th>
+                      <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">NIK</th>
+                      <th className="p-4 text-left text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">Role</th>
                       <th className="p-4 w-16" />
                     </tr>
                   </thead>
                   <tbody>
                     {filteredAkun.map((akun, i) => (
-                      <tr
-                        key={akun.nik}
-                        className={`border-t border-zinc-200 transition-colors hover:bg-emerald-50 ${
-                          i % 2 === 1 ? "bg-gray-50" : ""
-                        }`}
-                      >
+                      <tr key={akun.nik} className={`border-t border-zinc-200 transition-colors hover:bg-emerald-50 ${i % 2 === 1 ? "bg-gray-50" : ""}`}>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <div
-                              className={`size-10 ${akun.avatarBg} rounded-full flex items-center justify-center shrink-0`}
-                            >
+                            <div className={`size-10 ${akun.avatarBg} rounded-full flex items-center justify-center shrink-0`}>
                               <span className={`text-base font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] ${akun.avatarText}`}>
                                 {akun.initial}
                               </span>
@@ -293,9 +298,7 @@ export function AkunNakesScreen() {
                           {akun.nik}
                         </td>
                         <td className="p-4">
-                          <span
-                            className={`px-2 py-1 rounded-md text-[10px] font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] uppercase leading-4 tracking-wide ${roleBadgeStyle[akun.role]}`}
-                          >
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] uppercase leading-4 tracking-wide ${roleBadgeStyle[akun.role]}`}>
                             {akun.role}
                           </span>
                         </td>
@@ -328,7 +331,6 @@ export function AkunNakesScreen() {
           </div>
         </section>
 
-        {/* Konten Edukasi */}
         <section className="flex flex-col gap-4">
           <h2 className="text-zinc-900 text-xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-7">
             Konten Edukasi
@@ -367,10 +369,89 @@ export function AkunNakesScreen() {
             />
           </div>
         </section>
+
+        <section className="flex flex-col gap-4">
+          <h2 className="text-zinc-900 text-xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-7">
+            Riwayat Materi Dipublikasikan
+          </h2>
+
+          {materiHistory.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] p-6 text-center">
+              <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                Belum ada materi yang dipublikasikan.
+              </span>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] overflow-hidden">
+              {materiHistory.map((item, i) => (
+                <div
+                  key={item.id}
+                  className={`p-4 flex items-center justify-between gap-3 ${i > 0 ? "border-t border-zinc-200" : ""}`}
+                >
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-zinc-900 text-base font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] truncate">
+                      {item.judul}
+                    </span>
+                    <span className="text-neutral-700 text-xs font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                      {item.kategori} • {item.tanggal}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMateriToDelete(item)}
+                    className="p-1 rounded-full cursor-pointer transition-colors hover:bg-red-50 shrink-0"
+                    aria-label={`Hapus materi ${item.judul}`}
+                  >
+                    <Trash2 className="size-4 text-red-700" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <h2 className="text-zinc-900 text-xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-7">
+            Kuis yang Sudah Dibuat
+          </h2>
+
+          {kuisHistory.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] p-6 text-center">
+              <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                Belum ada kuis yang dibuat.
+              </span>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {kuisHistory.map((kuis) => (
+                <div key={kuis.id} className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col gap-2">
+                  <span className="text-zinc-900 text-lg font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
+                    {kuis.judul}
+                  </span>
+                  <span className="text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                    {kuis.jumlahSoal} pertanyaan • {kuis.durasi}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       {isModalOpen && (
         <AkunBaruModal onClose={() => setIsModalOpen(false)} onSubmit={handleCreateAkun} />
+      )}
+
+      {materiToDelete && (
+        <ConfirmDeleteModal
+          title="Hapus Materi?"
+          description={`Yakin ingin menghapus materi "${materiToDelete.judul}"?`}
+          onCancel={() => setMateriToDelete(null)}
+          onConfirm={() => {
+            setMateriHistory((prev) => prev.filter((m) => m.id !== materiToDelete.id))
+            setMateriToDelete(null)
+          }}
+        />
       )}
 
       <NakesBottomNav
@@ -410,7 +491,6 @@ function EduCard({
       className="p-5 relative bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col text-left overflow-hidden cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99]"
     >
       <div className={`absolute -right-6 -top-4 size-24 rounded-full blur-md ${glowColor}`} />
-
       <div className="relative flex items-start gap-4">
         <div className={`size-12 ${iconBg} rounded-xl flex items-center justify-center shrink-0`}>
           {icon}
