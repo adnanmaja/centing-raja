@@ -1,46 +1,34 @@
-import React, { useEffect, useRef, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { motion } from "framer-motion"
 
 import { SvgIcon } from "../../components/ui/svg-icon"
-
 import authPaths from "../../assets/icon-auth"
 
-const authLogo =
-  "/logo/logo-centing-raja.png"
-
-const authStoryImage =
-  "/images/ilustrasi-pengukuran-tinggi.png"
+const authLogo = "/logo/logo-centing-raja.png"
+const authStoryImage = "/images/ilustrasi-pengukuran-tinggi.png"
 
 export function CentingRajaAuth({
   onLogin,
-
   onRegister,
+  onTutorial,
 }: {
   onLogin: () => void
-
   onRegister: () => void
+  onTutorial?: () => void
 }) {
   const features = [
     {
       title: "Pantau Berat",
-
       text: "Catat berat dan tinggi badan secara rutin.",
-
       icon: authPaths.p8d38a40,
-
       viewBox: "0 0 18 18",
-
       tone: "bg-[#cfe1f8] text-[#4f6073]",
     },
-
     {
       title: "Grafik KMS",
-
-      text: "Visualisasi pertumbuhan berstandar WHO.",
-
+      text: "Visualisasi pertumbuhan berstandar Kemenkes RI Indonesia.",
       icon: authPaths.pa9e6b00,
-
       viewBox: "0 0 20 13",
-
       tone: "bg-[#eac55f] text-[#765b06]",
     },
   ]
@@ -77,41 +65,38 @@ export function CentingRajaAuth({
             <button
               type="button"
               onClick={onLogin}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#006d42] px-6 font-['Manrope:Regular',sans-serif] text-base text-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.10)]"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#006d42] px-6 font-['Manrope:Regular',sans-serif] text-base text-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.10)] transition-transform hover:-translate-y-0.5 active:translate-y-0"
             >
               Masuk{" "}
-              <SvgIcon
-                path={authPaths.pad382c0}
-                viewBox="0 0 13.5 13.5"
-                className="size-4"
-              />
+              <SvgIcon path={authPaths.pad382c0} viewBox="0 0 13.5 13.5" className="size-4" />
             </button>
             <button
               type="button"
               onClick={onRegister}
-              className="min-h-12 rounded-full border border-[#006d42] bg-transparent px-6 font-['Manrope:Regular',sans-serif] text-base text-[#006d42]"
+              className="min-h-12 rounded-full border border-[#006d42] bg-transparent px-6 font-['Manrope:Regular',sans-serif] text-base text-[#006d42] transition-colors hover:bg-[#006d42]/5"
             >
               Daftar Akun Baru
             </button>
           </div>
         </div>
       </section>
+
       <section className="mt-7 lg:order-1 lg:mt-0">
         <h2 className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-base font-semibold leading-6">
           Fitur Utama
         </h2>
+
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {features.map((feature) => (
-            <article
+            <motion.article
               key={feature.title}
-              className={`rounded-xl p-4 ${feature.tone}`}
+              whileHover={{ y: -4, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className={`cursor-pointer rounded-xl p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-md ${feature.tone}`}
             >
               <span className="grid size-10 place-items-center rounded-full bg-white/85">
-                <SvgIcon
-                  path={feature.icon}
-                  viewBox={feature.viewBox}
-                  className="size-5"
-                />
+                <SvgIcon path={feature.icon} viewBox={feature.viewBox} className="size-5" />
               </span>
               <h3 className="mt-4 font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-base font-semibold">
                 {feature.title}
@@ -119,28 +104,38 @@ export function CentingRajaAuth({
               <p className="mt-1 font-['Manrope:Regular',sans-serif] text-xs leading-4">
                 {feature.text}
               </p>
-            </article>
+            </motion.article>
           ))}
-          <article className="relative overflow-hidden rounded-xl bg-[#ffd7d3] p-4 sm:col-span-2">
+
+          <motion.article
+            role="button"
+            tabIndex={0}
+            onClick={onTutorial}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") onTutorial?.()
+            }}
+            whileHover={{ y: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className="relative cursor-pointer overflow-hidden rounded-xl bg-[#ffd7d3] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-shadow hover:shadow-md sm:col-span-2"
+          >
             <span className="grid size-10 place-items-center rounded-full bg-white text-[#ba1a1a]">
-              <SvgIcon
-                path={authPaths.pa80bf00}
-                viewBox="0 0 20 20"
-                className="size-5"
-              />
+              <SvgIcon path={authPaths.pa80bf00} viewBox="0 0 20 20" className="size-5" />
             </span>
             <h3 className="mt-3 font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-base font-semibold text-[#93000a]">
-              Jadwal Posyandu & Imunisasi
+              Tutorial Penggunaan Aplikasi
             </h3>
             <p className="mt-1 max-w-sm font-['Manrope:Regular',sans-serif] text-xs leading-4 text-[#ba1a1a]">
-              Pengingat otomatis agar tidak terlewat jadwal kunjungan rutin.
+              Pelajari cara memakai Centing Raja langkah demi langkah sebelum
+              mulai memantau tumbuh kembang anak.
             </p>
             <div
               aria-hidden="true"
               className="absolute -bottom-5 -right-4 size-24 rounded-full border-[10px] border-[#efb7b1]/60"
             />
-          </article>
+          </motion.article>
         </div>
+
         <article className="relative mt-5 min-h-48 overflow-hidden rounded-xl bg-[#3e4941] p-4 text-white shadow-[0_1px_2px_rgba(0,0,0,0.10)]">
           <img
             src={authStoryImage}

@@ -100,7 +100,7 @@ export function InputPengukuranOrangTua({
       aria-label="Input Pengukuran"
     >
       <ParentInputHeader logo={measurementInputLogoParent} title="Input" />
-      <div className="mx-auto w-full max-w-3xl px-5 py-5 sm:px-8 sm:py-9">
+      <div className="mx-auto w-full max-w-6xl px-5 py-5 sm:px-8 sm:py-9">
         <button
           type="button"
           onClick={onBack}
@@ -209,7 +209,7 @@ export function InputPengukuranOrangTua({
         </div>
       </div>
       <div className="fixed inset-x-0 bottom-16 z-20 border-t border-[#e7e8e9] bg-white/95 p-4 backdrop-blur-xl">
-        <div className="mx-auto max-w-3xl">
+       <div className="mx-auto max-w-6xl">
           <button
             type="button"
             disabled={!complete}

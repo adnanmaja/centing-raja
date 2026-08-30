@@ -22,8 +22,8 @@ export function ProfileParentScreen() {
     <div className="w-full min-h-screen bg-gray-50 flex flex-col">
       <ParentInputHeader logo={logo} title="Profil" />
 
-      {/* Hero */}
-      <div className="w-full px-5 pt-6 pb-8 flex flex-col items-center">
+    {/* Hero */}
+    <div className="w-full px-5 pt-6 pb-8 flex flex-col items-center mx-auto max-w-6xl sm:px-8">
         <div className="relative">
           <div className="absolute -inset-1 bg-emerald-800/20 rounded-full blur-md" />
           <div className="size-24 bg-zinc-100 rounded-full shadow-sm overflow-hidden">
@@ -71,8 +71,8 @@ export function ProfileParentScreen() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 px-5 pb-32 flex flex-col gap-6">
-        <section className="flex flex-col gap-3">
+     <div className="flex-1 px-5 pb-32 flex flex-col gap-6 mx-auto w-full max-w-6xl sm:px-8">
+          <section className="flex flex-col gap-3">
           <span className="pl-2 text-neutral-500 text-xs font-semibold font-['Manrope:SemiBold',sans-serif] uppercase tracking-wide">
             Akun
           </span>

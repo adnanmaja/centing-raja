@@ -64,8 +64,8 @@ export function EditProfileParentScreen() {
       </div>
 
       {/* Form */}
-      <div className="flex-1 px-5 pt-6 pb-32 flex flex-col gap-4">
-        <div className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col gap-4">
++      <div className="flex-1 px-5 pt-6 pb-32 flex flex-col gap-4 mx-auto w-full max-w-6xl sm:px-8">
+          <div className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <User className="size-3.5 text-emerald-800" />
             <span className="text-black text-xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif]">
