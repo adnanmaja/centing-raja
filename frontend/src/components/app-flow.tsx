@@ -211,9 +211,9 @@ function MaterialDetailRoute() {
 
 function Flow() {
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [parentChildRegistered, setParentChildRegistered] = useState(false)
-
   return (
     <Routes>
       <Route path="/" element={<SplashGate />} />
@@ -399,6 +399,20 @@ function Flow() {
               onHome={() => navigate("/orang-tua")}
               onMaterial={() => navigate("/orang-tua/materi")}
               onInput={() => undefined}
+            />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/orang-tua/input-pengukuran/berhasil"
+        element={
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <DataAnakBerhasilDisimpan
+              child={false}
+              onContinue={() => navigate("/orang-tua/detail-pertumbuhan", { state: location.state })}
+              onHome={() => navigate("/orang-tua")}
+              onMaterial={() => navigate("/orang-tua/materi")}
+              onInput={() => navigate("/orang-tua/input-pengukuran")}
             />
           </ProtectedRoute>
         }

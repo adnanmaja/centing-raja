@@ -2,12 +2,71 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/adnanmaja/centing-raja/db"
 	"github.com/adnanmaja/centing-raja/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type MeasurementResponse struct {
+	ID                    string    `json:"id"`
+	MeasurerID            string    `json:"measurer_id"`
+	MeasurerRole          string    `json:"measurer_role"`
+	ChildrenID            string    `json:"children_id"`
+	Age                   float64   `json:"age"`
+	MeasuredAt            time.Time `json:"measured_at"`
+	Weight                float64   `json:"weight"`
+	Height                float64   `json:"height"`
+	StuntingStatus        *string   `json:"stunting_status"`
+	ZScore                float64   `json:"z_score"`
+	HeadCircumference     float64   `json:"head_circumference"`
+	UpperArmCircumference float64   `json:"upper_arm_circumference"`
+}
+
+func numericToFloat64(n pgtype.Numeric) float64 {
+	if !n.Valid {
+		return 0
+	}
+	f, err := n.Float64Value()
+	if err != nil || !f.Valid {
+		return 0
+	}
+	return f.Float64
+}
+
+func toMeasurementResponse(m db.Measurement) MeasurementResponse {
+	var stuntingStatus *string
+	if m.StuntingStatus.Valid {
+		status := string(m.StuntingStatus.StuntingStatus)
+		stuntingStatus = &status
+	}
+
+	return MeasurementResponse{
+		ID:                    uuid.UUID(m.ID.Bytes).String(),
+		MeasurerID:            uuid.UUID(m.MeasurerID.Bytes).String(),
+		MeasurerRole:          string(m.MeasurerRole),
+		ChildrenID:            uuid.UUID(m.ChildrenID.Bytes).String(),
+		Age:                   numericToFloat64(m.Age),
+		MeasuredAt:            m.MeasuredAt.Time,
+		Weight:                numericToFloat64(m.Weight),
+		Height:                numericToFloat64(m.Height),
+		StuntingStatus:        stuntingStatus,
+		ZScore:                numericToFloat64(m.ZScore),
+		HeadCircumference:     numericToFloat64(m.HeadCircumference),
+		UpperArmCircumference: numericToFloat64(m.UpperArmCircumference),
+	}
+}
+
+func toMeasurementsResponse(measurements []db.Measurement) []MeasurementResponse {
+	res := make([]MeasurementResponse, len(measurements))
+	for i, m := range measurements {
+		res[i] = toMeasurementResponse(m)
+	}
+	return res
+}
 
 type CreateMeasurementRequest struct {
 	ChildrenID            uuid.UUID `json:"children_id" binding:"required"`
@@ -84,7 +143,8 @@ func (h *MeasurementHandler) CreateMeasurement(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, measurement)
+	c.JSON(http.StatusCreated, toMeasurementResponse(measurement))
+
 }
 
 func (h *MeasurementHandler) GetMeasurementByID(c *gin.Context) {
@@ -101,7 +161,8 @@ func (h *MeasurementHandler) GetMeasurementByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, measurement)
+	c.JSON(http.StatusOK, toMeasurementResponse(measurement))
+
 }
 
 func (h *MeasurementHandler) GetMeasurements(c *gin.Context) {
@@ -123,7 +184,8 @@ func (h *MeasurementHandler) GetMeasurements(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, measurements)
+	c.JSON(http.StatusOK, toMeasurementsResponse(measurements))
+
 }
 
 func (h *MeasurementHandler) ListMeasurementsByChildID(c *gin.Context) {
@@ -140,7 +202,8 @@ func (h *MeasurementHandler) ListMeasurementsByChildID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, measurements)
+	c.JSON(http.StatusOK, toMeasurementsResponse(measurements))
+
 }
 
 func (h *MeasurementHandler) UpdateMeasurement(c *gin.Context) {
@@ -170,7 +233,7 @@ func (h *MeasurementHandler) UpdateMeasurement(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, measurement)
+	c.JSON(http.StatusOK, toMeasurementResponse(measurement))
 }
 
 func (h *MeasurementHandler) DeleteMeasurement(c *gin.Context) {

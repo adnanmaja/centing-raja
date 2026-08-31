@@ -44,6 +44,31 @@ export interface CreateChildPayload {
   birth_date: string;
 }
 
+
+export type StuntingStatus = "severely_stunted" | "stunted" | "normal" | "tall";
+
+export interface Measurement {
+  id: string;
+  measurer_id: string;
+  measurer_role: string;
+  children_id: string;
+  age: number | string;
+  measured_at: string;
+  weight: number | string;
+  height: number | string;
+  stunting_status: StuntingStatus;
+  z_score: number | string;
+  head_circumference?: number | string;
+  upper_arm_circumference?: number | string;
+}
+
+export interface CreateMeasurementPayload {
+  children_id: string;
+  weight: number;
+  height: number;
+  head_circumference?: number;
+  upper_arm_circumference?: number;
+}
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export async function apiClient<T>(
@@ -148,4 +173,107 @@ export async function getChildById(id: string): Promise<Child> {
   return apiClient<Child>(`/nakes/children/${id}`, {
     method: "GET",
   });
+}
+
+function getRolePrefix(): string {
+  const userJson = localStorage.getItem("centing_user");
+  if (userJson) {
+    try {
+      const user = JSON.parse(userJson);
+      if (user.role === "tenaga_kesehatan") return "nakes";
+      if (user.role === "kader") return "kader";
+      if (user.role === "orang_tua") return "ortu";
+    } catch {
+      // fallback
+    }
+  }
+  return "ortu";
+}
+
+export async function createMeasurement(payload: CreateMeasurementPayload): Promise<Measurement> {
+  const prefix = getRolePrefix();
+  return apiClient<Measurement>(`/${prefix}/measurements`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getChildMeasurements(childId: string): Promise<Measurement[]> {
+  const prefix = getRolePrefix();
+  return apiClient<Measurement[]>(`/${prefix}/children/${childId}/measurements`, {
+    method: "GET",
+  });
+}
+
+export async function getMeasurementById(id: string): Promise<Measurement> {
+  return apiClient<Measurement>(`/nakes/measurements/${id}`, {
+    method: "GET",
+  });
+}
+
+export function getAgeMonths(birthDateStr?: string): number {
+  if (!birthDateStr) return 0;
+  const birth = new Date(birthDateStr);
+  const now = new Date();
+  const months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+  return Math.max(0, months);
+}
+
+export function formatAge(birthDateStr?: string): string {
+  const months = getAgeMonths(birthDateStr);
+  if (months >= 24) {
+    const years = Math.floor(months / 12);
+    const remMonths = months % 12;
+    return remMonths > 0 ? `${years} Tahun ${remMonths} Bulan` : `${years} Tahun`;
+  }
+  return `${months} Bulan`;
+}
+
+export function formatStuntingStatus(status?: StuntingStatus | string): {
+  label: string;
+  shortLabel: string;
+  tone: "healthy" | "warning" | "danger" | "neutral";
+  badgeBg: string;
+  badgeText: string;
+  description: string;
+} {
+  switch (status) {
+    case "severely_stunted":
+      return {
+        label: "Sangat Pendek (Severely Stunted)",
+        shortLabel: "Sangat Pendek",
+        tone: "danger",
+        badgeBg: "bg-red-100",
+        badgeText: "text-red-700",
+        description: "Tinggi badan anak berada di bawah -3 SD standar WHO. Perlu konsultasi dan rujukan segera ke fasilitas kesehatan.",
+      };
+    case "stunted":
+      return {
+        label: "Pendek (Stunted)",
+        shortLabel: "Pendek",
+        tone: "warning",
+        badgeBg: "bg-amber-100",
+        badgeText: "text-amber-800",
+        description: "Tinggi badan anak berada di bawah -2 SD standar WHO. Disarankan perbaikan nutrisi gizi seimbang dan pemantauan berkala.",
+      };
+    case "tall":
+      return {
+        label: "Tinggi",
+        shortLabel: "Tinggi",
+        tone: "healthy",
+        badgeBg: "bg-emerald-100",
+        badgeText: "text-emerald-800",
+        description: "Tinggi badan anak berada di atas +3 SD standar WHO. Tumbuh kembang di atas rata-rata populasi.",
+      };
+    case "normal":
+    default:
+      return {
+        label: "Normal",
+        shortLabel: "Normal",
+        tone: "healthy",
+        badgeBg: "bg-emerald-100",
+        badgeText: "text-emerald-800",
+        description: "Pertumbuhan tinggi badan anak sesuai dengan standar rata-rata WHO (PMK No. 2 Tahun 2020). Pertahankan pola asuh dan nutrisi bergizi seimbang.",
+      };
+  }
 }

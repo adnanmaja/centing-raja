@@ -1,6 +1,13 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { ArrowLeft, ArrowRight, Check, Ruler, Scale } from "lucide-react"
+import {
+  createMeasurement,
+  formatAge,
+  getNakesChildren,
+  type Child,
+  type Measurement,
+} from "../../lib/api"
 
 const avatarPlaceholder = "https://placehold.co/48x48"
 
@@ -11,14 +18,47 @@ export function InputPengukuranNakesScreen() {
   const location = useLocation()
 
   const state = (location.state ?? {}) as {
-    anak?: { nama: string; usiaBulan: string; jenisKelamin: string }
+    anak?: { id?: string; nama: string; usiaBulan: string; jenisKelamin: string }
+    child?: Child
   }
 
-  const anak = state.anak ?? {
-    nama: "Leo M.",
-    usiaBulan: "12",
-    jenisKelamin: "Laki-laki",
-  }
+  const [children, setChildren] = useState<Child[]>([])
+  const [selectedChild, setSelectedChild] = useState<Child | null>(state.child ?? null)
+  const [selectedAnak, setSelectedAnak] = useState(
+    state.anak ?? {
+      id: state.child?.id,
+      nama: state.child?.full_name ?? "Leo M.",
+      usiaBulan: state.child?.birth_date ? String(formatAge(state.child.birth_date)) : "12",
+      jenisKelamin: state.child?.gender === "P" || state.child?.gender === "Perempuan" ? "Perempuan" : "Laki-laki",
+    }
+  )
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    getNakesChildren(50, 0)
+      .then((data) => {
+        if (active && Array.isArray(data) && data.length > 0) {
+          setChildren(data)
+          if (!selectedChild && !state.anak?.id) {
+            setSelectedChild(data[0])
+            setSelectedAnak({
+              id: data[0].id,
+              nama: data[0].full_name,
+              usiaBulan: String(formatAge(data[0].birth_date)),
+              jenisKelamin: data[0].gender === "P" || data[0].gender === "Perempuan" ? "Perempuan" : "Laki-laki",
+            })
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to fetch nakes children:", err)
+      })
+    return () => {
+      active = false
+    }
+  }, [selectedChild, state.anak])
 
   const [beratBadan, setBeratBadan] = useState("")
   const [posisiUkur, setPosisiUkur] = useState<PosisiUkur>("Berdiri")
@@ -27,25 +67,55 @@ export function InputPengukuranNakesScreen() {
   const [lingkarLenganAtas, setLingkarLenganAtas] = useState("")
   const [catatan, setCatatan] = useState("")
 
-  const isValid = beratBadan.trim().length > 0 && tinggiBadan.trim().length > 0
+  const weightNum = parseFloat(beratBadan)
+  const heightNum = parseFloat(tinggiBadan)
+  const isValid = !isNaN(weightNum) && weightNum > 0 && !isNaN(heightNum) && heightNum > 0
 
-  const handleSave = () => {
-    if (!isValid) return
-    navigate("/nakes/pengukuran/berhasil", {
-      state: {
-        anak,
-        pengukuran: {
-          beratBadan,
-          tinggiBadan,
-          posisiUkur,
-          lingkarKepala,
-          lila: lingkarLenganAtas,
-          catatan,
+  const handleSave = async () => {
+    if (!isValid || isSubmitting) return
+
+    setIsSubmitting(true)
+    setErrorMessage(null)
+
+    try {
+      const childId = selectedChild?.id || selectedAnak.id
+      let createdMeasurement: Measurement | undefined
+
+      if (childId) {
+        const headNum = lingkarKepala ? parseFloat(lingkarKepala) : undefined
+        const lilaNum = lingkarLenganAtas ? parseFloat(lingkarLenganAtas) : undefined
+
+        createdMeasurement = await createMeasurement({
+          children_id: childId,
+          weight: weightNum,
+          height: heightNum,
+          head_circumference: headNum && !isNaN(headNum) ? headNum : undefined,
+          upper_arm_circumference: lilaNum && !isNaN(lilaNum) ? lilaNum : undefined,
+        })
+      }
+
+      navigate("/nakes/pengukuran/berhasil", {
+        state: {
+          anak: selectedAnak,
+          child: selectedChild,
+          measurement: createdMeasurement,
+          pengukuran: {
+            beratBadan,
+            tinggiBadan,
+            posisiUkur,
+            lingkarKepala,
+            lila: lingkarLenganAtas,
+            catatan,
+          },
         },
-      },
-    })
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menyimpan data pengukuran"
+      setErrorMessage(msg)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-
   return (
     <main className="min-h-svh bg-gray-50 pb-32 flex flex-col">
       <header className="sticky top-0 z-30 bg-gray-50/90 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] backdrop-blur-[6px]">
@@ -65,6 +135,40 @@ export function InputPengukuranNakesScreen() {
       </header>
 
       <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 py-4 flex flex-col gap-6">
+        {children.length > 1 && (
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-semibold text-neutral-600">Pilih Anak:</label>
+            <select
+              value={selectedChild?.id || ""}
+              onChange={(e) => {
+                const c = children.find((ch) => ch.id === e.target.value)
+                if (c) {
+                  setSelectedChild(c)
+                  setSelectedAnak({
+                    id: c.id,
+                    nama: c.full_name,
+                    usiaBulan: String(formatAge(c.birth_date)),
+                    jenisKelamin: c.gender === "P" || c.gender === "Perempuan" ? "Perempuan" : "Laki-laki",
+                  })
+                }
+              }}
+              className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-800"
+            >
+              {children.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.full_name} ({formatAge(c.birth_date)})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+            {errorMessage}
+          </div>
+        )}
+
         <div className="p-4 bg-zinc-100 rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="size-12 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden shrink-0">
@@ -72,10 +176,10 @@ export function InputPengukuranNakesScreen() {
             </div>
             <div className="flex flex-col">
               <span className="text-zinc-900 text-base font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] leading-6">
-                {anak.nama}
+                {selectedAnak.nama}
               </span>
               <span className="text-neutral-700 text-xs font-normal font-['Manrope:Regular',sans-serif] leading-5">
-                {anak.jenisKelamin} • {anak.usiaBulan} Bulan
+                {selectedAnak.jenisKelamin} • {selectedAnak.usiaBulan}
               </span>
             </div>
           </div>
@@ -224,19 +328,17 @@ export function InputPengukuranNakesScreen() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-30 bg-gray-50/90 border-t border-zinc-200 backdrop-blur-md">
-        <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 py-5">
+        <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 py-3 flex justify-end">
           <button
             type="button"
-            disabled={!isValid}
+            disabled={!isValid || isSubmitting}
             onClick={handleSave}
-            className={`w-full py-4 rounded-xl shadow-[0px_4px_12px_0px_rgba(0,109,66,0.20)] flex justify-center items-center gap-3 cursor-pointer transition-opacity ${
-              isValid ? "bg-emerald-800 opacity-100" : "bg-emerald-800 opacity-50 cursor-not-allowed"
-            }`}
+            className="w-full sm:w-auto px-8 py-3.5 bg-emerald-800 rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex justify-center items-center gap-2 cursor-pointer transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <span className="text-white text-base font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] leading-6">
-              Simpan &amp; Lihat Hasil
+            <span className="text-center text-white text-sm font-semibold font-['Manrope:SemiBold',sans-serif] leading-5">
+              {isSubmitting ? "Menyimpan..." : "Simpan & Lihat Hasil"}
             </span>
-            <ArrowRight className="size-3.5 text-white" />
+            <ArrowRight className="size-4 text-white" />
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { ArrowRight, Check, Ruler, Scale } from "lucide-react"
+import { formatStuntingStatus, type Child, type Measurement } from "../../lib/api"
 
 import { NakesHeader } from "../../components/nakes/nakes-header"
 
@@ -9,7 +10,9 @@ export function HasilPengukuranNakesScreen() {
   const location = useLocation()
 
   const state = (location.state ?? {}) as {
-    anak?: { nama: string; usiaBulan: string; jenisKelamin: string }
+    anak?: { id?: string; nama: string; usiaBulan: string; jenisKelamin: string }
+    child?: Child
+    measurement?: Measurement
     pengukuran?: {
       beratBadan: string
       tinggiBadan: string
@@ -20,7 +23,10 @@ export function HasilPengukuranNakesScreen() {
   }
 
   const anak = state.anak
+  const child = state.child
+  const measurement = state.measurement
   const pengukuran = state.pengukuran
+  const statusInfo = formatStuntingStatus(measurement?.stunting_status)
 
   return (
     <main className="min-h-svh bg-gray-50 flex flex-col">
@@ -115,10 +121,10 @@ export function HasilPengukuranNakesScreen() {
                   Status
                 </span>
               </div>
-              <span className="px-3 py-1 bg-emerald-300 rounded-full shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center gap-1">
-                <Check className="size-3 text-emerald-800" />
-                <span className="text-emerald-800 text-xs font-semibold font-['Manrope:SemiBold',sans-serif] leading-4">
-                  Gizi Baik
+              <span className={`px-3 py-1 ${statusInfo.badgeBg} rounded-full shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center gap-1`}>
+                <Check className={`size-3 ${statusInfo.badgeText}`} />
+                <span className={`${statusInfo.badgeText} text-xs font-semibold font-['Manrope:SemiBold',sans-serif] leading-4`}>
+                  {statusInfo.shortLabel}
                 </span>
               </span>
             </div>
@@ -133,7 +139,7 @@ export function HasilPengukuranNakesScreen() {
         >
           <button
             type="button"
-            onClick={() => navigate("/nakes/pertumbuhan", { state: { anak, pengukuran } })}
+            onClick={() => navigate("/nakes/pertumbuhan", { state: { anak, child, measurement, pengukuran } })}
             className="px-4 py-3 bg-emerald-800 rounded-lg shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex justify-center items-center gap-2 cursor-pointer transition-transform hover:scale-[1.02] active:scale-95"
           >
             <span className="text-center text-white text-xs font-semibold font-['Manrope:SemiBold',sans-serif] leading-4">

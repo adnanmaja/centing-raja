@@ -4,10 +4,45 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/adnanmaja/centing-raja/db"
 	"github.com/adnanmaja/centing-raja/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
+
+type ChildResponse struct {
+	ID          string    `json:"id"`
+	ParentID    string    `json:"parent_id"`
+	Nik         *string   `json:"nik"`
+	FullName    string    `json:"full_name"`
+	Gender      *string   `json:"gender"`
+	BirthDate   time.Time `json:"birth_date"`
+	HomeAddress *string   `json:"home_address"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+func toChildResponse(c db.Child) ChildResponse {
+	return ChildResponse{
+		ID:          uuid.UUID(c.ID.Bytes).String(),
+		ParentID:    uuid.UUID(c.ParentID.Bytes).String(),
+		Nik:         c.Nik,
+		FullName:    c.FullName,
+		Gender:      c.Gender,
+		BirthDate:   c.BirthDate.Time,
+		HomeAddress: c.HomeAddress,
+		CreatedAt:   c.CreatedAt.Time,
+		UpdatedAt:   c.UpdatedAt.Time,
+	}
+}
+
+func toChildrenResponse(children []db.Child) []ChildResponse {
+	res := make([]ChildResponse, len(children))
+	for i, c := range children {
+		res[i] = toChildResponse(c)
+	}
+	return res
+}
 
 type CreateChildrenRequest struct {
 	Nik         string    `json:"nik" binding:"required"`
@@ -73,7 +108,7 @@ func (h *ChildrenHandler) CreateChildren(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, children)
+	c.JSON(http.StatusCreated, toChildResponse(children))
 }
 
 func (h *ChildrenHandler) ChildrenByParent(c *gin.Context) {
@@ -95,7 +130,7 @@ func (h *ChildrenHandler) ChildrenByParent(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, child)
+	c.JSON(http.StatusOK, toChildrenResponse(child))
 }
 
 func (h *ChildrenHandler) GetChildByID(c *gin.Context) {
@@ -112,7 +147,7 @@ func (h *ChildrenHandler) GetChildByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, child)
+	c.JSON(http.StatusOK, toChildResponse(child))
 }
 
 func (h *ChildrenHandler) ListChildren(c *gin.Context) {
@@ -135,7 +170,7 @@ func (h *ChildrenHandler) ListChildren(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, children)
+	c.JSON(http.StatusOK, toChildrenResponse(children))
 }
 
 func (h *ChildrenHandler) UpdateChild(c *gin.Context) {
@@ -166,7 +201,7 @@ func (h *ChildrenHandler) UpdateChild(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, child)
+	c.JSON(http.StatusOK, toChildResponse(child))
 }
 
 func (h *ChildrenHandler) DeleteChild(c *gin.Context) {

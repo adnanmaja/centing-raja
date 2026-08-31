@@ -1,5 +1,14 @@
+import { useEffect, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { AlertTriangle, ArrowLeft, Check, LineChart } from "lucide-react"
+import {
+  formatAge,
+  formatStuntingStatus,
+  getChildMeasurements,
+  type Child,
+  type Measurement,
+} from "../../lib/api"
+
 const avatarImage = "https://placehold.co/96x96"
 
 type ZScoreLevel = "normal" | "ambang" | "waspada"
@@ -10,7 +19,7 @@ const levelStyle: Record<ZScoreLevel, { badge: string; badgeText: string; bar: s
   waspada: { badge: "bg-rose-200", badgeText: "text-red-800", bar: "bg-red-700" },
 }
 
-function ZScoreBar({ zScore }: { zScore: number }) {
+function ZScoreBar({ zScore, barColor }: { zScore: number; barColor?: string }) {
   // Map z-score range [-3, +3] to a 0-100% bar position
   const clamped = Math.max(-3, Math.min(3, zScore))
   const percent = ((clamped + 3) / 6) * 100
@@ -19,7 +28,7 @@ function ZScoreBar({ zScore }: { zScore: number }) {
     <div className="flex flex-col gap-1">
       <div className="h-2 relative bg-zinc-200 rounded-full overflow-hidden">
         <div
-          className="h-2 absolute left-0 top-0 bg-emerald-800 rounded-full transition-all"
+          className={`h-2 absolute left-0 top-0 ${barColor || "bg-emerald-800"} rounded-full transition-all`}
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -39,13 +48,49 @@ export function DetailPertumbuhanNakesScreen() {
   const location = useLocation()
 
   const state = (location.state ?? {}) as {
-    anak?: { nama: string; usiaBulan: string; jenisKelamin: string }
+    anak?: { id?: string; nama: string; usiaBulan: string; jenisKelamin: string }
+    child?: Child
+    measurement?: Measurement
     pengukuran?: { beratBadan: string; tinggiBadan: string }
   }
 
-  const anak = state.anak ?? { nama: "Leo M.", usiaBulan: "12", jenisKelamin: "Laki-laki" }
-  const pengukuran = state.pengukuran ?? { beratBadan: "12.5", tinggiBadan: "82" }
+  const [measurement, setMeasurement] = useState<Measurement | null>(state.measurement ?? null)
+  const [child, setChild] = useState<Child | null>(state.child ?? null)
 
+  useEffect(() => {
+    const childId = state.child?.id || state.anak?.id
+    if (!state.measurement && childId) {
+      let active = true
+      getChildMeasurements(childId)
+        .then((data) => {
+          if (active && Array.isArray(data) && data.length > 0) {
+            const sorted = [...data].sort(
+              (a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()
+            )
+            setMeasurement(sorted[0])
+          }
+        })
+        .catch((err) => {
+          console.warn("[Centing] Failed to fetch measurements:", err)
+        })
+      return () => {
+        active = false
+      }
+    }
+  }, [state.child, state.anak, state.measurement])
+
+  const anakName = child?.full_name || state.anak?.nama || "Leo M."
+  const anakUsia = child?.birth_date ? formatAge(child.birth_date) : `${state.anak?.usiaBulan || "12"} Bulan`
+  const anakGender = child?.gender === "P" || child?.gender === "Perempuan" || state.anak?.jenisKelamin === "Perempuan" ? "Perempuan" : "Laki-laki"
+
+  const weightVal = measurement ? String(measurement.weight) : (state.pengukuran?.beratBadan || "12.5")
+  const heightVal = measurement ? String(measurement.height) : (state.pengukuran?.tinggiBadan || "82")
+  const zScoreNum = measurement ? Number(measurement.z_score) : -1.8
+  const zScoreStr = `${zScoreNum >= 0 ? "+" : ""}${zScoreNum.toFixed(1)} SD`
+
+  const statusInfo = formatStuntingStatus(measurement?.stunting_status)
+  const tbLevel: ZScoreLevel = zScoreNum < -2 ? "waspada" : zScoreNum < -1 ? "ambang" : "normal"
+  const tbLevelConfig = levelStyle[tbLevel]
   return (
     <main className="min-h-svh bg-gray-50 flex flex-col">
       <header className="sticky top-0 z-30 bg-gray-50/80 shadow-[0px_1px_8px_0px_rgba(0,0,0,0.04)] backdrop-blur-md">
@@ -75,24 +120,22 @@ export function DetailPertumbuhanNakesScreen() {
           </div>
 
           <h2 className="text-zinc-900 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-8">
-            {anak.nama}
+            {anakName}
           </h2>
 
           <div className="flex items-center gap-2 text-slate-600">
             <span className="text-sm font-normal font-['Manrope:Regular',sans-serif] leading-5">
-              {anak.usiaBulan} Bulan
+              {anakUsia}
             </span>
             <span className="text-sm font-normal font-['Manrope:Regular',sans-serif] leading-5">•</span>
             <span className="text-sm font-normal font-['Manrope:Regular',sans-serif] leading-5">
-              {anak.jenisKelamin}
+              {anakGender}
             </span>
           </div>
 
-          <span className="px-4 py-3 bg-emerald-300/20 rounded-full shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center gap-2">
-            <Check className="size-5 text-emerald-800" />
-            <span className="text-emerald-800 text-xs font-semibold font-['Manrope:SemiBold',sans-serif] uppercase tracking-wide">
-              Tumbuh Kembang Sehat
-            </span>
+          <span className={`px-4 py-1.5 rounded-full ${tbLevelConfig.badge} ${tbLevelConfig.badgeText} text-xs font-bold font-['Manrope:Bold',sans-serif] leading-5 flex items-center gap-1.5 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}>
+            <Check className="size-3.5" />
+            {statusInfo.shortLabel}
           </span>
         </div>
 
@@ -116,7 +159,7 @@ export function DetailPertumbuhanNakesScreen() {
                     Berat Badan Menurut Umur (BB/U)
                   </span>
                   <span className="text-zinc-900 text-2xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] leading-8">
-                    {pengukuran.beratBadan} kg
+                    {weightVal} kg
                   </span>
                 </div>
                 <span className={`px-2 py-0.5 rounded-sm ${levelStyle.normal.badge} ${levelStyle.normal.badgeText} text-xs font-bold font-['Manrope:Bold',sans-serif] leading-5 shrink-0`}>
@@ -144,29 +187,34 @@ export function DetailPertumbuhanNakesScreen() {
                     Tinggi Badan Menurut Umur (TB/U)
                   </span>
                   <span className="text-zinc-900 text-2xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] leading-8">
-                    {pengukuran.tinggiBadan} cm
+                    {heightVal} cm
                   </span>
                 </div>
-                <span className={`px-2 py-0.5 rounded-sm ${levelStyle.normal.badge} ${levelStyle.normal.badgeText} text-xs font-bold font-['Manrope:Bold',sans-serif] leading-5 shrink-0`}>
-                  Normal
+                <span className={`px-2 py-0.5 rounded-sm ${tbLevelConfig.badge} ${tbLevelConfig.badgeText} text-xs font-bold font-['Manrope:Bold',sans-serif] leading-5 shrink-0`}>
+                  {statusInfo.shortLabel}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between">
                   <span className="text-slate-600 text-xs font-normal font-['Manrope:Regular',sans-serif] leading-4">
-                    Z-Score: -1.8 SD
+                    Z-Score: {zScoreStr}
                   </span>
-                  <span className="text-yellow-800 text-xs font-medium font-['Manrope:Medium',sans-serif] leading-4">
-                    Normal (Ambang Batas)
+                  <span className={`${tbLevelConfig.badgeText} text-xs font-medium font-['Manrope:Medium',sans-serif] leading-4`}>
+                    {statusInfo.shortLabel}
                   </span>
                 </div>
-                <ZScoreBar zScore={-1.8} />
+                <ZScoreBar zScore={zScoreNum} barColor={tbLevelConfig.bar} />
               </div>
-              <div className="p-3 bg-amber-200/30 rounded-lg flex items-start gap-2">
-                <AlertTriangle className="size-3.5 text-yellow-900 mt-0.5 shrink-0" />
-                <p className="text-yellow-900 text-sm font-normal font-['Manrope:Regular',sans-serif] leading-5">
-                  Tinggi badan berada di ambang batas normal (-1.8 SD). Pantau asupan protein hewani dan stimulasi
-                  psikososial sesuai standar PMK No. 2/2020.
+              <div className={`p-3 rounded-lg flex items-start gap-2 ${
+                tbLevel === "waspada" ? "bg-red-100" : tbLevel === "ambang" ? "bg-amber-100" : "bg-emerald-50"
+              }`}>
+                <AlertTriangle className={`size-3.5 mt-0.5 shrink-0 ${
+                  tbLevel === "waspada" ? "text-red-700" : tbLevel === "ambang" ? "text-yellow-900" : "text-emerald-700"
+                }`} />
+                <p className={`text-sm font-normal font-['Manrope:Regular',sans-serif] leading-5 ${
+                  tbLevel === "waspada" ? "text-red-800" : tbLevel === "ambang" ? "text-yellow-900" : "text-emerald-800"
+                }`}>
+                  {statusInfo.description}
                 </p>
               </div>
             </div>

@@ -1,7 +1,9 @@
+import { useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 
 import { ParentBottomNav } from "../../components/parent/parent-bottom-nav"
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
+import { formatAge, formatStuntingStatus, type Child, type Measurement } from "../../lib/api"
 
 const childSuccessMark = "/images/centang-hijau.png"
 const childSuccessLogo = "/logo/logo-centing-raja.png"
@@ -27,6 +29,14 @@ export function DataAnakBerhasilDisimpan({
     : "Terima kasih telah melakukan pengukuran. Data ini sangat berharga untuk memantau status tumbuh kembang si kecil."
   const logo = child ? childSuccessLogo : measurementSuccessLogoParent
   const mark = child ? childSuccessMark : measurementSuccessMarkParent
+  const location = useLocation()
+  const state = (location.state ?? {}) as {
+    child?: Child
+    measurement?: Measurement
+  }
+  const liveChild = state.child
+  const liveMeasurement = state.measurement
+  const statusInfo = formatStuntingStatus(liveMeasurement?.stunting_status)
 
   return (
     <main data-reveal-page className="min-h-svh bg-[#f8f9fa] pb-24 text-[#191c1d]" aria-label={title}>
@@ -77,19 +87,27 @@ export function DataAnakBerhasilDisimpan({
               <>
                 <div>
                   Nama Anak
-                  <strong className="mt-1 block text-sm text-[#191c1d]">Leo M.</strong>
+                  <strong className="mt-1 block text-sm text-[#191c1d]">
+                    {liveChild?.full_name || "Leo M."}
+                  </strong>
                 </div>
                 <div>
                   Tanggal Lahir
-                  <strong className="mt-1 block text-sm text-[#191c1d]">15 Okt 2022</strong>
+                  <strong className="mt-1 block text-sm text-[#191c1d]">
+                    {liveChild?.birth_date ? new Date(liveChild.birth_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "15 Okt 2022"}
+                  </strong>
                 </div>
                 <div>
                   Jenis Kelamin
-                  <strong className="mt-1 block text-sm text-[#191c1d]">Laki-laki</strong>
+                  <strong className="mt-1 block text-sm text-[#191c1d]">
+                    {liveChild?.gender === "P" || liveChild?.gender === "Perempuan" ? "Perempuan" : "Laki-laki"}
+                  </strong>
                 </div>
                 <div>
                   Usia Saat Ini
-                  <strong className="mt-1 block text-sm text-[#191c1d]">12 Bulan</strong>
+                  <strong className="mt-1 block text-sm text-[#191c1d]">
+                    {liveChild?.birth_date ? formatAge(liveChild.birth_date) : "12 Bulan"}
+                  </strong>
                 </div>
               </>
             ) : (
@@ -97,19 +115,21 @@ export function DataAnakBerhasilDisimpan({
                 <div className="col-span-2 flex items-center justify-between">
                   Berat Badan
                   <strong className="text-xl text-[#191c1d]">
-                    12.5 <span className="text-sm font-normal">kg</span>
+                    {liveMeasurement ? liveMeasurement.weight : "12.5"}{" "}
+                    <span className="text-sm font-normal">kg</span>
                   </strong>
                 </div>
                 <div className="col-span-2 flex items-center justify-between border-t border-[#e7e8e9] pt-3">
                   Tinggi Badan
                   <strong className="text-xl text-[#191c1d]">
-                    82 <span className="text-sm font-normal">cm</span>
+                    {liveMeasurement ? liveMeasurement.height : "82"}{" "}
+                    <span className="text-sm font-normal">cm</span>
                   </strong>
                 </div>
                 <div className="col-span-2 flex items-center justify-between border-t border-[#e7e8e9] pt-3">
                   Status
-                  <span className="rounded-full bg-[#76d69f] px-3 py-1 font-semibold text-[#005c38]">
-                    ◎ Gizi Baik
+                  <span className={`rounded-full ${statusInfo.badgeBg} ${statusInfo.badgeText} px-3 py-1 font-semibold`}>
+                    ◎ {statusInfo.shortLabel}
                   </span>
                 </div>
               </>

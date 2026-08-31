@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 import { ParentBottomNav } from "../../components/parent/parent-bottom-nav"
 import { ParentGrowthChart } from "../../components/parent/parent-growth-chart"
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
 import { SvgIcon } from "../../components/ui/svg-icon"
-import { getParentChildren, type Child } from "../../lib/api"
+import {
+  formatStuntingStatus,
+  getChildMeasurements,
+  getParentChildren,
+  type Child,
+  type Measurement,
+} from "../../lib/api"
 import { useAuth } from "../../context/auth-context"
 import parentReminderPaths from "../../assets/icon-parent-reminder"
 import parentChildSelectPaths from "../../assets/icon-child-select"
@@ -12,21 +19,27 @@ const parentDashboardLogo = "/logo/logo-centing-raja.png"
 const parentEducationFood = "/images/piring-mpasi-seimbang.png"
 const parentEducationPlay = "/images/ibu-dan-anak-bermain.png"
 
-function getChildAgeDisplay(birthDateStr: string): string {
+function getChildAgeDisplay(birthDateStr?: string): string {
+  if (!birthDateStr) return "0 bln"
   const birth = new Date(birthDateStr)
+  if (isNaN(birth.getTime())) return "0 bln"
   const now = new Date()
   const months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth())
   if (months < 12) return `${Math.max(0, months)} bln`
   return `${(months / 12).toFixed(1)} thn`
 }
 
-function getInitials(name: string): string {
-  return name
-    .split(" ")
+function getInitials(name?: string): string {
+  if (!name || typeof name !== "string") return "A"
+  const letters = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
     .map((w) => w[0])
     .slice(0, 2)
     .join("")
     .toUpperCase()
+  return letters || "A"
 }
 
 export function BerandaOrangTua({
@@ -37,8 +50,11 @@ export function BerandaOrangTua({
   onInput: () => void
 }) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [children, setChildren] = useState<Child[]>([])
   const [selectedChild, setSelectedChild] = useState<Child | null>(null)
+  const [measurements, setMeasurements] = useState<Measurement[]>([])
+  const [isMeasurementLoading, setIsMeasurementLoading] = useState(false)
   const [metric, setMetric] = useState<"Tinggi Badan" | "Berat Badan">("Tinggi Badan")
   const [isChildPickerOpen, setIsChildPickerOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -64,11 +80,59 @@ export function BerandaOrangTua({
       active = false
     }
   }, [])
-  const metrics = [
-    { label: "Tinggi Badan Saat Ini", value: "92", unit: "cm", range: "Normal (75th %ile)" },
-    { label: "Berat Badan Saat Ini", value: "14.2", unit: "kg", range: "Normal (60th %ile)" },
-  ]
 
+  useEffect(() => {
+    if (!selectedChild) {
+      setMeasurements([])
+      return
+    }
+    let active = true
+    setIsMeasurementLoading(true)
+    getChildMeasurements(selectedChild.id)
+      .then((data) => {
+        if (active && Array.isArray(data)) {
+          setMeasurements(data)
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to load child measurements:", err)
+      })
+      .finally(() => {
+        if (active) setIsMeasurementLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [selectedChild])
+
+  const sortedMeasurements = [...measurements].sort(
+    (a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()
+  )
+  const latestMeasurement = sortedMeasurements.length > 0 ? sortedMeasurements[0] : null
+  const statusInfo = formatStuntingStatus(latestMeasurement?.stunting_status)
+
+  const isMeasuredThisMonth = latestMeasurement && (() => {
+    const mDate = new Date(latestMeasurement.measured_at)
+    const now = new Date()
+    return mDate.getMonth() === now.getMonth() && mDate.getFullYear() === now.getFullYear()
+  })()
+
+  const metrics = [
+    {
+      label: "Tinggi Badan Saat Ini",
+      value: latestMeasurement ? String(latestMeasurement.height) : "-",
+      unit: "cm",
+      range: latestMeasurement
+        ? `${statusInfo.shortLabel} (${Number(latestMeasurement.z_score) >= 0 ? "+" : ""}${Number(latestMeasurement.z_score).toFixed(1)} SD)`
+        : "Belum ada data",
+    },
+    {
+      label: "Berat Badan Saat Ini",
+      value: latestMeasurement ? String(latestMeasurement.weight) : "-",
+      unit: "kg",
+      range: latestMeasurement ? "Tercatat" : "Belum ada data",
+    },
+  ]
   const articles = [
     {
       type: "Nutrisi",
@@ -105,7 +169,7 @@ export function BerandaOrangTua({
                 <span className="grid size-6 place-items-center rounded-full bg-[#76d69f] text-[9px] text-[#005c38]">
                   {getInitials(selectedChild.full_name)}
                 </span>
-                {selectedChild.full_name} ({getChildAgeDisplay(selectedChild.birth_date)})
+                {selectedChild.full_name || "Anak"} ({getChildAgeDisplay(selectedChild.birth_date)})
                 <SvgIcon
                   path={parentChildSelectPaths.p4ab6c80}
                   viewBox="0 0 9 5.55"
@@ -131,7 +195,7 @@ export function BerandaOrangTua({
                         {getInitials(child.full_name)}
                       </span>
                       <span>
-                        {child.full_name} <span className="text-[#536478]">({getChildAgeDisplay(child.birth_date)})</span>
+                        {child.full_name || "Anak"} <span className="text-[#536478]">({getChildAgeDisplay(child.birth_date)})</span>
                       </span>
                     </button>
                   ))}
@@ -149,7 +213,9 @@ export function BerandaOrangTua({
           )}
         </section>
 
-        <section className="relative mt-4 overflow-hidden rounded-xl bg-[#76d69f] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:p-5">
+        <section className={`relative mt-4 overflow-hidden rounded-xl p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:p-5 ${
+          isMeasuredThisMonth ? "bg-[#eaf8f0] border border-[#76d69f]/40" : "bg-[#76d69f]"
+        }`}>
           <svg
             aria-hidden="true"
             className="pointer-events-none absolute -right-4 -top-4 size-24 opacity-10"
@@ -164,21 +230,42 @@ export function BerandaOrangTua({
               </span>
               <div className="min-w-0">
                 <h2 className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-base font-semibold text-[#005c38] sm:text-lg">
-                  Waktunya Pengukuran!
+                  {isMeasuredThisMonth ? "Pengukuran Bulan Ini Selesai!" : "Waktunya Pengukuran!"}
                 </h2>
                 <p className="mt-1 max-w-md font-['Manrope:Regular',sans-serif] text-xs leading-4 text-[#286148] sm:text-sm sm:leading-5">
-                  {selectedChild ? `${selectedChild.full_name} belum diukur bulan ini.` : "Si kecil belum diukur bulan ini."} Yuk, catat perkembangannya secara mandiri.
+                  {isMeasuredThisMonth
+                    ? `${selectedChild?.full_name || "Anak"} telah selesai diukur bulan ini. Pantau terus status gizi si kecil.`
+                    : selectedChild
+                    ? `${selectedChild.full_name} belum diukur bulan ini. Yuk, catat perkembangannya secara mandiri.`
+                    : "Si kecil belum diukur bulan ini. Yuk, catat perkembangannya secara mandiri."}
                 </p>
               </div>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              {latestMeasurement && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate("/orang-tua/detail-pertumbuhan", {
+                      state: { child: selectedChild, measurement: latestMeasurement },
+                    })
+                  }
+                  className="inline-flex min-h-8 items-center gap-1 rounded-full border border-[#007c4a] bg-white px-3 font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#007c4a] shadow-sm hover:bg-[#f0f9f4]"
+                >
+                  Lihat Detail
+                </button>
+              )}
               <button
                 type="button"
-                onClick={onInput}
-                className="inline-flex min-h-8 items-center gap-1 rounded-full bg-[#007c4a] px-4 font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-white shadow-[0_1px_1px_rgba(0,0,0,0.05)]"
+                onClick={() =>
+                  navigate("/orang-tua/input-pengukuran", {
+                    state: { child: selectedChild },
+                  })
+                }
+                className="inline-flex min-h-8 items-center gap-1 rounded-full bg-[#007c4a] px-4 font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-white shadow-[0_1px_1px_rgba(0,0,0,0.05)] hover:brightness-105"
               >
                 <SvgIcon path={parentReminderPaths.p38ac19c0} viewBox="0 0 10.5 10.5" className="size-3" />
-                Input Data
+                {isMeasuredThisMonth ? "Ukur Ulang" : "Input Data"}
               </button>
             </div>
           </div>
@@ -186,7 +273,19 @@ export function BerandaOrangTua({
 
         <section className="mt-5 grid grid-cols-2 gap-3">
           {metrics.map((item) => (
-            <article key={item.label} className="rounded-xl bg-white p-3 shadow-[0_1px_4px_rgba(0,0,0,0.03)] sm:p-5">
+            <article
+              key={item.label}
+              onClick={() => {
+                if (latestMeasurement && selectedChild) {
+                  navigate("/orang-tua/detail-pertumbuhan", {
+                    state: { child: selectedChild, measurement: latestMeasurement },
+                  })
+                }
+              }}
+              className={`rounded-xl bg-white p-3 shadow-[0_1px_4px_rgba(0,0,0,0.03)] sm:p-5 ${
+                latestMeasurement ? "cursor-pointer hover:shadow-md transition-shadow" : ""
+              }`}
+            >
               <p className="font-['Manrope:Regular',sans-serif] text-[10px] text-[#536478] sm:text-xs">{item.label}</p>
               <p className="mt-1 font-['Plus_Jakarta_Sans:Bold',sans-serif] text-2xl font-bold text-[#007c4a] sm:text-3xl">
                 {item.value}
@@ -227,7 +326,12 @@ export function BerandaOrangTua({
                 Berat Badan
               </button>
             </div>
-            <ParentGrowthChart key={metric} metric={metric} />
+            <ParentGrowthChart
+              key={`${metric}-${selectedChild?.id}-${measurements.length}`}
+              metric={metric}
+              measurements={measurements}
+              child={selectedChild}
+            />
           </section>
 
           <section className="mt-5 sm:mt-7 lg:mt-7">
