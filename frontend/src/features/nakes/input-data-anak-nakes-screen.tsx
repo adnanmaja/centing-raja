@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Baby, Check, MapPin } from "lucide-react"
-
+import { Baby, Check, MapPin, Hash } from "lucide-react"
+import { createChild } from "../../lib/api"
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 
@@ -13,6 +13,7 @@ export function InputDataAnakNakesScreen() {
   const navigate = useNavigate()
 
   const [form, setForm] = useState({
+    nik: "",
     nama: "",
     usiaBulan: "",
     jenisKelamin: "" as JenisKelamin | "",
@@ -20,14 +21,16 @@ export function InputDataAnakNakesScreen() {
     rw: "",
     alamat: "",
   })
-
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const handleChange =
-    (field: "nama" | "usiaBulan" | "rt" | "rw" | "alamat") =>
+    (field: "nik" | "nama" | "usiaBulan" | "rt" | "rw" | "alamat") =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }))
     }
 
   const isValid =
+    form.nik.trim().length >= 16 &&
     form.nama.trim().length > 0 &&
     form.usiaBulan.trim().length > 0 &&
     form.jenisKelamin.length > 0 &&
@@ -35,12 +38,36 @@ export function InputDataAnakNakesScreen() {
     form.rw.trim().length > 0 &&
     form.alamat.trim().length > 0
 
-  const handleSave = () => {
-    if (!isValid) return
-    // TODO: kirim ke POST /api/anak
-    navigate("/nakes/input/berhasil", { state: { anak: form } })
-  }
+  const handleSave = async () => {
+    if (!isValid || isSubmitting) return
+    setIsSubmitting(true)
+    setErrorMessage(null)
 
+    try {
+      const months = parseInt(form.usiaBulan, 10) || 0
+      const birthDateObj = new Date()
+      birthDateObj.setMonth(birthDateObj.getMonth() - months)
+      const birth_date = birthDateObj.toISOString()
+
+      const fullAddress = `RT ${form.rt} / RW ${form.rw}, ${form.alamat}`
+      const genderBackend = form.jenisKelamin === "Laki-laki" ? "L" : "P"
+
+      const createdChild = await createChild({
+        nik: form.nik,
+        full_name: form.nama,
+        gender: genderBackend,
+        home_address: fullAddress,
+        birth_date,
+      })
+
+      navigate("/nakes/input/berhasil", { state: { anak: createdChild } })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menyimpan data anak. Silakan periksa kembali."
+      setErrorMessage(msg)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
   return (
     <main className="min-h-svh bg-gray-50 pb-32 flex flex-col">
       <NakesHeader title="Input" />
@@ -72,12 +99,21 @@ export function InputDataAnakNakesScreen() {
               </div>
 
               <FieldText
+                label="Nomor Induk Kependudukan (NIK)"
+                placeholder="16 digit NIK anak"
+                value={form.nik}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 16)
+                  setForm((prev) => ({ ...prev, nik: val }))
+                }}
+              />
+
+              <FieldText
                 label="Nama Lengkap"
                 placeholder="Contoh: Budi Santoso"
                 value={form.nama}
                 onChange={handleChange("nama")}
               />
-
               <div className="flex flex-col gap-2">
                 <label className="px-1 text-neutral-700 text-xs font-semibold font-['Manrope:SemiBold',sans-serif] leading-4">
                   Usia (Bulan)
@@ -160,17 +196,23 @@ export function InputDataAnakNakesScreen() {
               </div>
             </div>
 
+            {errorMessage && (
+              <div className="rounded-xl bg-red-50 p-3 text-center text-xs text-red-600 font-semibold font-['Manrope:SemiBold',sans-serif]">
+                {errorMessage}
+              </div>
+            )}
+
             <button
               type="button"
-              disabled={!isValid}
+              disabled={!isValid || isSubmitting}
               onClick={handleSave}
               className={`py-4 rounded-full shadow-[0px_2px_4px_-2px_rgba(0,0,0,0.10)] flex justify-center items-center gap-2 transition-opacity cursor-pointer ${
-                isValid ? "bg-emerald-800 opacity-100" : "bg-emerald-800 opacity-50 cursor-not-allowed"
+                isValid && !isSubmitting ? "bg-emerald-800 opacity-100" : "bg-emerald-800 opacity-50 cursor-not-allowed"
               }`}
             >
               <Check className="size-4 text-white" />
               <span className="text-center text-white text-2xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] leading-8">
-                Simpan Data
+                {isSubmitting ? "Menyimpan..." : "Simpan Data"}
               </span>
             </button>
           </div>

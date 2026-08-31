@@ -101,19 +101,12 @@ func NewServer(svcs *service.Services) *Server {
 	ortu := protected.Group("/ortu")
 	ortu.Use(RequireRole(db.UserRoleOrangTua))
 	ortu.GET("/child", childrenHandler.ChildrenByParent)
+	ortu.POST("/child", childrenHandler.CreateChildren)
 	ortu.GET("/children/:id/measurements", measurementHandler.ListMeasurementsByChildID)
-
 	server.router = router
 	return server
 }
 
-// healthCheck godoc
-// @Summary Health check
-// @Description Check server operational status
-// @Tags Health
-// @Produce json
-// @Success 200 {object} StatusResponse
-// @Router / [get]
 func healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "aman"})
 }

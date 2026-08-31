@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { AlertTriangle, ChevronDown, Search } from "lucide-react"
-
+import { getNakesChildren, type Child } from "../../lib/api"
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 
@@ -43,14 +43,18 @@ const statusConfig: Record<StatusAnak, StatusConfigEntry> = {
   },
 }
 
-// TODO: ganti dengan fetch ke GET /api/wilayah/{id}/anak
-const anakList: AnakData[] = [
+function getAgeMonths(birthDateStr: string): number {
+  const birth = new Date(birthDateStr)
+  const now = new Date()
+  return Math.max(0, (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth()))
+}
+
+const defaultMockAnak: AnakData[] = [
   { nama: "Budi Santoso", umurBulan: 24, jenisKelamin: "L", status: "stunting", zScore: -2.5 },
   { nama: "Siti Aminah", umurBulan: 18, jenisKelamin: "P", status: "berisiko", zScore: -1.8 },
   { nama: "Ahmad Fauzi", umurBulan: 36, jenisKelamin: "L", status: "aman", zScore: -0.5 },
   { nama: "Rina Melati", umurBulan: 12, jenisKelamin: "P", status: "aman", zScore: 0.2 },
 ]
-
 // TODO: ganti dengan fetch agregat per RW dari GET /api/wilayah/{kecamatan}/rw
 type RwSummary = { rw: string; totalAnak: number; stuntingRate: number }
 const rwList: RwSummary[] = [
@@ -89,24 +93,58 @@ export function DataAnakRtScreen() {
 
   const [searchQuery, setSearchQuery] = useState("")
   const [filter, setFilter] = useState<FilterOption>("semua")
-  const [visibleCount, setVisibleCount] = useState(4)
+  const [visibleCount, setVisibleCount] = useState(10)
+  const [liveChildren, setLiveChildren] = useState<Child[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    getNakesChildren(100, 0)
+      .then((data) => {
+        if (active && Array.isArray(data) && data.length > 0) {
+          setLiveChildren(data)
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to fetch nakes children:", err)
+      })
+      .finally(() => {
+        if (active) setIsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const displayAnakList: AnakData[] = useMemo(() => {
+    if (liveChildren.length > 0) {
+      return liveChildren.map((c) => ({
+        nama: c.full_name,
+        umurBulan: getAgeMonths(c.birth_date),
+        jenisKelamin: (c.gender === "P" ? "P" : "L") as "L" | "P",
+        status: "aman" as StatusAnak,
+        zScore: 0.0,
+      }))
+    }
+    return defaultMockAnak
+  }, [liveChildren])
 
   const counts = useMemo(
     () => ({
-      stunting: anakList.filter((a) => a.status === "stunting").length,
-      berisiko: anakList.filter((a) => a.status === "berisiko").length,
-      aman: anakList.filter((a) => a.status === "aman").length,
+      stunting: displayAnakList.filter((a) => a.status === "stunting").length,
+      berisiko: displayAnakList.filter((a) => a.status === "berisiko").length,
+      aman: displayAnakList.filter((a) => a.status === "aman").length,
     }),
-    [],
+    [displayAnakList],
   )
 
   const filteredList = useMemo(() => {
-    return anakList.filter((anak) => {
+    return displayAnakList.filter((anak) => {
       const matchesFilter = filter === "semua" || anak.status === filter
       const matchesSearch = anak.nama.toLowerCase().includes(searchQuery.toLowerCase())
       return matchesFilter && matchesSearch
     })
-  }, [filter, searchQuery])
+  }, [displayAnakList, filter, searchQuery])
 
   const visibleList = filteredList.slice(0, visibleCount)
   const hasMore = visibleCount < filteredList.length

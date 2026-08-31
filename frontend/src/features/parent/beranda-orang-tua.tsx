@@ -1,20 +1,33 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { ParentBottomNav } from "../../components/parent/parent-bottom-nav"
 import { ParentGrowthChart } from "../../components/parent/parent-growth-chart"
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
 import { SvgIcon } from "../../components/ui/svg-icon"
+import { getParentChildren, type Child } from "../../lib/api"
+import { useAuth } from "../../context/auth-context"
 import parentReminderPaths from "../../assets/icon-parent-reminder"
 import parentChildSelectPaths from "../../assets/icon-child-select"
-
 const parentDashboardLogo = "/logo/logo-centing-raja.png"
 const parentEducationFood = "/images/piring-mpasi-seimbang.png"
 const parentEducationPlay = "/images/ibu-dan-anak-bermain.png"
 
-const childrenList = [
-  { id: "leo", name: "Leo M.", age: "2.5 thn", initials: "LM" },
-  { id: "kirana", name: "Kirana A.", age: "1.2 thn", initials: "KA" },
-]
+function getChildAgeDisplay(birthDateStr: string): string {
+  const birth = new Date(birthDateStr)
+  const now = new Date()
+  const months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth())
+  if (months < 12) return `${Math.max(0, months)} bln`
+  return `${(months / 12).toFixed(1)} thn`
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+}
 
 export function BerandaOrangTua({
   onMaterial,
@@ -23,10 +36,34 @@ export function BerandaOrangTua({
   onMaterial: () => void
   onInput: () => void
 }) {
+  const { user } = useAuth()
+  const [children, setChildren] = useState<Child[]>([])
+  const [selectedChild, setSelectedChild] = useState<Child | null>(null)
   const [metric, setMetric] = useState<"Tinggi Badan" | "Berat Badan">("Tinggi Badan")
   const [isChildPickerOpen, setIsChildPickerOpen] = useState(false)
-  const [selectedChild, setSelectedChild] = useState(childrenList[0])
+  const [isLoading, setIsLoading] = useState(true)
 
+  useEffect(() => {
+    let active = true
+    getParentChildren()
+      .then((data) => {
+        if (active && Array.isArray(data)) {
+          setChildren(data)
+          if (data.length > 0) {
+            setSelectedChild(data[0])
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to load parent children:", err)
+      })
+      .finally(() => {
+        if (active) setIsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
   const metrics = [
     { label: "Tinggi Badan Saat Ini", value: "92", unit: "cm", range: "Normal (75th %ile)" },
     { label: "Berat Badan Saat Ini", value: "14.2", unit: "kg", range: "Normal (60th %ile)" },
@@ -51,55 +88,65 @@ export function BerandaOrangTua({
     <main data-reveal-page className="min-h-svh bg-[#f8f9fa] pb-24 text-[#191c1d]" aria-label="Beranda Orang Tua">
       <ParentInputHeader logo={parentDashboardLogo} title="Beranda" />
 
-<div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-8 sm:py-8">
-          <section className="flex flex-wrap items-end justify-between gap-4">
+      <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-8 sm:py-8">
+        <section className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="font-['Manrope:Regular',sans-serif] text-sm text-[#4e5d55]">Selamat pagi,</p>
-            <h1 className="font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] font-bold leading-8">Ibu Nisa</h1>
+            <h1 className="font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] font-bold leading-8">{user?.name || "Orang Tua"}</h1>
           </div>
 
-          <div className="relative">
+          {selectedChild ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsChildPickerOpen((prev) => !prev)}
+                className="flex items-center gap-2 rounded-full bg-[#edeeef] px-3 py-2 font-['Manrope:SemiBold',sans-serif] text-xs text-[#191c1d] shadow-[0_1px_1px_rgba(0,0,0,0.05)]"
+              >
+                <span className="grid size-6 place-items-center rounded-full bg-[#76d69f] text-[9px] text-[#005c38]">
+                  {getInitials(selectedChild.full_name)}
+                </span>
+                {selectedChild.full_name} ({getChildAgeDisplay(selectedChild.birth_date)})
+                <SvgIcon
+                  path={parentChildSelectPaths.p4ab6c80}
+                  viewBox="0 0 9 5.55"
+                  className="h-1.5 w-2.5 text-[#3e4941]"
+                />
+              </button>
+
+              {isChildPickerOpen && (
+                <div className="absolute right-0 z-40 mt-2 w-56 rounded-xl bg-white p-2 shadow-lg ring-1 ring-black/5">
+                  {children.map((child) => (
+                    <button
+                      key={child.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedChild(child)
+                        setIsChildPickerOpen(false)
+                      }}
+                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left font-['Manrope:Regular',sans-serif] text-sm transition-colors hover:bg-[#f3f4f5] ${
+                        selectedChild.id === child.id ? "bg-[#e9f7ef]" : ""
+                      }`}
+                    >
+                      <span className="grid size-7 place-items-center rounded-full bg-[#76d69f] text-[10px] text-[#005c38]">
+                        {getInitials(child.full_name)}
+                      </span>
+                      <span>
+                        {child.full_name} <span className="text-[#536478]">({getChildAgeDisplay(child.birth_date)})</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
             <button
               type="button"
-              onClick={() => setIsChildPickerOpen((prev) => !prev)}
-              className="flex items-center gap-2 rounded-full bg-[#edeeef] px-3 py-2 font-['Manrope:SemiBold',sans-serif] text-xs text-[#191c1d] shadow-[0_1px_1px_rgba(0,0,0,0.05)]"
+              onClick={onInput}
+              className="flex items-center gap-1.5 rounded-full bg-[#006d42] px-3.5 py-2 font-['Manrope:SemiBold',sans-serif] text-xs text-white shadow-sm hover:brightness-105"
             >
-              <span className="grid size-6 place-items-center rounded-full bg-[#76d69f] text-[9px] text-[#005c38]">
-                {selectedChild.initials}
-              </span>
-              {selectedChild.name} ({selectedChild.age})
-              <SvgIcon
-                path={parentChildSelectPaths.p4ab6c80}
-                viewBox="0 0 9 5.55"
-                className="h-1.5 w-2.5 text-[#3e4941]"
-              />
+              + Tambah Data Anak
             </button>
-
-            {isChildPickerOpen && (
-              <div className="absolute right-0 z-40 mt-2 w-56 rounded-xl bg-white p-2 shadow-lg ring-1 ring-black/5">
-                {childrenList.map((child) => (
-                  <button
-                    key={child.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedChild(child)
-                      setIsChildPickerOpen(false)
-                    }}
-                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left font-['Manrope:Regular',sans-serif] text-sm transition-colors hover:bg-[#f3f4f5] ${
-                      selectedChild.id === child.id ? "bg-[#e9f7ef]" : ""
-                    }`}
-                  >
-                    <span className="grid size-7 place-items-center rounded-full bg-[#76d69f] text-[10px] text-[#005c38]">
-                      {child.initials}
-                    </span>
-                    <span>
-                      {child.name} <span className="text-[#536478]">({child.age})</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
         </section>
 
         <section className="relative mt-4 overflow-hidden rounded-xl bg-[#76d69f] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:p-5">
@@ -120,7 +167,7 @@ export function BerandaOrangTua({
                   Waktunya Pengukuran!
                 </h2>
                 <p className="mt-1 max-w-md font-['Manrope:Regular',sans-serif] text-xs leading-4 text-[#286148] sm:text-sm sm:leading-5">
-                  Leo belum diukur bulan ini oleh Kader. Yuk, catat perkembangannya secara mandiri.
+                  {selectedChild ? `${selectedChild.full_name} belum diukur bulan ini.` : "Si kecil belum diukur bulan ini."} Yuk, catat perkembangannya secara mandiri.
                 </p>
               </div>
             </div>
