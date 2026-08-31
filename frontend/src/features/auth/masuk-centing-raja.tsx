@@ -1,26 +1,24 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useState } from "react"
 
 import { SvgIcon } from "../../components/ui/svg-icon"
-
+import { requestOTP } from "../../lib/api"
 import loginPaths from "../../assets/icon-login"
+import phonePaths from "../../assets/icon-phone-field"
 
 const loginLogo =
   "/logo/logo-centing-raja.png"
 
 export function MasukCentingRaja({
   onBack,
-
   onLogin,
 }: {
   onBack: () => void
-
-  onLogin: (role: string) => void
+  onLogin: (phone: string, role?: string) => void
 }) {
-  const [role, setRole] = useState<string | null>(null)
-
-  const [name, setName] = useState("")
-
-  const [nik, setNik] = useState("")
+  const [role, setRole] = useState<string | null>("Orang Tua")
+  const [phone, setPhone] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const roles = ["Orang Tua", "Kader", "Nakes"]
 
@@ -90,71 +88,72 @@ export function MasukCentingRaja({
             </button>
           ))}
         </div>
-        <div className="mt-6">
-          <label
-            htmlFor="full-name"
-            className="font-['Manrope:Regular',sans-serif] text-base leading-6 text-[#3e4941]"
-          >
-            Nama Lengkap
-          </label>
-          <div className="relative mt-2">
-            <SvgIcon
-              path={loginPaths.p85bff00}
-              viewBox="0 0 16 16"
-              className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[#3e4941]"
-            />
-            <input
-              id="full-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Masukkan nama lengkap"
-              className="min-h-12 w-full rounded-xl bg-[#f3f4f5] py-3 pl-12 pr-4 font-['Manrope:Regular',sans-serif] text-base text-[#191c1d] outline-none placeholder:text-[#9aa4a0] focus:ring-2 focus:ring-[#006d42]/30"
-            />
-          </div>
-        </div>
-        <div className="mt-4">
-          <label
-            htmlFor="nik"
-            className="font-['Manrope:Regular',sans-serif] text-base leading-6 text-[#3e4941]"
-          >
-            NIK (Nomor Induk Kependudukan)
-          </label>
-          <div className="relative mt-2">
-            <SvgIcon
-              path={loginPaths.p207ea900}
-              viewBox="0 0 20 20"
-              className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[#3e4941]"
-            />
-            <input
-              id="nik"
-              value={nik}
-              onChange={(e) =>
-                setNik(e.target.value.replace(/\D/g, "").slice(0, 16))
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault()
+            if (!phone || isSubmitting) return
+
+            setIsSubmitting(true)
+            setErrorMessage(null)
+            try {
+              const res = await requestOTP(phone)
+              console.log("[Centing Auth] OTP message:", res.message)
+              onLogin(phone, role || undefined)
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : String(err)
+              if (msg.toLowerCase().includes("not found") || msg.toLowerCase().includes("404")) {
+                setErrorMessage("Nomor telepon belum terdaftar. Silakan daftar akun baru.")
+              } else {
+                setErrorMessage(msg || "Gagal mengirim OTP. Silakan coba lagi.")
               }
-              inputMode="numeric"
-              placeholder="16 digit NIK"
-              className="min-h-12 w-full rounded-xl bg-[#f3f4f5] py-3 pl-12 pr-4 font-['Manrope:Regular',sans-serif] text-base text-[#191c1d] outline-none placeholder:text-[#9aa4a0] focus:ring-2 focus:ring-[#006d42]/30"
-            />
-          </div>
-          <p className="mt-1 text-right font-['Manrope:Regular',sans-serif] text-xs text-[#63747a]">
-            {nik.length}/16
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            if (role) onLogin(role)
+            } finally {
+              setIsSubmitting(false)
+            }
           }}
-          disabled={!name || nik.length < 16 || !role}
-          className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#006d42] font-['Manrope:Regular',sans-serif] text-base text-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.10)] disabled:cursor-not-allowed disabled:opacity-45"
         >
-          Masuk{" "}
-          <SvgIcon
-            path={loginPaths.pce77c00}
-            viewBox="0 0 9.333 9.333"
-            className="size-4"
-          />
-        </button>
+          <div className="mt-6">
+            <label
+              htmlFor="phone-number"
+              className="font-['Manrope:Regular',sans-serif] text-base leading-6 text-[#3e4941]"
+            >
+              Nomor Handphone (WhatsApp)
+            </label>
+            <div className="relative mt-2">
+              <SvgIcon
+                path={phonePaths.p143e1930}
+                viewBox="0 0 18 18"
+                className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[#3e4941]"
+              />
+              <input
+                id="phone-number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                inputMode="tel"
+                placeholder="Contoh: 08123456789"
+                className="min-h-12 w-full rounded-xl bg-[#f3f4f5] py-3 pl-12 pr-4 font-['Manrope:Regular',sans-serif] text-base text-[#191c1d] outline-none placeholder:text-[#9aa4a0] focus:ring-2 focus:ring-[#006d42]/30"
+              />
+            </div>
+          </div>
+
+          {errorMessage && (
+            <div className="mt-4 rounded-lg bg-red-50 p-3 text-center font-['Manrope:Regular',sans-serif] text-xs text-red-600">
+              {errorMessage}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={!phone || isSubmitting}
+            className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#006d42] font-['Manrope:Regular',sans-serif] text-base text-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.10)] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {isSubmitting ? "Mengirim OTP..." : "Masuk"}{" "}
+            <SvgIcon
+              path={loginPaths.pce77c00}
+              viewBox="0 0 9.333 9.333"
+              className="size-4"
+            />
+          </button>
+        </form>
       </section>
       <p className="absolute bottom-8 left-1/2 z-10 w-full -translate-x-1/2 text-center font-['Manrope:Regular',sans-serif] text-sm text-[#3e4941]">
   Kendala masuk?{" "}
