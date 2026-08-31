@@ -4,22 +4,18 @@ import { ParentBottomNav } from "../../components/parent/parent-bottom-nav"
 
 import { SvgIcon } from "../../components/ui/svg-icon"
 
-import { parentMaterialItems } from "./parent-materials"
+import { type ParentMaterialItem } from "./parent-materials"
 
 const parentMaterialsLogo =
   "/logo/logo-centing-raja.png"
 
 export function DetailMateriEdukasi({
   material,
-
   onBack,
-
   onHome,
 }: {
-  material: typeof parentMaterialItems[number]
-
+  material: ParentMaterialItem
   onBack: () => void
-
   onHome: () => void
 }) {
   return (
@@ -50,13 +46,17 @@ export function DetailMateriEdukasi({
       </header>
       <article className="mx-auto w-full max-w-3xl px-4 py-7 sm:px-8 sm:py-12">
         <span
-          className={`grid size-14 place-items-center rounded-2xl ${material.iconBox}`}
+          className={`grid size-14 place-items-center rounded-2xl ${material.iconBox || "bg-[#76d69f] text-[#005c38]"}`}
         >
-          <SvgIcon
-            path={material.icon}
-            viewBox="0 0 21 25.083"
-            className="size-7"
-          />
+          {material.icon ? (
+            <SvgIcon
+              path={material.icon}
+              viewBox="0 0 21 25.083"
+              className="size-7"
+            />
+          ) : (
+            <span className="text-2xl">📖</span>
+          )}
         </span>
         <p className="mt-6 font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#007c4a]">
           {material.category}
@@ -76,14 +76,20 @@ export function DetailMateriEdukasi({
             membantu keluarga mengambil langkah kecil yang konsisten bagi tumbuh
             kembang si kecil.
           </p>
-          <a
-            href={material.link}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#006d42] px-5 font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-white transition hover:bg-[#005c38]"
-          >
-            Buka Link Materi <span aria-hidden="true">↗</span>
-          </a>
+          {(material.link || material.video_url) ? (
+            <a
+              href={material.link || material.video_url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#006d42] px-5 font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-white transition hover:bg-[#005c38]"
+            >
+              Buka Link Materi <span aria-hidden="true">↗</span>
+            </a>
+          ) : (
+            <p className="mt-4 text-xs text-[#536478]">
+              Materi disusun oleh Tim Kesehatan Centing Raja.
+            </p>
+          )}
         </section>
       </article>
       <ParentBottomNav onHome={onHome} onMaterial={onBack} active="Materi" />

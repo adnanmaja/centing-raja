@@ -5,14 +5,15 @@ import { X } from "lucide-react"
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
 import { SvgIcon } from "../../components/ui/svg-icon"
+import { getEducationMaterials, type EducationMaterial } from "../../lib/api"
 
 import materiPaths from "../../assets/icon-materi"
 import materiTrophyPaths from "../../assets/icon-materi-trophy"
 import materiQuizPaths from "../../assets/icon-materi-quiz"
-
 type ModuleStatus = "Selesai" | "Sedang Berjalan" | "Belum Mulai"
 
 type ModuleItem = {
+  id?: string
   module: string
   title: string
   description: string
@@ -23,6 +24,7 @@ type ModuleItem = {
   action: string
   icon: string
   viewBox: string
+  video_url?: string
 }
 
 const initialModules: ModuleItem[] = [
@@ -162,7 +164,52 @@ export function MateriKader({
   const [filter, setFilter] = useState("Semua")
   const [modules, setModules] = useState<ModuleItem[]>(initialModules)
   const [activeModule, setActiveModule] = useState<ModuleItem | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
+  useEffect(() => {
+    let active = true
+    getEducationMaterials(50, 0)
+      .then((data) => {
+        if (active && Array.isArray(data) && data.length > 0) {
+          const apiModules: ModuleItem[] = data.map((item, idx) => {
+            const titleLower = item.title.toLowerCase()
+            const category = titleLower.includes("gizi") || titleLower.includes("mpasi") || titleLower.includes("nutrisi")
+              ? "Gizi"
+              : titleLower.includes("pola") || titleLower.includes("asuh") || titleLower.includes("stimulasi")
+              ? "Pola Asuh"
+              : "Dasar"
+
+            return {
+              id: item.id,
+              module: `MODUL ${idx + 1} • ${category.toUpperCase()}`,
+              title: item.title,
+              description: item.description || "Panduan materi stunting untuk kader Posyandu.",
+              duration: "10 mnt",
+              durationSeconds: 10 * 60,
+              status: "Belum Mulai",
+              category,
+              action: "Mulai Belajar",
+              icon: materiPaths.p3cf2be00,
+              viewBox: "0 0 11.6667 11.6667",
+              video_url: item.video_url,
+            }
+          })
+
+          const existingTitles = new Set(apiModules.map((m) => m.title.toLowerCase()))
+          const merged = [...apiModules, ...initialModules.filter((m) => !existingTitles.has(m.title.toLowerCase()))]
+          setModules(merged)
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to fetch education materials for kader:", err)
+      })
+      .finally(() => {
+        if (active) setIsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
   const filters = ["Semua", "Dasar", "Gizi", "Pola Asuh"]
 
   const visibleModules = filter === "Semua" ? modules : modules.filter((item) => item.category === filter)

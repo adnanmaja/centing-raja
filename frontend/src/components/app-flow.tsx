@@ -43,7 +43,12 @@ import { InputPengukuranOrangTua } from "../features/parent/input-pengukuran-ora
 import { DetailPertumbuhan } from "../features/parent/detail-pertumbuhan"
 import { MateriEdukasi } from "../features/parent/materi-edukasi"
 import { DetailMateriEdukasi } from "../features/parent/detail-materi-edukasi"
-import { parentMaterialItems } from "../features/parent/parent-materials"
+import {
+  parentMaterialItems,
+  normalizeEducationMaterial,
+  type ParentMaterialItem,
+} from "../features/parent/parent-materials"
+import { getEducationMaterialById } from "../lib/api"
 import { ProfileParentScreen } from "../features/parent/profile-parent-screen"
 import { EditProfileParentScreen } from "../features/parent/edit-profile-parent-screen"
 import { ChangePasswordParentScreen } from "../features/parent/change-password-parent-screen"
@@ -193,10 +198,46 @@ function KaderProfileRoute() {
 }
 function MaterialDetailRoute() {
   const { id } = useParams()
-
   const navigate = useNavigate()
+  const [material, setMaterial] = useState<ParentMaterialItem | null>(() => {
+    return parentMaterialItems.find((item) => item.id === id) || null
+  })
+  const [isLoading, setIsLoading] = useState(!material)
 
-  const material = parentMaterialItems.find((item) => item.id === id)
+  useEffect(() => {
+    if (!id) return
+    const local = parentMaterialItems.find((item) => item.id === id)
+    if (local) {
+      setMaterial(local)
+      setIsLoading(false)
+      return
+    }
+
+    let active = true
+    getEducationMaterialById(id)
+      .then((data) => {
+        if (active && data) {
+          setMaterial(normalizeEducationMaterial(data))
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to fetch material by id:", err)
+      })
+      .finally(() => {
+        if (active) setIsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [id])
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-[#f8f9fa] text-xs text-[#536478]">
+        Memuat materi...
+      </div>
+    )
+  }
 
   if (!material) return <Navigate to="/orang-tua/materi" replace />
 
@@ -422,7 +463,7 @@ function Flow() {
         element={
           <ProtectedRoute allowedRoles={["orang_tua"]}>
             <DetailPertumbuhan
-              onBack={() => navigate("/orang-tua/input-pengukuran/berhasil")}
+              onBack={() => navigate("/orang-tua")}
               onViewChart={() => navigate("/orang-tua")}
             />
           </ProtectedRoute>

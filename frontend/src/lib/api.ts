@@ -69,6 +69,22 @@ export interface CreateMeasurementPayload {
   head_circumference?: number;
   upper_arm_circumference?: number;
 }
+
+export interface EducationMaterial {
+  id: string;
+  creator_id: string;
+  title: string;
+  description?: string;
+  video_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateEducationMaterialPayload {
+  title: string;
+  description?: string;
+  video_url?: string;
+}
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export async function apiClient<T>(
@@ -208,6 +224,38 @@ export async function getChildMeasurements(childId: string): Promise<Measurement
 export async function getMeasurementById(id: string): Promise<Measurement> {
   return apiClient<Measurement>(`/nakes/measurements/${id}`, {
     method: "GET",
+  });
+}
+
+export async function getEducationMaterials(limit = 20, offset = 0): Promise<EducationMaterial[]> {
+  return apiClient<EducationMaterial[]>(`/education-materials?limit=${limit}&offset=${offset}`, {
+    method: "GET",
+  });
+}
+
+export async function getEducationMaterialById(id: string): Promise<EducationMaterial> {
+  return apiClient<EducationMaterial>(`/education-materials/${id}`, {
+    method: "GET",
+  });
+}
+
+export async function createEducationMaterial(payload: CreateEducationMaterialPayload): Promise<EducationMaterial> {
+  return apiClient<EducationMaterial>("/nakes/education-materials", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateEducationMaterial(id: string, payload: CreateEducationMaterialPayload): Promise<EducationMaterial> {
+  return apiClient<EducationMaterial>(`/nakes/education-materials/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteEducationMaterial(id: string): Promise<void> {
+  return apiClient<void>(`/nakes/education-materials/${id}`, {
+    method: "DELETE",
   });
 }
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   BookOpen,
@@ -15,7 +15,7 @@ import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 import { ConfirmDeleteModal } from "../../components/ui/confirm-delete-modal"
 import { AkunBaruModal, type AkunBaruData, type Role } from "./akun-baru-modal"
-
+import { deleteEducationMaterial, getEducationMaterials } from "../../lib/api"
 type Akun = {
   nama: string
   nik: string
@@ -101,6 +101,41 @@ export function AkunNakesScreen() {
   const [kuisHistory] = useState<KuisHistoryItem[]>(initialKuisHistory)
   const [materiToDelete, setMateriToDelete] = useState<MateriHistoryItem | null>(null)
 
+  useEffect(() => {
+    let active = true
+    getEducationMaterials(50, 0)
+      .then((data) => {
+        if (active && Array.isArray(data) && data.length > 0) {
+          const apiItems: MateriHistoryItem[] = data.map((item) => {
+            const dateStr = item.created_at
+              ? new Date(item.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+              : "Hari ini"
+
+            let kategori = "Edukasi"
+            let judul = item.title
+            const match = item.title.match(/^\[(.*?)\]\s*(.*)$/)
+            if (match) {
+              kategori = match[1]
+              judul = match[2]
+            }
+
+            return {
+              id: item.id,
+              judul,
+              kategori,
+              tanggal: dateStr,
+            }
+          })
+          setMateriHistory(apiItems)
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to fetch education materials for nakes:", err)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
   const filteredAkun = useMemo(() => {
     return akunList.filter((akun) => {
       const matchesSearch =
@@ -447,13 +482,20 @@ export function AkunNakesScreen() {
           title="Hapus Materi?"
           description={`Yakin ingin menghapus materi "${materiToDelete.judul}"?`}
           onCancel={() => setMateriToDelete(null)}
-          onConfirm={() => {
+          onConfirm={async () => {
+            if (!materiToDelete) return
+            try {
+              if (materiToDelete.id.length > 5) {
+                await deleteEducationMaterial(materiToDelete.id)
+              }
+            } catch (err) {
+              console.warn("[Centing] Failed to delete education material:", err)
+            }
             setMateriHistory((prev) => prev.filter((m) => m.id !== materiToDelete.id))
             setMateriToDelete(null)
           }}
         />
       )}
-
       <NakesBottomNav
         active="Akun"
         onHome={() => navigate("/nakes")}

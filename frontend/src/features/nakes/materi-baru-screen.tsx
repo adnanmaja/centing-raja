@@ -5,6 +5,7 @@ import { Check } from "lucide-react"
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 import { NakesToast, type ToastData } from "../../components/nakes/nakes-toast"
+import { createEducationMaterial } from "../../lib/api"
 
 const kategoriOptions = ["Nutrisi", "Stimulasi", "Kesehatan", "Info Kader", "Gizi Anak"]
 
@@ -16,25 +17,44 @@ export function MateriBaruScreen() {
   const [deskripsi, setDeskripsi] = useState("")
   const [link, setLink] = useState("")
   const [toast, setToast] = useState<ToastData | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isValid = judul.trim().length > 0 && kategori.length > 0 && deskripsi.trim().length > 0
 
-  const handlePublish = () => {
-    if (!isValid) {
-      setToast({
-        type: "error",
-        message: "Lengkapi Judul Materi, Kategori, dan Deskripsi Singkat terlebih dahulu.",
-      })
+  const handlePublish = async () => {
+    if (!isValid || isSubmitting) {
+      if (!isValid) {
+        setToast({
+          type: "error",
+          message: "Mohon lengkapi judul, kategori, dan deskripsi materi.",
+        })
+      }
       return
     }
 
-    // TODO: kirim ke POST /api/materi
-    setToast({
-      type: "success",
-      message: `Materi "${judul}" berhasil dipublikasikan dan sudah bisa dilihat oleh Kader dan Orang Tua.`,
-    })
+    setIsSubmitting(true)
+    try {
+      await createEducationMaterial({
+        title: `[${kategori}] ${judul}`,
+        description: deskripsi,
+        video_url: link.trim() || undefined,
+      })
 
-    window.setTimeout(() => navigate("/nakes/akun"), 1200)
+      setToast({
+        type: "success",
+        message: `Materi "${judul}" berhasil dipublikasikan dan sudah bisa dilihat oleh Kader dan Orang Tua.`,
+      })
+
+      window.setTimeout(() => navigate("/nakes/akun"), 1200)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal mempublikasikan materi"
+      setToast({
+        type: "error",
+        message: msg,
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -111,11 +131,12 @@ export function MateriBaruScreen() {
           <button
             type="button"
             onClick={handlePublish}
-            className="h-14 py-3.5 bg-emerald-800 rounded-full shadow-[0px_2px_4px_-2px_rgba(0,0,0,0.10)] flex justify-center items-center gap-3 cursor-pointer transition-transform hover:scale-[1.01] active:scale-95"
+            disabled={!isValid || isSubmitting}
+            className="h-14 py-3.5 bg-emerald-800 rounded-full shadow-[0px_2px_4px_-2px_rgba(0,0,0,0.10)] flex justify-center items-center gap-3 cursor-pointer transition-transform hover:scale-[1.01] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Check className="size-3.5 text-white" />
             <span className="text-center text-white text-xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] leading-7">
-              Publikasikan Materi
+              {isSubmitting ? "Mempublikasikan..." : "Publikasikan Materi"}
             </span>
           </button>
         </div>
