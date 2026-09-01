@@ -6,6 +6,8 @@ import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 import { ConfirmDeleteModal } from "../../components/ui/confirm-delete-modal"
 import { createNotification } from "../../lib/api"
 
+export type StatusTugas = "belum-diukur" | "selesai"
+
 type AnakTugas = {
   id: string
   nama: string

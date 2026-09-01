@@ -5,6 +5,7 @@ export interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
   isAuthenticated: boolean;
+  setUser: (user: UserProfile | null) => void;
   login: (token: string, user: UserProfile) => void;
   logout: () => void;
 }
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         token,
         isAuthenticated,
+        setUser,
         login,
         logout,
       }}
