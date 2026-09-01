@@ -1,11 +1,44 @@
+import { useEffect, useState } from "react"
+import { useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { SvgIcon } from "../../components/ui/svg-icon"
+import { getKaderQuizSubmissions, type QuizSubmission } from "../../lib/api"
+import type { QuizCompletionData, QuizResultSummaryItem } from "./kuis-kader"
 
 import resultPaths from "../../assets/icon-result"
 
 const resultMascot = "/images/ilustrasi-berhasil.png"
+
+const defaultSummary: QuizResultSummaryItem[] = [
+  {
+    question: "Apa definisi stunting yang paling tepat menurut WHO?",
+    answer: "Jawaban: Gangguan pertumbuhan dan perkembangan akibat kekurangan gizi kronis.",
+    correct: true,
+  },
+  {
+    question: "Kapan periode 1000 Hari Pertama Kehidupan dimulai?",
+    answer: "Jawaban: Sejak masa kehamilan hingga anak berusia dua tahun.",
+    correct: true,
+  },
+  {
+    question: "Salah satu langkah penting mencegah stunting adalah?",
+    answer: "Jawaban: Memberikan makanan bergizi seimbang dan memantau pertumbuhan.",
+    correct: true,
+  },
+  {
+    question: "Pengukuran panjang badan balita dilakukan dengan?",
+    answer: "Jawaban Anda: Timbangan dewasa",
+    detail: "Benar: Alat ukur panjang badan sesuai usia anak.",
+    correct: false,
+  },
+  {
+    question: "Peran kader dalam pencegahan stunting adalah?",
+    answer: "Jawaban: Mencatat, mengedukasi, dan merujuk bila ditemukan risiko.",
+    correct: true,
+  },
+]
 
 export function ResultKader({
   onHome,
@@ -14,29 +47,55 @@ export function ResultKader({
   onHome: () => void
   onBack: () => void
 }) {
-  const answerSummary = [
-    {
-      question: "Ciri-ciri balita stunting yang paling mudah dikenali?",
-      answer: "Jawaban: Tinggi badan lebih pendek dari standar usianya.",
-      correct: true,
-    },
-    {
-      question: "Usia Emas (Golden Age) pencegahan stunting berada pada rentang?",
-      answer: "Jawaban: 1000 Hari Pertama Kehidupan (HPK).",
-      correct: true,
-    },
-    {
-      question: "Pemberian ASI Eksklusif dilakukan sampai bayi berusia?",
-      answer: "Jawaban Anda: 4 Bulan",
-      detail: "Benar: 6 Bulan. Setelah 6 bulan, baru diberikan MPASI.",
-      correct: false,
-    },
-    {
-      question: "Makanan Pendamping ASI (MPASI) yang baik harus mengandung?",
-      answer: "Jawaban: Protein hewani, karbohidrat, dan lemak.",
-      correct: true,
-    },
-  ]
+  const location = useLocation()
+  const stateData = location.state as QuizCompletionData | undefined
+
+  const [score, setScore] = useState<number>(stateData?.score ?? 80)
+  const [correctCount, setCorrectCount] = useState<number>(stateData?.correctCount ?? 4)
+  const [totalQuestions, setTotalQuestions] = useState<number>(stateData?.totalQuestions ?? 5)
+  const [answerSummary, setAnswerSummary] = useState<QuizResultSummaryItem[]>(
+    stateData?.summary || defaultSummary
+  )
+
+  useEffect(() => {
+    if (stateData) return
+    let active = true
+    getKaderQuizSubmissions()
+      .then((submissions) => {
+        if (active && Array.isArray(submissions) && submissions.length > 0) {
+          const latest = submissions[0]
+          if (typeof latest.score === "number") {
+            setScore(Math.round(latest.score))
+          }
+        }
+      })
+      .catch(() => {
+        // keep fallback
+      })
+    return () => {
+      active = false
+    }
+  }, [stateData])
+  const headline =
+    score >= 80
+      ? "Luar Biasa, Kader Hebat!"
+      : score >= 60
+        ? "Bagus, Tetap Semangat!"
+        : "Jangan Menyerah, Pelajari Lagi!"
+
+  const achievementTitle =
+    score >= 80
+      ? "Pemahaman Anda sudah sangat baik."
+      : score >= 60
+        ? "Pemahaman Anda cukup baik."
+        : "Perlu pendalaman materi kembali."
+
+  const achievementDesc =
+    score >= 80
+      ? "Terus tingkatkan wawasan tentang pencegahan stunting agar pendampingan keluarga di Posyandu semakin optimal."
+      : score >= 60
+        ? "Pelajari kembali materi edukasi untuk meningkatkan pemahaman Anda seputar pencegahan stunting."
+        : "Silakan baca kembali materi edukasi dan ulangi kuis untuk memperkuat pemahaman Anda."
 
   return (
     <main className="min-h-svh bg-[#f8f9fa] pb-28 pt-16 text-[#191c1d]" aria-label="Hasil kuis kader">
@@ -58,7 +117,7 @@ export function ResultKader({
               <span className="absolute -left-2 bottom-4 text-xl text-[#e3bf66]">★</span>
             </div>
             <h1 className="font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] font-bold leading-8 text-[#005c38] sm:text-3xl">
-              Luar Biasa, Kader Hebat!
+              {headline}
             </h1>
             <p className="mt-2 max-w-[300px] font-['Manrope:Regular',sans-serif] text-base leading-6 text-[#005c38]/90">
               Kamu berhasil menyelesaikan kuis.
@@ -77,7 +136,7 @@ export function ResultKader({
               <div className="relative mt-4 grid size-32 place-items-center rounded-full border-[8px] border-[#006d42] sm:size-36">
                 <div>
                   <strong className="block font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] font-bold leading-none text-[#006d42]">
-                    80
+                    {score}
                   </strong>
                   <span className="mt-1 block font-['Manrope:SemiBold',sans-serif] text-xs text-[#536478]">/ 100</span>
                 </div>
@@ -86,7 +145,7 @@ export function ResultKader({
                 <span className="grid size-4 place-items-center rounded-full bg-white">
                   <SvgIcon path={resultPaths.p127da640} viewBox="0 0 13.5833 10.0208" className="h-2.5 w-3 text-[#006d42]" />
                 </span>
-                4 dari 5 Jawaban Benar
+                {correctCount} dari {totalQuestions} Jawaban Benar
               </span>
             </div>
             <div className="rounded-2xl bg-[#f4fbf6] p-5 text-left xl:p-6">
@@ -94,10 +153,10 @@ export function ResultKader({
                 Pencapaian Kader
               </p>
               <h2 className="mt-2 font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold text-[#005c38]">
-                Pemahaman Anda sudah sangat baik.
+                {achievementTitle}
               </h2>
               <p className="mt-2 font-['Manrope:Regular',sans-serif] text-sm leading-6 text-[#3e4941]">
-                Terus tingkatkan wawasan tentang pencegahan stunting agar pendampingan keluarga di Posyandu semakin optimal.
+                {achievementDesc}
               </p>
             </div>
           </section>

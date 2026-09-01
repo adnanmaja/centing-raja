@@ -630,7 +630,7 @@ function Flow() {
           <ProtectedRoute allowedRoles={["kader"]}>
             <KuisKader
               onBack={() => navigate("/kader/materi")}
-              onComplete={() => navigate("/kader/materi/hasil")}
+              onComplete={(resultData) => navigate("/kader/materi/hasil", { state: resultData })}
             />
           </ProtectedRoute>
         }

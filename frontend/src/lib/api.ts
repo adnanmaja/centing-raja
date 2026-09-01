@@ -85,6 +85,58 @@ export interface CreateEducationMaterialPayload {
   description?: string;
   video_url?: string;
 }
+
+export interface Quiz {
+  id: string;
+  creator_id: string;
+  title: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  quiz_id: string;
+  question_text: string;
+  question_type: "multiple_choice" | "true_false";
+  options: string[] | string;
+  correct_ans?: string;
+}
+
+export interface QuizSubmission {
+  id: string;
+  kader_id: string;
+  quiz_id: string;
+  score: number;
+  answers: Array<{
+    question_id: string;
+    selected_option: string;
+    is_correct?: boolean;
+  }> | string;
+  submitted_at?: string;
+}
+
+export interface CreateQuizPayload {
+  title: string;
+  description?: string;
+}
+
+export interface CreateQuizQuestionPayload {
+  question_text: string;
+  question_type: "multiple_choice" | "true_false";
+  options: string[];
+  correct_ans?: string;
+}
+
+export interface CreateQuizSubmissionPayload {
+  score: number;
+  answers: Array<{
+    question_id: string;
+    selected_option: string;
+    is_correct?: boolean;
+  }>;
+}
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export async function apiClient<T>(
@@ -256,6 +308,57 @@ export async function updateEducationMaterial(id: string, payload: CreateEducati
 export async function deleteEducationMaterial(id: string): Promise<void> {
   return apiClient<void>(`/nakes/education-materials/${id}`, {
     method: "DELETE",
+  });
+}
+
+export async function getQuizzes(limit = 20, offset = 0): Promise<Quiz[]> {
+  return apiClient<Quiz[]>(`/quizzes?limit=${limit}&offset=${offset}`, {
+    method: "GET",
+  });
+}
+
+export async function getQuizById(id: string): Promise<Quiz> {
+  return apiClient<Quiz>(`/quizzes/${id}`, {
+    method: "GET",
+  });
+}
+
+export async function getQuizQuestions(quizId: string): Promise<QuizQuestion[]> {
+  return apiClient<QuizQuestion[]>(`/quizzes/${quizId}/questions`, {
+    method: "GET",
+  });
+}
+
+export async function submitQuiz(
+  quizId: string,
+  payload: CreateQuizSubmissionPayload
+): Promise<QuizSubmission> {
+  return apiClient<QuizSubmission>(`/quizzes/${quizId}/submissions`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getKaderQuizSubmissions(): Promise<QuizSubmission[]> {
+  return apiClient<QuizSubmission[]>("/kader/submissions", {
+    method: "GET",
+  });
+}
+
+export async function createQuiz(payload: CreateQuizPayload): Promise<Quiz> {
+  return apiClient<Quiz>("/nakes/quizzes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function createQuizQuestion(
+  quizId: string,
+  payload: CreateQuizQuestionPayload
+): Promise<QuizQuestion> {
+  return apiClient<QuizQuestion>(`/nakes/quizzes/${quizId}/questions`, {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 

@@ -1,11 +1,10 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { AlertTriangle, Check, Plus, Trash2 } from "lucide-react"
-
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 import { NakesToast, type ToastData } from "../../components/nakes/nakes-toast"
-
+import { createQuiz, createQuizQuestion } from "../../lib/api"
 const MAX_PERTANYAAN = 5
 const OPSI_LABEL = ["A", "B", "C", "D"] as const
 
@@ -32,7 +31,7 @@ export function KuisBaruScreen() {
   const [durasi, setDurasi] = useState("")
   const [pertanyaanList, setPertanyaanList] = useState<Pertanyaan[]>([createEmptyPertanyaan()])
   const [toast, setToast] = useState<ToastData | null>(null)
-
+  const [submitting, setSubmitting] = useState(false)
   // State untuk alert interaktif "Kirim ke Kader"
   const [showKirimAlert, setShowKirimAlert] = useState(false)
 
@@ -93,20 +92,44 @@ export function KuisBaruScreen() {
     return null
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const error = validate()
     if (error) {
       setToast({ type: "error", message: error })
       return
     }
 
-    // TODO: kirim ke POST /api/kuis
-    setToast({
-      type: "success",
-      message: `Kuis "${judulKuis}" berhasil dikirimkan dan siap diikuti oleh Kader.`,
-    })
+    setSubmitting(true)
+    try {
+      const quiz = await createQuiz({
+        title: judulKuis.trim(),
+        description: durasi.trim() ? `Durasi: ${durasi}` : "Kuis evaluasi kader posyandu",
+      })
 
-    window.setTimeout(() => navigate("/nakes/akun"), 1200)
+      for (const p of pertanyaanList) {
+        await createQuizQuestion(quiz.id, {
+          question_text: p.teks.trim(),
+          question_type: "multiple_choice",
+          options: p.pilihan.map((opt) => opt.trim()),
+          correct_ans: String(p.jawabanBenar),
+        })
+      }
+
+      setToast({
+        type: "success",
+        message: `Kuis "${judulKuis}" berhasil dikirimkan dan siap diikuti oleh Kader.`,
+      })
+
+      window.setTimeout(() => navigate("/nakes/akun"), 1200)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Gagal menyimpan kuis. Silakan coba lagi."
+      setToast({
+        type: "error",
+        message,
+      })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   // Membuka alert interaktif "Kirim ke Kader" (validasi dulu sebelum tampil)
@@ -120,13 +143,9 @@ export function KuisBaruScreen() {
   }
 
   // Konfirmasi dari dalam alert interaktif
-  const handleConfirmKirimKader = () => {
-    // TODO: kirim ke POST /api/kuis/kirim-kader
+  const handleConfirmKirimKader = async () => {
     setShowKirimAlert(false)
-    setToast({
-      type: "success",
-      message: `Kuis "${judulKuis}" berhasil dikirim ke Kader!`,
-    })
+    await handleSubmit()
   }
 
   return (
@@ -305,11 +324,12 @@ export function KuisBaruScreen() {
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-full sm:w-auto sm:ml-auto sm:flex py-3.5 sm:px-8 bg-emerald-800 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex justify-center items-center gap-2 cursor-pointer transition-transform hover:scale-[1.02] active:scale-95"
+            disabled={submitting}
+            className="w-full sm:w-auto sm:ml-auto sm:flex py-3.5 sm:px-8 bg-emerald-800 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex justify-center items-center gap-2 cursor-pointer transition-transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Check className="size-3.5 text-white" />
             <span className="text-center text-white text-xs font-semibold font-['Manrope:SemiBold',sans-serif] leading-4">
-              Simpan &amp; Publikasikan Kuis
+              {submitting ? "Menyimpan..." : "Simpan & Publikasikan Kuis"}
             </span>
           </button>
         </div>
