@@ -137,6 +137,21 @@ export interface CreateQuizSubmissionPayload {
     is_correct?: boolean;
   }>;
 }
+
+export interface NotificationItem {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface CreateNotificationPayload {
+  user_id: string;
+  title: string;
+  message: string;
+}
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export async function apiClient<T>(
@@ -370,6 +385,39 @@ export async function createQuizQuestion(
   return apiClient<QuizQuestion>(`/nakes/quizzes/${quizId}/questions`, {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function getNotifications(): Promise<NotificationItem[]> {
+  return apiClient<NotificationItem[]>("/notifications", {
+    method: "GET",
+  });
+}
+
+export async function getNotificationById(id: string): Promise<NotificationItem> {
+  return apiClient<NotificationItem>(`/notifications/${id}`, {
+    method: "GET",
+  });
+}
+
+export async function markNotificationAsRead(id: string): Promise<MessageResponse> {
+  return apiClient<MessageResponse>(`/notifications/${id}/read`, {
+    method: "PATCH",
+  });
+}
+
+export async function createNotification(
+  payload: CreateNotificationPayload
+): Promise<NotificationItem> {
+  return apiClient<NotificationItem>("/nakes/notifications", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteNotification(id: string): Promise<MessageResponse> {
+  return apiClient<MessageResponse>(`/nakes/notifications/${id}`, {
+    method: "DELETE",
   });
 }
 

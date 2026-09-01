@@ -1,7 +1,35 @@
+import { useEffect, useState } from "react"
 import { SvgIcon } from "../ui/svg-icon"
+import { getNotifications, markNotificationAsRead, type NotificationItem } from "../../lib/api"
 import parentNotificationPaths from "../../assets/icon-parent-notification"
 
 export function KaderNotification({ onClose }: { onClose: () => void }) {
+  const [notification, setNotification] = useState<NotificationItem | null>(null)
+
+  useEffect(() => {
+    let active = true
+    getNotifications()
+      .then((data) => {
+        if (active && Array.isArray(data) && data.length > 0) {
+          const unread = data.find((n) => !n.is_read) || data[0]
+          setNotification(unread)
+        }
+      })
+      .catch(() => {
+        // fallback
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const handleDismiss = () => {
+    if (notification?.id && !notification.is_read) {
+      markNotificationAsRead(notification.id).catch(() => {})
+    }
+    onClose()
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -16,7 +44,7 @@ export function KaderNotification({ onClose }: { onClose: () => void }) {
           </span>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleDismiss}
             className="grid size-8 place-items-center rounded-full text-xl leading-none text-[#63747a] transition hover:bg-[#f3f4f5]"
             aria-label="Tutup notifikasi"
           >
@@ -27,16 +55,15 @@ export function KaderNotification({ onClose }: { onClose: () => void }) {
           Pengingat Tugas
         </p>
         <h2 className="mt-2 font-['Plus_Jakarta_Sans:Bold',sans-serif] text-xl font-bold leading-7 text-[#191c1d]">
-          Ada balita yang belum diukur lebih dari 1 minggu
+          {notification?.title || "Ada balita yang belum diukur lebih dari 1 minggu"}
         </h2>
         <p className="mt-3 font-['Manrope:Regular',sans-serif] text-sm leading-6 text-[#3e4941]">
-          Beberapa balita di wilayah Anda sudah melewati batas satu minggu tanpa
-          pengukuran. Segera lakukan kunjungan agar data pertumbuhan tetap
-          terpantau.
+          {notification?.message ||
+            "Beberapa balita di wilayah Anda sudah melewati batas satu minggu tanpa pengukuran. Segera lakukan kunjungan agar data pertumbuhan tetap terpantau."}
         </p>
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleDismiss}
           className="mt-6 min-h-11 w-full rounded-xl bg-[#006d42] px-5 font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-white shadow-[0_4px_10px_rgba(0,109,66,0.18)] transition hover:bg-[#005c38]"
         >
           Mengerti
