@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
 import { SvgIcon } from "../../components/ui/svg-icon"
-
+import { useAuth } from "../../context/auth-context"
+import { getKaderChildren, getKaderMeasurements } from "../../lib/api"
 import kaderNavPaths from "../../assets/icon-kader-nav"
 import kaderActionPaths from "../../assets/icon-kader-action"
 import kaderReminderPaths from "../../assets/icon-kader-reminder"
@@ -23,6 +25,46 @@ export function BerandaKader({
   onProfile: () => void
   onInput: () => void
 }) {
+  const { user } = useAuth()
+  const [unmeasuredCount, setUnmeasuredCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    async function loadStats() {
+      try {
+        const [children, measurements] = await Promise.all([
+          getKaderChildren(100, 0),
+          getKaderMeasurements().catch(() => []),
+        ])
+        if (!mounted) return
+        const currentYear = new Date().getFullYear()
+        const currentMonth = new Date().getMonth()
+        const measuredIds = new Set(
+          measurements
+            .filter((m) => {
+              const d = new Date(m.measured_at)
+              return d.getFullYear() === currentYear && d.getMonth() === currentMonth
+            })
+            .map((m) => m.children_id)
+        )
+        const pending = children.filter((c) => !measuredIds.has(c.id)).length
+        setUnmeasuredCount(pending)
+      } catch (err) {
+        console.error("Failed to load kader stats:", err)
+      }
+    }
+    loadStats()
+    return () => {
+      mounted = false
+    }
+  }, [])
+  const todayFormatted = new Date().toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+
   const news = [
     {
       image: kaderEducationImage,
@@ -69,10 +111,10 @@ export function BerandaKader({
         <section className="kader-hero rounded-2xl bg-[#e9f7ef] p-5 shadow-[0_8px_26px_rgba(0,109,66,0.06)] xl:flex xl:items-center xl:justify-between xl:gap-10 xl:p-8">
           <div>
             <h1 className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold leading-7 xl:text-2xl">
-              Halo, Kader Nur!
+              Halo, {user?.name || "Kader"}!
             </h1>
             <p className="mt-1 font-['Manrope:Regular',sans-serif] text-sm text-[#3e4941]">
-              Senin, 24 Oktober 2023
+              {todayFormatted}
             </p>
           </div>
           <div className="mt-5 rounded-xl bg-white/70 p-3 xl:mt-0 xl:w-3/5 xl:p-4">
@@ -81,7 +123,9 @@ export function BerandaKader({
                 Tugas Hari Ini
               </p>
               <span className="rounded-full bg-[#ba1a1a]/10 px-2 py-1 font-['Manrope:Regular',sans-serif] text-[10px] text-[#ba1a1a]">
-                3 Belum Selesai
+                {unmeasuredCount !== null
+                  ? `${unmeasuredCount} Belum Selesai`
+                  : "Memuat tugas..."}
               </span>
             </div>
             <div className="flex min-w-0 items-center gap-3">

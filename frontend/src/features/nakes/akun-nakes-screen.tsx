@@ -15,7 +15,15 @@ import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 import { ConfirmDeleteModal } from "../../components/ui/confirm-delete-modal"
 import { AkunBaruModal, type AkunBaruData, type Role } from "./akun-baru-modal"
-import { deleteEducationMaterial, getEducationMaterials, getQuizzes } from "../../lib/api"
+import {
+  createNakesUser,
+  deleteEducationMaterial,
+  deleteQuiz,
+  getEducationMaterials,
+  getNakesUsers,
+  getQuizzes,
+  type UserProfile,
+} from "../../lib/api"
 type Akun = {
   nama: string
   nik: string
@@ -100,9 +108,35 @@ export function AkunNakesScreen() {
   const [materiHistory, setMateriHistory] = useState<MateriHistoryItem[]>(initialMateriHistory)
   const [kuisHistory, setKuisHistory] = useState<KuisHistoryItem[]>(initialKuisHistory)
   const [materiToDelete, setMateriToDelete] = useState<MateriHistoryItem | null>(null)
-
+  const [quizToDelete, setQuizToDelete] = useState<KuisHistoryItem | null>(null)
   useEffect(() => {
     let active = true
+    getNakesUsers(100, 0)
+      .then((users: UserProfile[]) => {
+        if (active && Array.isArray(users) && users.length > 0) {
+          const mapped: Akun[] = users
+            .filter((u) => u.role === "kader" || u.role === "orang_tua")
+            .map((u, idx) => {
+              const palette = avatarPalette[idx % avatarPalette.length]
+              const roleLabel: Role = u.role === "kader" ? "Kader" : "Orang Tua"
+              return {
+                nama: u.name,
+                nik: u.phone_number,
+                role: roleLabel,
+                initial: u.name.charAt(0).toUpperCase(),
+                avatarBg: palette.bg,
+                avatarText: palette.text,
+              }
+            })
+          if (mapped.length > 0) {
+            setAkunList(mapped)
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to fetch users for nakes:", err)
+      })
+
     getEducationMaterials(50, 0)
       .then((data) => {
         if (active && Array.isArray(data) && data.length > 0) {
@@ -173,26 +207,37 @@ export function AkunNakesScreen() {
     window.alert(`Akun "${akun.nama}" berhasil dihapus.`)
   }
 
-  const handleCreateAkun = (data: AkunBaruData) => {
+  const handleCreateAkun = async (data: AkunBaruData) => {
     const isDuplicate = akunList.some((akun) => akun.nik === data.nik)
     if (isDuplicate) {
-      window.alert("NIK ini sudah terdaftar. Gunakan NIK lain.")
+      window.alert("Nomor telepon/NIK ini sudah terdaftar. Gunakan nomor lain.")
       return
     }
 
-    const palette = avatarPalette[akunList.length % avatarPalette.length]
-    const newAkun: Akun = {
-      nama: data.nama,
-      nik: data.nik,
-      role: data.role,
-      initial: data.nama.charAt(0).toUpperCase(),
-      avatarBg: palette.bg,
-      avatarText: palette.text,
-    }
+    try {
+      const createdUser = await createNakesUser({
+        name: data.nama,
+        phone_number: data.nik,
+        role: data.role === "Kader" ? "kader" : "orang_tua",
+      })
 
-    setAkunList((prev) => [newAkun, ...prev])
-    setIsModalOpen(false)
-    window.alert(`Akun "${data.nama}" berhasil ditambahkan sebagai ${data.role}.`)
+      const palette = avatarPalette[akunList.length % avatarPalette.length]
+      const newAkun: Akun = {
+        nama: createdUser.name,
+        nik: createdUser.phone_number,
+        role: data.role,
+        initial: createdUser.name.charAt(0).toUpperCase(),
+        avatarBg: palette.bg,
+        avatarText: palette.text,
+      }
+
+      setAkunList((prev) => [newAkun, ...prev])
+      setIsModalOpen(false)
+      window.alert(`Akun "${data.nama}" berhasil ditambahkan sebagai ${data.role}.`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menambahkan akun"
+      window.alert(msg)
+    }
   }
 
   const roleFilterOptions: RoleFilter[] = ["Semua", "Kader", "Orang Tua"]
@@ -476,13 +521,23 @@ export function AkunNakesScreen() {
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {kuisHistory.map((kuis) => (
-                <div key={kuis.id} className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col gap-2">
-                  <span className="text-zinc-900 text-lg font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
-                    {kuis.judul}
-                  </span>
-                  <span className="text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif]">
-                    {kuis.jumlahSoal} pertanyaan • {kuis.durasi}
-                  </span>
+                <div key={kuis.id} className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex items-center justify-between gap-3">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-zinc-900 text-lg font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] truncate">
+                      {kuis.judul}
+                    </span>
+                    <span className="text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                      {kuis.jumlahSoal} pertanyaan • {kuis.durasi}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setQuizToDelete(kuis)}
+                    className="p-1 rounded-full cursor-pointer transition-colors hover:bg-red-50 shrink-0"
+                    aria-label={`Hapus kuis ${kuis.judul}`}
+                  >
+                    <Trash2 className="size-4 text-red-700" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -510,6 +565,26 @@ export function AkunNakesScreen() {
             }
             setMateriHistory((prev) => prev.filter((m) => m.id !== materiToDelete.id))
             setMateriToDelete(null)
+          }}
+        />
+      )}
+
+      {quizToDelete && (
+        <ConfirmDeleteModal
+          title="Hapus Kuis?"
+          description={`Yakin ingin menghapus kuis "${quizToDelete.judul}"?`}
+          onCancel={() => setQuizToDelete(null)}
+          onConfirm={async () => {
+            if (!quizToDelete) return
+            try {
+              if (quizToDelete.id.length > 5) {
+                await deleteQuiz(quizToDelete.id)
+              }
+            } catch (err) {
+              console.warn("[Centing] Failed to delete quiz:", err)
+            }
+            setKuisHistory((prev) => prev.filter((q) => q.id !== quizToDelete.id))
+            setQuizToDelete(null)
           }}
         />
       )}

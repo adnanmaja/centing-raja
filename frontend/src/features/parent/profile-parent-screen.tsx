@@ -1,15 +1,31 @@
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { ArrowLeft, ChevronRight, Key, HelpCircle, Shield, LogOut, User, Pencil, Ruler, Lock } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
 import { ParentBottomNav } from "../../components/parent/parent-bottom-nav"
 import { useAuth } from "../../context/auth-context"
-
+import { getParentChildren } from "../../lib/api"
 const logo = "/logo/logo-centing-raja.png"
 export function ProfileParentScreen() {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
+  const [childrenCount, setChildrenCount] = useState<number>(0)
 
+  useEffect(() => {
+    let active = true
+    getParentChildren()
+      .then((data) => {
+        if (active && Array.isArray(data)) {
+          setChildrenCount(data.length)
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to fetch parent children:", err)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
   return (
     <div className="w-full min-h-screen bg-gray-50 flex flex-col">
       <ParentInputHeader logo={logo} title="Profil" />
@@ -34,7 +50,7 @@ export function ProfileParentScreen() {
         </div>
 
         <h1 className="mt-4 text-black text-2xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif]">
-          Ibu Nisa
+          {user?.name || "Orang Tua"}
         </h1>
 
         <div className="mt-3 px-3 py-2 bg-emerald-300 rounded-full flex items-center gap-1">
@@ -47,7 +63,7 @@ export function ProfileParentScreen() {
         <div className="mt-5 w-full max-w-sm flex gap-3">
           <div className="flex-1 p-3 bg-white rounded-2xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col items-center">
             <span className="text-emerald-800 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
-              2
+              {childrenCount}
             </span>
             <span className="text-neutral-700 text-sm font-normal font-['Manrope:Regular',sans-serif]">
               Anak Terdaftar

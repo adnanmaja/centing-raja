@@ -3,6 +3,8 @@ export interface UserProfile {
   name: string;
   phone_number: string;
   role: "tenaga_kesehatan" | "kader" | "orang_tua";
+  nik?: string;
+  is_notification_enabled?: boolean;
 }
 
 export interface RegisterPayload {
@@ -252,6 +254,18 @@ export async function getNakesChildren(limit = 50, offset = 0): Promise<Child[]>
   });
 }
 
+export async function getKaderChildren(limit = 100, offset = 0): Promise<Child[]> {
+  return apiClient<Child[]>(`/kader/children?limit=${limit}&offset=${offset}`, {
+    method: "GET",
+  });
+}
+
+export async function deleteChild(childId: string): Promise<{ message: string }> {
+  return apiClient<{ message: string }>(`/nakes/children/${childId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getChildById(id: string): Promise<Child> {
   return apiClient<Child>(`/nakes/children/${id}`, {
     method: "GET",
@@ -388,6 +402,43 @@ export async function createQuizQuestion(
   });
 }
 
+
+export async function deleteQuiz(quizId: string): Promise<{ message: string }> {
+  return apiClient<{ message: string }>(`/nakes/quizzes/${quizId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function getUserProfile(): Promise<UserProfile> {
+  return apiClient<UserProfile>("/users/profile", {
+    method: "GET",
+  });
+}
+
+export async function updateUserProfile(payload: {
+  name: string;
+  nik?: string;
+  phone_number: string;
+  is_notification_enabled?: boolean;
+}): Promise<UserProfile> {
+  return apiClient<UserProfile>("/users/profile", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getNakesUsers(limit = 100, offset = 0): Promise<UserProfile[]> {
+  return apiClient<UserProfile[]>(`/nakes/users?limit=${limit}&offset=${offset}`, {
+    method: "GET",
+  });
+}
+
+export async function createNakesUser(payload: RegisterPayload): Promise<UserProfile> {
+  return apiClient<UserProfile>("/nakes/users", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
 export async function getNotifications(): Promise<NotificationItem[]> {
   return apiClient<NotificationItem[]>("/notifications", {
     method: "GET",

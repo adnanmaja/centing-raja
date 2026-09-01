@@ -3,6 +3,7 @@ import { useRef, useState } from "react"
 import { SvgIcon } from "../../components/ui/svg-icon"
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { useAuth } from "../../context/auth-context"
+import { updateUserProfile } from "../../lib/api"
 import editProfilePaths from "../../assets/icon-edit-profile"
 import lockedPosyanduPaths from "../../assets/icon-posyandu-locked"
 import phoneFieldPaths from "../../assets/icon-phone-field"
@@ -16,17 +17,29 @@ export function EditProfileKader({ onBack }: { onBack: () => void }) {
   const [name, setName] = useState(user?.name || "Nurhayati Ningsih")
   const [phone, setPhone] = useState(user?.phone_number || "0812-3456-7890")
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [photo, setPhoto] = useState<string>(() => localStorage.getItem(PHOTO_STORAGE_KEY) || defaultPhoto)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const save = () => {
-    const updated = user
-      ? { ...user, name, phone_number: phone }
-      : { id: "k1", name, phone_number: phone, role: "kader" as const }
-    localStorage.setItem("centing_user", JSON.stringify(updated))
-    if (setUser) setUser(updated)
-    setSaved(true)
-    window.setTimeout(onBack, 650)
+  const save = async () => {
+    setErrorMsg(null)
+    setSaving(true)
+    try {
+      const updatedUser = await updateUserProfile({
+        name,
+        phone_number: phone,
+      })
+      localStorage.setItem("centing_user", JSON.stringify(updatedUser))
+      if (setUser) setUser(updatedUser)
+      setSaved(true)
+      window.setTimeout(onBack, 650)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal memperbarui profil"
+      setErrorMsg(msg)
+    } finally {
+      setSaving(false)
+    }
   }
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -113,14 +126,19 @@ export function EditProfileKader({ onBack }: { onBack: () => void }) {
         </section>
 
         <section className="mt-10 flex flex-col items-center gap-4">
+          {errorMsg && (
+            <div className="w-full rounded-xl bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-200">
+              {errorMsg}
+            </div>
+          )}
           <button
             type="button"
             onClick={save}
-            disabled={!name.trim() || !phone.trim() || saved}
+            disabled={!name.trim() || !phone.trim() || saved || saving}
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#007c4a] font-['Manrope:SemiBold',sans-serif] text-base font-semibold text-white shadow-[0_4px_8px_rgba(0,109,66,0.2)] disabled:opacity-60"
           >
             <SvgIcon path={inputMeasurementPaths.p3e09ad60} viewBox="0 0 18 18" className="size-4" />
-            {saved ? "Perubahan Disimpan" : "Simpan Perubahan"}
+            {saved ? "Perubahan Disimpan" : saving ? "Menyimpan..." : "Simpan Perubahan"}
           </button>
           <button type="button" onClick={onBack} className="font-['Manrope:Regular',sans-serif] text-base text-[#536478] hover:text-[#007c4a]">
             Batal

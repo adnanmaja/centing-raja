@@ -48,6 +48,8 @@ func NewServer(svcs *service.Services) *Server {
 
 	protected := router.Group("/")
 	protected.Use(authHandler.AuthMiddleware())
+	protected.GET("/users/profile", authHandler.GetProfile)
+	protected.PUT("/users/profile", authHandler.UpdateProfile)
 
 	protected.GET("/education-materials", educationHandler.ListEducationMaterials)
 	protected.GET("/education-materials/:id", educationHandler.GetEducationMaterialByID)
@@ -63,6 +65,8 @@ func NewServer(svcs *service.Services) *Server {
 	nakes := protected.Group("/nakes")
 	nakes.Use(RequireRole(db.UserRoleTenagaKesehatan))
 
+	nakes.GET("/users", authHandler.ListUsers)
+	nakes.POST("/users", authHandler.Register)
 	nakes.GET("/children", childrenHandler.ListChildren)
 	nakes.POST("/children", childrenHandler.CreateChildren)
 	nakes.GET("/children/:id", childrenHandler.GetChildByID)
@@ -97,6 +101,7 @@ func NewServer(svcs *service.Services) *Server {
 
 	kader := protected.Group("/kader")
 	kader.Use(RequireRole(db.UserRoleKader))
+	kader.GET("/children", childrenHandler.ListChildren)
 	kader.GET("/submissions", quizHandler.ListQuizSubmissionsByKader)
 	kader.POST("/measurements", measurementHandler.CreateMeasurement)
 	kader.GET("/children/:id/measurements", measurementHandler.ListMeasurementsByChildID)

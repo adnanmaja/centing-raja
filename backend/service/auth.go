@@ -11,6 +11,7 @@ import (
 
 	"github.com/adnanmaja/centing-raja/db"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -147,4 +148,25 @@ func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func (s *AuthService) GetUserByID(ctx context.Context, id uuid.UUID) (db.GetUserByIDRow, error) {
+	return s.db.GetUserByID(ctx, pgtype.UUID{Bytes: id, Valid: true})
+}
+
+func (s *AuthService) UpdateProfile(ctx context.Context, id uuid.UUID, name string, nik, phone *string, isNotificationEnabled *bool) (db.User, error) {
+	return s.db.UpdateUserProfile(ctx, db.UpdateUserProfileParams{
+		ID:                    pgtype.UUID{Bytes: id, Valid: true},
+		Name:                  name,
+		Nik:                   nik,
+		PhoneNumber:           phone,
+		IsNotificationEnabled: isNotificationEnabled,
+	})
+}
+
+func (s *AuthService) ListUsers(ctx context.Context, limit, offset int32) ([]db.ListUsersRow, error) {
+	return s.db.ListUsers(ctx, db.ListUsersParams{
+		Limit:  limit,
+		Offset: offset,
+	})
 }
