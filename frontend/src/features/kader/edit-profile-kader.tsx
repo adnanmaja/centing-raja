@@ -2,7 +2,7 @@ import { useRef, useState } from "react"
 
 import { SvgIcon } from "../../components/ui/svg-icon"
 import { ProfileHeader } from "../../components/kader/profile-header"
-
+import { useAuth } from "../../context/auth-context"
 import editProfilePaths from "../../assets/icon-edit-profile"
 import lockedPosyanduPaths from "../../assets/icon-posyandu-locked"
 import phoneFieldPaths from "../../assets/icon-phone-field"
@@ -12,17 +12,22 @@ const defaultPhoto = "/images/foto-kader-2.png"
 const PHOTO_STORAGE_KEY = "kaderProfilePhoto"
 
 export function EditProfileKader({ onBack }: { onBack: () => void }) {
-  const [name, setName] = useState("Nurhayati Ningsih")
-  const [phone, setPhone] = useState("0812-3456-7890")
+  const { user, setUser } = useAuth()
+  const [name, setName] = useState(user?.name || "Nurhayati Ningsih")
+  const [phone, setPhone] = useState(user?.phone_number || "0812-3456-7890")
   const [saved, setSaved] = useState(false)
   const [photo, setPhoto] = useState<string>(() => localStorage.getItem(PHOTO_STORAGE_KEY) || defaultPhoto)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const save = () => {
+    const updated = user
+      ? { ...user, name, phone_number: phone }
+      : { id: "k1", name, phone_number: phone, role: "kader" as const }
+    localStorage.setItem("centing_user", JSON.stringify(updated))
+    if (setUser) setUser(updated)
     setSaved(true)
     window.setTimeout(onBack, 650)
   }
-
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return

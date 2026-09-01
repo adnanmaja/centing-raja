@@ -15,7 +15,7 @@ import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 import { ConfirmDeleteModal } from "../../components/ui/confirm-delete-modal"
 import { AkunBaruModal, type AkunBaruData, type Role } from "./akun-baru-modal"
-import { deleteEducationMaterial, getEducationMaterials } from "../../lib/api"
+import { deleteEducationMaterial, getEducationMaterials, getQuizzes } from "../../lib/api"
 type Akun = {
   nama: string
   nik: string
@@ -98,7 +98,7 @@ export function AkunNakesScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const [materiHistory, setMateriHistory] = useState<MateriHistoryItem[]>(initialMateriHistory)
-  const [kuisHistory] = useState<KuisHistoryItem[]>(initialKuisHistory)
+  const [kuisHistory, setKuisHistory] = useState<KuisHistoryItem[]>(initialKuisHistory)
   const [materiToDelete, setMateriToDelete] = useState<MateriHistoryItem | null>(null)
 
   useEffect(() => {
@@ -132,6 +132,23 @@ export function AkunNakesScreen() {
       .catch((err) => {
         console.warn("[Centing] Failed to fetch education materials for nakes:", err)
       })
+
+    getQuizzes(50, 0)
+      .then((data) => {
+        if (active && Array.isArray(data) && data.length > 0) {
+          const apiQuizzes: KuisHistoryItem[] = data.map((quiz) => ({
+            id: quiz.id,
+            judul: quiz.title,
+            durasi: quiz.description?.includes("Durasi:") ? quiz.description.replace("Durasi:", "").trim() : "15 Menit",
+            jumlahSoal: 5,
+          }))
+          setKuisHistory(apiQuizzes)
+        }
+      })
+      .catch(() => {
+        // keep fallback
+      })
+
     return () => {
       active = false
     }

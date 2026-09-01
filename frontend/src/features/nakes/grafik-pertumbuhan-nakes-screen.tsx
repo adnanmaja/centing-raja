@@ -1,18 +1,76 @@
 import { useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { ArrowLeft, Info } from "lucide-react"
+import type { Measurement } from "../../lib/api"
 
 type Metric = "Tinggi Badan" | "Berat Badan"
 
-function GrowthChart({ metric }: { metric: Metric }) {
+function GrowthChart({
+  metric,
+  measurements,
+}: {
+  metric: Metric
+  measurements?: Measurement[]
+}) {
   const isHeight = metric === "Tinggi Badan"
-
-  const value = isHeight ? "92" : "14.2"
   const unit = isHeight ? "cm" : "kg"
 
-  const line = isHeight
+  const sorted =
+    measurements && measurements.length > 0
+      ? [...measurements].sort(
+          (a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime()
+        )
+      : []
+
+  const defaultPoints = [
+    [8, isHeight ? 132 : 134],
+    [48, isHeight ? 106 : 110],
+    [86, isHeight ? 82 : 86],
+    [124, isHeight ? 56 : 66],
+    [164, isHeight ? 40 : 50],
+    [204, isHeight ? 43 : 52],
+  ]
+
+  const calculatedPoints =
+    sorted.length > 0
+      ? sorted.map((m, idx) => {
+          const val = isHeight ? Number(m.height) || 75 : Number(m.weight) || 9
+          const ageMonths = Number(m.age) || idx * 6
+          const clampedAge = Math.min(30, Math.max(0, ageMonths))
+          const x = 8 + (clampedAge / 30) * 236
+
+          let y = 140
+          if (isHeight) {
+            const clampedVal = Math.min(110, Math.max(45, val))
+            y = 154 - ((clampedVal - 45) / (110 - 45)) * 120
+          } else {
+            const clampedVal = Math.min(25, Math.max(2, val))
+            y = 154 - ((clampedVal - 2) / (25 - 2)) * 120
+          }
+          return [Math.round(x), Math.round(y)]
+        })
+      : defaultPoints
+
+  const defaultLine = isHeight
     ? "M8 132 L48 106 L86 82 L124 56 L164 40 L204 43 L244 27"
     : "M8 134 L48 110 L86 86 L124 66 L164 50 L204 52 L244 42"
+
+  const line =
+    calculatedPoints.length > 1
+      ? calculatedPoints.reduce(
+          (acc, pt, idx) => `${acc} ${idx === 0 ? "M" : "L"}${pt[0]} ${pt[1]}`,
+          ""
+        )
+      : defaultLine
+
+  const latestPt = calculatedPoints[calculatedPoints.length - 1]
+  const lastMeasurement = sorted.length > 0 ? sorted[sorted.length - 1] : null
+  const value = lastMeasurement
+    ? String(isHeight ? lastMeasurement.height : lastMeasurement.weight)
+    : isHeight
+    ? "92"
+    : "14.2"
+  const ageLabel = lastMeasurement ? `Bulan ${Math.round(Number(lastMeasurement.age))}` : "Bulan 30"
 
   return (
     <div className="mx-auto w-full max-w-2xl overflow-visible">
@@ -45,19 +103,12 @@ function GrowthChart({ metric }: { metric: Metric }) {
         <path d="M224 12V154" stroke="#87c6a1" strokeDasharray="2 2" />
 
         <g fill="white" stroke="#007c4a" strokeWidth="2">
-          {[
-            [8, isHeight ? 132 : 134],
-            [48, isHeight ? 106 : 110],
-            [86, isHeight ? 82 : 86],
-            [124, isHeight ? 56 : 66],
-            [164, isHeight ? 40 : 50],
-            [204, isHeight ? 43 : 52],
-          ].map(([x, y]) => (
+          {calculatedPoints.map(([x, y]) => (
             <circle key={`${x}-${y}`} cx={x} cy={y} r="3.5" />
           ))}
         </g>
 
-        <circle cx="204" cy={isHeight ? 43 : 52} r="3.5" fill="white" stroke="#007c4a" strokeWidth="2" />
+        <circle cx={latestPt[0]} cy={latestPt[1]} r="3.5" fill="white" stroke="#007c4a" strokeWidth="2" />
 
         <g transform="translate(191,18)">
           <rect width="58" height="27" rx="4" fill="white" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.10))" }} />
@@ -80,7 +131,7 @@ function GrowthChart({ metric }: { metric: Metric }) {
             fontFamily="Manrope, sans-serif"
             fontSize="6"
           >
-            Bulan 30
+            {ageLabel}
           </text>
         </g>
 
@@ -103,12 +154,13 @@ export function GrafikPertumbuhanNakesScreen() {
 
   const state = (location.state ?? {}) as {
     anak?: { nama: string }
+    measurements?: Measurement[]
   }
 
   const anak = state.anak ?? { nama: "Leo M." }
+  const measurements = state.measurements
 
   const [metric, setMetric] = useState<Metric>("Tinggi Badan")
-
   return (
     <main className="min-h-svh bg-gray-50 flex flex-col">
       <header className="sticky top-0 z-30 bg-gray-50/80 shadow-[0px_1px_8px_0px_rgba(0,0,0,0.04)] backdrop-blur-md">
@@ -139,7 +191,7 @@ export function GrafikPertumbuhanNakesScreen() {
             </h2>
             <button
               type="button"
-              className="size-8 bg-zinc-100 rounded-full flex items-center justify-center cursor-pointer transition-colors hover:bg-zinc-200"
+              className="size-8 rounded-full flex items-center justify-center bg-gray-50 cursor-pointer transition-colors hover:bg-gray-100"
               aria-label="Info grafik"
             >
               <Info className="size-3.5 text-neutral-700" />
@@ -164,7 +216,7 @@ export function GrafikPertumbuhanNakesScreen() {
           </div>
 
           <div className="p-4">
-            <GrowthChart key={metric} metric={metric} />
+            <GrowthChart key={metric} metric={metric} measurements={measurements} />
           </div>
         </div>
       </div>

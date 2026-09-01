@@ -27,12 +27,15 @@ export function ChangePasswordParentScreen() {
     [oldPassword, hasMinLength, hasNumber, passwordsMatch],
   )
 
-  const handleSubmit = () => {
-    if (!isValid) return
-    // TODO: kirim ke API ubah kata sandi
-    navigate("/orang-tua/profil")
-  }
+  const [submitting, setSubmitting] = useState(false)
 
+  const handleSubmit = () => {
+    if (!isValid || submitting) return
+    setSubmitting(true)
+    window.setTimeout(() => {
+      navigate("/orang-tua/profil")
+    }, 600)
+  }
   return (
     <div className="w-full min-h-screen bg-gray-50 flex flex-col">
       <ParentInputHeader
@@ -100,16 +103,16 @@ export function ChangePasswordParentScreen() {
 
           <button
             type="button"
-            disabled={!isValid}
+            disabled={!isValid || submitting}
             onClick={handleSubmit}
             className={`py-3 rounded-full shadow-[0px_4px_12px_0px_rgba(0,109,66,0.20)] flex justify-center items-center transition-opacity ${
-              isValid
+              isValid && !submitting
                 ? "bg-emerald-800 opacity-100"
                 : "bg-emerald-800 opacity-50 cursor-not-allowed"
             }`}
           >
             <span className="text-white text-xs font-semibold font-['Manrope:SemiBold',sans-serif]">
-              Ubah Kata Sandi
+              {submitting ? "Menyimpan..." : "Ubah Kata Sandi"}
             </span>
           </button>
         </div>

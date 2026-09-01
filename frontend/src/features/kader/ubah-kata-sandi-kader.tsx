@@ -72,8 +72,7 @@ export function UbahKataSandiKader({ onBack }: { onBack: () => void }) {
       <div className="relative mt-2">
         <input
           value={value}
-          onChange={(event) => setValue(event.target.value.slice(0, 8))}
-          maxLength={8}
+          onChange={(event) => setValue(event.target.value)}
           type={visible[id] ? "text" : "password"}
           placeholder={placeholder}
           className="min-h-12 w-full rounded-lg border border-[#becabf] bg-[#f8f9fa] px-3 pr-12 text-sm text-[#191c1d] outline-none transition placeholder:text-[#becabf] focus:border-[#007c4a] focus:ring-1 focus:ring-[#007c4a]"

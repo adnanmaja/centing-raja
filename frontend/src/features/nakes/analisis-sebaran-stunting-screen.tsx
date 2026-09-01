@@ -1,6 +1,7 @@
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { AlertTriangle, ArrowLeft, ChevronRight, MapPin, Ruler, Users } from "lucide-react"
-
+import { getNakesMeasurements } from "../../lib/api"
 type StatusGizi = {
   label: string
   sdRange: string
@@ -67,6 +68,57 @@ const trajectoryImage = "https://placehold.co/318x318"
 
 export function AnalisisSebaranStuntingScreen() {
   const navigate = useNavigate()
+  const [statusList, setStatusList] = useState<StatusGizi[]>(statusGiziList)
+  const [totalChildren, setTotalChildren] = useState(1245)
+
+  useEffect(() => {
+    let active = true
+    getNakesMeasurements(200, 0)
+      .then((measurements) => {
+        if (!active || !Array.isArray(measurements) || measurements.length === 0) return
+
+        let severelyCount = 0
+        let stuntedCount = 0
+        let normalCount = 0
+        let tallCount = 0
+
+        for (const m of measurements) {
+          if (m.stunting_status === "severely_stunted") severelyCount++
+          else if (m.stunting_status === "stunted") stuntedCount++
+          else if (m.stunting_status === "tall") tallCount++
+          else normalCount++
+        }
+
+        setTotalChildren(measurements.length)
+        setStatusList([
+          {
+            ...statusGiziList[0],
+            count: severelyCount,
+            countUnknown: severelyCount === 0,
+          },
+          {
+            ...statusGiziList[1],
+            count: stuntedCount,
+          },
+          {
+            ...statusGiziList[2],
+            count: normalCount,
+          },
+          {
+            ...statusGiziList[3],
+            count: tallCount,
+            countUnknown: tallCount === 0,
+          },
+        ])
+      })
+      .catch(() => {
+        // keep fallback values
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   return (
     <div className="min-h-svh bg-gray-50 flex flex-col">
@@ -127,7 +179,7 @@ export function AnalisisSebaranStuntingScreen() {
                   Total Anak Diukur
                 </span>
                 <span className="text-emerald-800 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-8">
-                  1,245
+                  {totalChildren.toLocaleString("id-ID")}
                 </span>
               </div>
               <div className="flex-1 p-3 bg-gray-50 rounded-lg flex flex-col gap-1">
@@ -165,7 +217,7 @@ export function AnalisisSebaranStuntingScreen() {
             </div>
 
             <div className="flex flex-col gap-3">
-              {statusGiziList.map((status) => (
+              {statusList.map((status) => (
                 <div
                   key={status.label}
                   className="p-4 relative bg-zinc-100 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center gap-4 overflow-hidden"
