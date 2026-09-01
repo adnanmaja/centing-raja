@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { MoreVertical, Pin, Tag, Trash2 } from "lucide-react"
 
@@ -6,10 +6,10 @@ import { ProfileHeader } from "../../components/kader/profile-header"
 import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
 import { ConfirmDeleteModal } from "../../components/ui/confirm-delete-modal"
 import { SvgIcon } from "../../components/ui/svg-icon"
+import { formatAge, getKaderChildren, getKaderMeasurements, type Child, type Measurement } from "../../lib/api"
 
 import taskMeasurementPaths from "../../assets/icon-measurement"
 import viewDataPaths from "../../assets/icon-view-data"
-
 export type KaderChildTask = {
   id?: string
   name: string
@@ -26,132 +26,28 @@ export type KaderChildTask = {
   pinned?: boolean
 }
 
-const initialChildren: KaderChildTask[] = [
-  {
-    id: "c1",
-    name: "Ahmad Raihan",
-    initials: "AR",
-    rt: "RT 01 / RW 03",
-    address: "Jl. Manggis No. 12",
-    age: "14 Bulan",
-    gender: "Laki-laki",
-    deadline: "Batas Waktu: Hari ini",
-    status: "Mendesak",
-    tone: "bg-[#dceafe] text-[#4f6073]",
-    overdue: true,
-  },
-  {
-    id: "c2",
-    name: "Nabila Putri",
-    initials: "NP",
-    rt: "RT 01 / RW 03",
-    address: "Jl. Manggis No. 4",
-    age: "9 Bulan",
-    gender: "Perempuan",
-    deadline: "Batas Waktu: 2 Hari lagi",
-    status: "Belum",
-    tone: "bg-[#fcebc8] text-[#765b06]",
-  },
-  {
-    id: "c3",
-    name: "Raka Pratama",
-    initials: "RP",
-    rt: "RT 01 / RW 03",
-    address: "Jl. Mawar No. 7",
-    age: "18 Bulan",
-    gender: "Laki-laki",
-    deadline: "Batas Waktu: 3 Hari lagi",
-    status: "Belum",
-    tone: "bg-[#e7dcff] text-[#604fa3]",
-  },
-  {
-    id: "c4",
-    name: "Alya Safitri",
-    initials: "AS",
-    rt: "RT 01 / RW 03",
-    address: "Jl. Manggis No. 21",
-    age: "11 Bulan",
-    gender: "Perempuan",
-    deadline: "Tercatat: Hari ini, 08:30",
-    status: "Selesai",
-    tone: "bg-[#e9f7ef] text-[#006d42]",
-    done: true,
-  },
-  {
-    id: "c5",
-    name: "Dimas Bagaskara",
-    initials: "DB",
-    rt: "RT 01 / RW 03",
-    address: "Jl. Kenanga No. 5",
-    age: "20 Bulan",
-    gender: "Laki-laki",
-    deadline: "Tercatat: Kemarin, 09:15",
-    status: "Selesai",
-    tone: "bg-[#e9f7ef] text-[#006d42]",
-    done: true,
-  },
-  {
-    id: "c6",
-    name: "Siti Putri",
-    initials: "SP",
-    rt: "RT 02 / RW 03",
-    address: "Jl. Durian No. 5",
-    age: "8 Bulan",
-    gender: "Perempuan",
-    deadline: "Batas Waktu: 3 Hari lagi",
-    status: "Belum",
-    tone: "bg-[#f3d36b] text-[#765b06]",
-  },
-  {
-    id: "c7",
-    name: "Fahri Ramadhan",
-    initials: "FR",
-    rt: "RT 02 / RW 03",
-    address: "Jl. Durian No. 9",
-    age: "16 Bulan",
-    gender: "Laki-laki",
-    deadline: "Batas Waktu: 4 Hari lagi",
-    status: "Belum",
-    tone: "bg-[#dceafe] text-[#4f6073]",
-  },
-  {
-    id: "c8",
-    name: "Bima Nugraha",
-    initials: "BN",
-    rt: "RT 02 / RW 03",
-    address: "Jl. Nangka No. 2",
-    age: "10 Bulan",
-    gender: "Laki-laki",
-    deadline: "Tercatat: Hari ini, 09:30",
-    status: "Selesai",
-    tone: "bg-[#edf0f2] text-[#63747a]",
-    done: true,
-  },
-  {
-    id: "c9",
-    name: "Citra Lestari",
-    initials: "CL",
-    rt: "RT 03 / RW 03",
-    address: "Jl. Melati No. 8",
-    age: "13 Bulan",
-    gender: "Perempuan",
-    deadline: "Batas Waktu: 5 Hari lagi",
-    status: "Belum",
-    tone: "bg-[#fde2da] text-[#a64b39]",
-  },
-  {
-    id: "c10",
-    name: "Gilang Prakoso",
-    initials: "GP",
-    rt: "RT 03 / RW 03",
-    address: "Jl. Melati No. 14",
-    age: "22 Bulan",
-    gender: "Laki-laki",
-    deadline: "Batas Waktu: 6 Hari lagi",
-    status: "Belum",
-    tone: "bg-[#dff3eb] text-[#006d42]",
-  },
+const tonePalette = [
+  "bg-[#dceafe] text-[#4f6073]",
+  "bg-[#fcebc8] text-[#765b06]",
+  "bg-[#e7dcff] text-[#604fa3]",
+  "bg-[#dff3eb] text-[#006d42]",
+  "bg-[#ffd9d5] text-[#b3261e]",
 ]
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
+}
+
+function parseRt(address?: string): { rt: string; street: string } {
+  if (!address) return { rt: "RT 01 / RW 03", street: "Alamat belum diatur" }
+  const rtMatch = address.match(/RT\s*\d+(\s*\/\s*RW\s*\d+)?/i)
+  const rt = rtMatch ? rtMatch[0].toUpperCase() : "RT 01 / RW 03"
+  return { rt, street: address }
+}
 
 export function TugasBulanIni({
   onHome,
@@ -167,14 +63,83 @@ export function TugasBulanIni({
   onProfile: () => void
 }) {
   const [activeRt, setActiveRt] = useState("Semua")
-  const [children, setChildren] = useState<KaderChildTask[]>(initialChildren)
+  const [children, setChildren] = useState<KaderChildTask[]>([])
+  const [loading, setLoading] = useState(true)
   const [openMenuFor, setOpenMenuFor] = useState<string | null>(null)
   const [childToDelete, setChildToDelete] = useState<KaderChildTask | null>(null)
 
-  const filters = ["Semua", "RT 01", "RT 02", "RT 03"]
+  useEffect(() => {
+    let mounted = true
+    async function loadData() {
+      try {
+        const [childrenData, measurementsData] = await Promise.all([
+          getKaderChildren(100, 0),
+          getKaderMeasurements().catch(() => [] as Measurement[]),
+        ])
+        if (!mounted) return
+
+        const currentYear = new Date().getFullYear()
+        const currentMonth = new Date().getMonth()
+        const measuredChildIds = new Set(
+          measurementsData
+            .filter((m) => {
+              const d = new Date(m.measured_at)
+              return d.getFullYear() === currentYear && d.getMonth() === currentMonth
+            })
+            .map((m) => m.children_id)
+        )
+
+        const mapped: KaderChildTask[] = childrenData.map((c: Child, idx: number) => {
+          const isDone = measuredChildIds.has(c.id)
+          const { rt, street } = parseRt(c.home_address)
+          return {
+            id: c.id,
+            name: c.full_name,
+            initials: getInitials(c.full_name),
+            rt,
+            address: street,
+            age: formatAge(c.birth_date),
+            gender: c.gender === "L" || c.gender === "Laki-laki" ? "Laki-laki" : "Perempuan",
+            deadline: isDone ? "Tercatat: Bulan ini" : "Batas Waktu: Akhir Bulan",
+            status: isDone ? "Selesai" : "Belum",
+            tone: tonePalette[idx % tonePalette.length],
+            done: isDone,
+            overdue: false,
+          }
+        })
+        setChildren(mapped)
+      } catch (err) {
+        console.error("Failed to load kader children:", err)
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    loadData()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const currentPeriod = new Date().toLocaleDateString("id-ID", {
+    month: "long",
+    year: "numeric",
+  })
+  const totalCount = children.length
+  const doneCount = children.filter((c) => c.done).length
+  const pendingCount = totalCount - doneCount
+
+  const uniqueRts = Array.from(
+    new Set(
+      children.map((c) => {
+        const m = c.rt.match(/RT\s*\d+/i)
+        return m ? m[0].toUpperCase() : "RT 01"
+      })
+    )
+  ).sort()
+  const filters = ["Semua", ...(uniqueRts.length > 0 ? uniqueRts : ["RT 01", "RT 02", "RT 03"])]
 
   const visibleChildren =
-    activeRt === "Semua" ? children : children.filter((child) => child.rt.startsWith(activeRt))
+    activeRt === "Semua" ? children : children.filter((child) => child.rt.toUpperCase().includes(activeRt.toUpperCase()))
 
   const sortedChildren = [...visibleChildren].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
 
@@ -187,7 +152,6 @@ export function TugasBulanIni({
     setChildren((prev) => prev.map((c) => (c.name === name ? { ...c, done: true, status: "Selesai" } : c)))
     setOpenMenuFor(null)
   }
-
   return (
     <main className="min-h-svh bg-[#f8f9fa] pb-28 pt-16 text-[#191c1d]" aria-label="Tugas Bulan Ini">
       <ProfileHeader title="Tugas" />
@@ -205,19 +169,19 @@ export function TugasBulanIni({
               Tugas Bulan Ini
             </h1>
             <p className="mt-1 font-['Manrope:Regular',sans-serif] text-sm text-white/80">
-              Posyandu Mawar 03 - Agustus 2023
+              Posyandu Mawar 03 - {currentPeriod}
             </p>
             <div className="mt-6 flex divide-x divide-white/20">
               <div className="min-w-[105px] pr-5">
-                <strong className="block font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] leading-7">12</strong>
+                <strong className="block font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] leading-7">{totalCount}</strong>
                 <span className="font-['Manrope:Regular',sans-serif] text-xs tracking-[0.06em] text-white/70">TOTAL TUGAS</span>
               </div>
               <div className="min-w-[90px] px-5">
-                <strong className="block font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] leading-7 text-[#7adaa2]">4</strong>
+                <strong className="block font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] leading-7 text-[#7adaa2]">{doneCount}</strong>
                 <span className="font-['Manrope:Regular',sans-serif] text-xs tracking-[0.06em] text-white/70">SELESAI</span>
               </div>
               <div className="min-w-[80px] pl-5">
-                <strong className="block font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] leading-7 text-[#e7c269]">8</strong>
+                <strong className="block font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] leading-7 text-[#e7c269]">{pendingCount}</strong>
                 <span className="font-['Manrope:Regular',sans-serif] text-xs tracking-[0.06em] text-white/70">BELUM</span>
               </div>
             </div>

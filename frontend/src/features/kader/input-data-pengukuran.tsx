@@ -39,6 +39,7 @@ export function InputDataPengukuran({
   const [headCircumference, setHeadCircumference] = useState("46.0")
   const [armCircumference, setArmCircumference] = useState("14.5")
   const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [touched, setTouched] = useState({
     weight: true,
     height: true,
@@ -314,38 +315,34 @@ export function InputDataPengukuran({
             />
           </label>
         </div>
+        {errorMessage && (
+          <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-700 ring-1 ring-red-200">
+            {errorMessage}
+          </div>
+        )}
         <button
           type="button"
           onClick={async () => {
+            setErrorMessage(null)
+            if (!child.id) {
+              setErrorMessage("ID anak tidak valid")
+              return
+            }
             setSaving(true)
-            let createdMeasurement: Measurement | undefined
             try {
-              createdMeasurement = await createMeasurement({
-                children_id: child.id || "00000000-0000-0000-0000-000000000001",
+              const createdMeasurement = await createMeasurement({
+                children_id: child.id,
                 weight,
                 height,
                 head_circumference: Number(headCircumference) || undefined,
                 upper_arm_circumference: Number(armCircumference) || undefined,
               })
-            } catch {
-              // Continue to success screen with local measurement model
-              createdMeasurement = {
-                id: crypto.randomUUID(),
-                measurer_id: "kader-1",
-                measurer_role: "kader",
-                children_id: child.id || "c1",
-                age: child.age,
-                measured_at: new Date().toISOString(),
-                weight,
-                height,
-                stunting_status: height < 76 ? "stunted" : "normal",
-                z_score: height < 76 ? -2.15 : 0.25,
-                head_circumference: Number(headCircumference) || 46,
-                upper_arm_circumference: Number(armCircumference) || 14.5,
-              }
+              onSaved({ child, measurement: createdMeasurement })
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Gagal menyimpan data pengukuran"
+              setErrorMessage(msg)
             } finally {
               setSaving(false)
-              onSaved({ child, measurement: createdMeasurement })
             }
           }}
           disabled={!isComplete || saving}

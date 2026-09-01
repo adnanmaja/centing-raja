@@ -5,11 +5,9 @@ import { SvgIcon } from "../../components/ui/svg-icon"
 import profilePagePaths from "../../assets/icon-profile-page"
 
 import logoutPaths from "../../assets/icon-logout"
-
 import { ProfileHeader } from "../../components/kader/profile-header"
-
 import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
-
+import { useAuth } from "../../context/auth-context"
 const kaderProfilePhoto =
   "/images/foto-kader.png"
 
@@ -42,9 +40,9 @@ export function ProfileKader({
 
   onLogout: () => void
 }) {
+  const { user } = useAuth()
   const actionRows = [
     { label: "Edit Profil", icon: "✥" },
-
     { label: "Ubah Kata Sandi", icon: "◉" },
   ]
 
@@ -83,7 +81,7 @@ export function ProfileKader({
             </button>
           </div>
           <h1 className="mt-4 font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-base font-semibold">
-            Kader Nur
+            {user?.name || "Kader Nur"}
           </h1>
           <span className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#76d69f]/25 px-3 py-1 font-['Manrope:Regular',sans-serif] text-sm text-[#005c38]">
             <SvgIcon
@@ -107,15 +105,15 @@ export function ProfileKader({
             <dl className="mt-5 space-y-5 font-['Manrope:Regular',sans-serif] text-sm">
               <div className="flex justify-between gap-4">
                 <dt className="text-[#63747a]">NIK</dt>
-                <dd className="text-right font-semibold">3273102930192039</dd>
+                <dd className="text-right font-semibold">{user?.nik || "3273102930192039"}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-[#63747a]">Nama Lengkap</dt>
-                <dd className="text-right font-semibold">Nurhayati Ningsih</dd>
+                <dd className="text-right font-semibold">{user?.name || "Nurhayati Ningsih"}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-[#63747a]">No. Telepon</dt>
-                <dd className="text-right font-semibold">0812-3456-7890</dd>
+                <dd className="text-right font-semibold">{user?.phone_number || "0812-3456-7890"}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-[#63747a]">Nama Posyandu</dt>

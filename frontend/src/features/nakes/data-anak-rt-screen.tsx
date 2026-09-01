@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { AlertTriangle, ChevronDown, Search } from "lucide-react"
-import { getNakesChildren, type Child } from "../../lib/api"
+import { getNakesChildren, getNakesMeasurements, type Child, type Measurement } from "../../lib/api"
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 
@@ -95,18 +95,27 @@ export function DataAnakRtScreen() {
   const [filter, setFilter] = useState<FilterOption>("semua")
   const [visibleCount, setVisibleCount] = useState(10)
   const [liveChildren, setLiveChildren] = useState<Child[]>([])
+  const [liveMeasurements, setLiveMeasurements] = useState<Measurement[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     let active = true
-    getNakesChildren(100, 0)
-      .then((data) => {
-        if (active && Array.isArray(data) && data.length > 0) {
-          setLiveChildren(data)
+    Promise.all([
+      getNakesChildren(100, 0),
+      getNakesMeasurements(100, 0).catch(() => [] as Measurement[]),
+    ])
+      .then(([childrenData, measurementsData]) => {
+        if (active) {
+          if (Array.isArray(childrenData) && childrenData.length > 0) {
+            setLiveChildren(childrenData)
+          }
+          if (Array.isArray(measurementsData) && measurementsData.length > 0) {
+            setLiveMeasurements(measurementsData)
+          }
         }
       })
       .catch((err) => {
-        console.warn("[Centing] Failed to fetch nakes children:", err)
+        console.warn("[Centing] Failed to fetch nakes data:", err)
       })
       .finally(() => {
         if (active) setIsLoading(false)
@@ -118,16 +127,39 @@ export function DataAnakRtScreen() {
 
   const displayAnakList: AnakData[] = useMemo(() => {
     if (liveChildren.length > 0) {
-      return liveChildren.map((c) => ({
-        nama: c.full_name,
-        umurBulan: getAgeMonths(c.birth_date),
-        jenisKelamin: (c.gender === "P" ? "P" : "L") as "L" | "P",
-        status: "aman" as StatusAnak,
-        zScore: 0.0,
-      }))
+      const latestMap = new Map<string, Measurement>()
+      for (const m of liveMeasurements) {
+        const existing = latestMap.get(m.children_id)
+        if (!existing || new Date(m.measured_at) > new Date(existing.measured_at)) {
+          latestMap.set(m.children_id, m)
+        }
+      }
+
+      return liveChildren.map((c) => {
+        const m = latestMap.get(c.id)
+        let status: StatusAnak = "aman"
+        let zScore = 0.0
+        if (m) {
+          zScore = Number(m.z_score) || 0.0
+          if (m.stunting_status === "severely_stunted" || m.stunting_status === "stunted" || zScore <= -2) {
+            status = "stunting"
+          } else if (zScore < -1) {
+            status = "berisiko"
+          } else {
+            status = "aman"
+          }
+        }
+        return {
+          nama: c.full_name,
+          umurBulan: getAgeMonths(c.birth_date),
+          jenisKelamin: (c.gender === "P" || c.gender === "Perempuan" ? "P" : "L") as "L" | "P",
+          status,
+          zScore,
+        }
+      })
     }
     return defaultMockAnak
-  }, [liveChildren])
+  }, [liveChildren, liveMeasurements])
 
   const counts = useMemo(
     () => ({

@@ -4,6 +4,7 @@ import { Check, Pencil, User, CreditCard, Phone, MapPin } from "lucide-react"
 
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
 import { useAuth } from "../../context/auth-context"
+import { updateUserProfile } from "../../lib/api"
 
 const logo = "/logo/logo-centing-raja.png"
 
@@ -11,9 +12,11 @@ export function EditProfileParentScreen() {
   const navigate = useNavigate()
   const { user, setUser } = useAuth()
 
+  const [saving, setSaving] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [form, setForm] = useState({
     nama: user?.name || "Ibu Nisa",
-    nik: "3201987654321001",
+    nik: user?.nik || "3201987654321001",
     whatsapp: user?.phone_number || "08123456789",
     alamat: "Jl. Mawar Merah No. 12",
     rtRw: "03/05",
@@ -26,13 +29,24 @@ export function EditProfileParentScreen() {
       setForm((prev) => ({ ...prev, [field]: e.target.value }))
     }
 
-  const handleSave = () => {
-    const updated = user
-      ? { ...user, name: form.nama, phone_number: form.whatsapp }
-      : { id: "p1", name: form.nama, phone_number: form.whatsapp, role: "orang_tua" as const }
-    localStorage.setItem("centing_user", JSON.stringify(updated))
-    if (setUser) setUser(updated)
-    navigate("/orang-tua/profil")
+  const handleSave = async () => {
+    setErrorMsg(null)
+    setSaving(true)
+    try {
+      const updated = await updateUserProfile({
+        name: form.nama,
+        nik: form.nik,
+        phone_number: form.whatsapp,
+      })
+      localStorage.setItem("centing_user", JSON.stringify(updated))
+      if (setUser) setUser(updated)
+      navigate("/orang-tua/profil")
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal memperbarui profil"
+      setErrorMsg(msg)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -151,14 +165,20 @@ export function EditProfileParentScreen() {
 
       {/* Fixed save button */}
       <div className="fixed bottom-0 left-0 right-0 p-5 bg-white shadow-[0px_-4px_16px_0px_rgba(0,0,0,0.05)]">
+        {errorMsg && (
+          <div className="mb-3 p-3 rounded-xl bg-red-50 text-red-700 text-sm ring-1 ring-red-200">
+            {errorMsg}
+          </div>
+        )}
         <button
           type="button"
           onClick={handleSave}
-          className="w-full px-6 py-3 bg-emerald-800 rounded-full shadow-md flex justify-center items-center gap-3"
+          disabled={saving || !form.nama.trim() || !form.whatsapp.trim()}
+          className="w-full px-6 py-3 bg-emerald-800 rounded-full shadow-md flex justify-center items-center gap-3 disabled:opacity-60 cursor-pointer"
         >
           <Check className="size-4 text-white" />
           <span className="text-white text-xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif]">
-            Simpan Perubahan
+            {saving ? "Menyimpan..." : "Simpan Perubahan"}
           </span>
         </button>
       </div>

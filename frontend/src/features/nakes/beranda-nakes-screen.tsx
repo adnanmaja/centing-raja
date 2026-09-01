@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { AlertTriangle, CheckCircle2, ChevronRight, ClipboardList, Map } from "lucide-react"
 
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 import { NakesGrowthTrendChart } from "../../components/nakes/nakes-growth-trend-chart"
+import { getNakesChildren, getNakesMeasurements, type Child, type Measurement } from "../../lib/api"
 
 const infoKaderImage = "/images/foto-kader.png"
 const giziAnakImage = "/images/piring-mpasi-seimbang.png"
@@ -35,11 +37,46 @@ const articles = [
 
 export function BerandaNakesScreen() {
   const navigate = useNavigate()
+  const [totalBalita, setTotalBalita] = useState<number>(0)
+  const [monitoringCoverage, setMonitoringCoverage] = useState<number>(0)
+  const [activeTasks, setActiveTasks] = useState<number>(0)
 
-  const monitoringCoverage = 85
-  const totalBalita = 120
-  const activeTasks = 12
+  useEffect(() => {
+    let active = true
+    async function loadStats() {
+      try {
+        const [children, measurements] = await Promise.all([
+          getNakesChildren(100, 0),
+          getNakesMeasurements(100, 0).catch(() => [] as Measurement[]),
+        ])
+        if (!active) return
+        const total = children.length
+        setTotalBalita(total)
 
+        const currentYear = new Date().getFullYear()
+        const currentMonth = new Date().getMonth()
+        const measuredChildIds = new Set(
+          measurements
+            .filter((m) => {
+              const d = new Date(m.measured_at)
+              return d.getFullYear() === currentYear && d.getMonth() === currentMonth
+            })
+            .map((m) => m.children_id)
+        )
+
+        const measuredCount = children.filter((c: Child) => measuredChildIds.has(c.id)).length
+        const coverage = total > 0 ? Math.round((measuredCount / total) * 100) : 0
+        setMonitoringCoverage(coverage)
+        setActiveTasks(total - measuredCount)
+      } catch (err) {
+        console.error("Failed to load nakes stats:", err)
+      }
+    }
+    loadStats()
+    return () => {
+      active = false
+    }
+  }, [])
   return (
     <main data-reveal-page className="min-h-svh bg-[#f8f9fa] pb-24 text-[#191c1d]">
       <NakesHeader title="Beranda" />
