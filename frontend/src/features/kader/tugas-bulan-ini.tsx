@@ -10,12 +10,14 @@ import { SvgIcon } from "../../components/ui/svg-icon"
 import taskMeasurementPaths from "../../assets/icon-measurement"
 import viewDataPaths from "../../assets/icon-view-data"
 
-type Child = {
+export type KaderChildTask = {
+  id?: string
   name: string
   initials: string
   rt: string
   address: string
   age: string
+  gender?: string
   deadline: string
   status: string
   tone: string
@@ -24,107 +26,127 @@ type Child = {
   pinned?: boolean
 }
 
-const initialChildren: Child[] = [
+const initialChildren: KaderChildTask[] = [
   {
+    id: "c1",
     name: "Ahmad Raihan",
     initials: "AR",
     rt: "RT 01 / RW 03",
     address: "Jl. Manggis No. 12",
     age: "14 Bulan",
+    gender: "Laki-laki",
     deadline: "Batas Waktu: Hari ini",
     status: "Mendesak",
     tone: "bg-[#dceafe] text-[#4f6073]",
     overdue: true,
   },
   {
+    id: "c2",
     name: "Nabila Putri",
     initials: "NP",
     rt: "RT 01 / RW 03",
     address: "Jl. Manggis No. 4",
     age: "9 Bulan",
+    gender: "Perempuan",
     deadline: "Batas Waktu: 2 Hari lagi",
     status: "Belum",
     tone: "bg-[#fcebc8] text-[#765b06]",
   },
   {
+    id: "c3",
     name: "Raka Pratama",
     initials: "RP",
     rt: "RT 01 / RW 03",
     address: "Jl. Mawar No. 7",
     age: "18 Bulan",
+    gender: "Laki-laki",
     deadline: "Batas Waktu: 3 Hari lagi",
     status: "Belum",
     tone: "bg-[#e7dcff] text-[#604fa3]",
   },
   {
+    id: "c4",
     name: "Alya Safitri",
     initials: "AS",
     rt: "RT 01 / RW 03",
     address: "Jl. Manggis No. 21",
     age: "11 Bulan",
+    gender: "Perempuan",
     deadline: "Tercatat: Hari ini, 08:30",
     status: "Selesai",
     tone: "bg-[#e9f7ef] text-[#006d42]",
     done: true,
   },
   {
+    id: "c5",
     name: "Dimas Bagaskara",
     initials: "DB",
     rt: "RT 01 / RW 03",
     address: "Jl. Kenanga No. 5",
     age: "20 Bulan",
+    gender: "Laki-laki",
     deadline: "Tercatat: Kemarin, 09:15",
     status: "Selesai",
     tone: "bg-[#e9f7ef] text-[#006d42]",
     done: true,
   },
   {
+    id: "c6",
     name: "Siti Putri",
     initials: "SP",
     rt: "RT 02 / RW 03",
     address: "Jl. Durian No. 5",
     age: "8 Bulan",
+    gender: "Perempuan",
     deadline: "Batas Waktu: 3 Hari lagi",
     status: "Belum",
     tone: "bg-[#f3d36b] text-[#765b06]",
   },
   {
+    id: "c7",
     name: "Fahri Ramadhan",
     initials: "FR",
     rt: "RT 02 / RW 03",
     address: "Jl. Durian No. 9",
     age: "16 Bulan",
+    gender: "Laki-laki",
     deadline: "Batas Waktu: 4 Hari lagi",
     status: "Belum",
     tone: "bg-[#dceafe] text-[#4f6073]",
   },
   {
+    id: "c8",
     name: "Bima Nugraha",
     initials: "BN",
     rt: "RT 02 / RW 03",
     address: "Jl. Nangka No. 2",
     age: "10 Bulan",
+    gender: "Laki-laki",
     deadline: "Tercatat: Hari ini, 09:30",
     status: "Selesai",
     tone: "bg-[#edf0f2] text-[#63747a]",
     done: true,
   },
   {
+    id: "c9",
     name: "Citra Lestari",
     initials: "CL",
     rt: "RT 03 / RW 03",
     address: "Jl. Melati No. 8",
     age: "13 Bulan",
+    gender: "Perempuan",
     deadline: "Batas Waktu: 5 Hari lagi",
     status: "Belum",
     tone: "bg-[#fde2da] text-[#a64b39]",
   },
   {
+    id: "c10",
     name: "Gilang Prakoso",
     initials: "GP",
     rt: "RT 03 / RW 03",
     address: "Jl. Melati No. 14",
     age: "22 Bulan",
+    gender: "Laki-laki",
     deadline: "Batas Waktu: 6 Hari lagi",
     status: "Belum",
     tone: "bg-[#dff3eb] text-[#006d42]",
@@ -140,14 +162,14 @@ export function TugasBulanIni({
 }: {
   onHome: () => void
   onMaterial: () => void
-  onViewData: () => void
-  onInput: () => void
+  onViewData: (child?: KaderChildTask) => void
+  onInput: (child?: KaderChildTask) => void
   onProfile: () => void
 }) {
   const [activeRt, setActiveRt] = useState("Semua")
-  const [children, setChildren] = useState<Child[]>(initialChildren)
+  const [children, setChildren] = useState<KaderChildTask[]>(initialChildren)
   const [openMenuFor, setOpenMenuFor] = useState<string | null>(null)
-  const [childToDelete, setChildToDelete] = useState<Child | null>(null)
+  const [childToDelete, setChildToDelete] = useState<KaderChildTask | null>(null)
 
   const filters = ["Semua", "RT 01", "RT 02", "RT 03"]
 
@@ -307,7 +329,7 @@ export function TugasBulanIni({
 
               <button
                 type="button"
-                onClick={child.done ? onViewData : onInput}
+                onClick={() => (child.done ? onViewData(child) : onInput(child))}
                 className={`mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl font-['Manrope:SemiBold',sans-serif] text-sm font-semibold transition active:scale-[0.98] ${
                   child.done ? "bg-[#f3f4f5] text-[#63747a] hover:bg-[#e7e9e8]" : "bg-[#007c4a] text-white hover:bg-[#006d42]"
                 }`}

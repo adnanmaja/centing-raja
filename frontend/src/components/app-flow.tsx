@@ -517,8 +517,8 @@ function Flow() {
             <TugasBulanIni
               onHome={() => navigate("/kader")}
               onMaterial={() => navigate("/kader/materi")}
-              onViewData={() => navigate("/kader/tugas/data")}
-              onInput={() => navigate("/kader/tugas/input")}
+              onViewData={(child) => navigate("/kader/tugas/data", { state: { child } })}
+              onInput={(child) => navigate("/kader/tugas/input", { state: { child } })}
               onProfile={() => navigate("/kader/profil")}
             />
           </ProtectedRoute>
@@ -543,7 +543,7 @@ function Flow() {
           <ProtectedRoute allowedRoles={["kader"]}>
             <InputDataPengukuran
               onBack={() => navigate("/kader/tugas")}
-              onSaved={() => navigate("/kader/tugas/berhasil")}
+              onSaved={(data) => navigate("/kader/tugas/berhasil", { state: data })}
             />
           </ProtectedRoute>
         }
@@ -554,7 +554,7 @@ function Flow() {
           <ProtectedRoute allowedRoles={["kader"]}>
             <DataBerhasilDisimpan
               onHome={() => navigate("/kader")}
-              onDetails={() => navigate("/kader/tugas/data")}
+              onDetails={(data) => navigate("/kader/tugas/data", { state: data })}
               onMaterial={() => navigate("/kader/materi")}
               onProfile={() => navigate("/kader/profil")}
             />

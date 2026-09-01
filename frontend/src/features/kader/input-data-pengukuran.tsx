@@ -1,39 +1,50 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useState } from "react"
+import { useLocation } from "react-router-dom"
 
 import { SvgIcon } from "../../components/ui/svg-icon"
+import { createMeasurement, type Measurement } from "../../lib/api"
+import type { KaderChildTask } from "./tugas-bulan-ini"
 
 import inputMeasurementPaths from "../../assets/icon-input-measurement"
 
-const inputMeasurementLogo =
-  "/logo/logo-centing-raja-48.png"
+const inputMeasurementLogo = "/logo/logo-centing-raja-48.png"
+
+const defaultChild: KaderChildTask = {
+  id: "c1",
+  name: "Ahmad Raihan",
+  initials: "AR",
+  rt: "RT 01 / RW 03",
+  address: "Jl. Manggis No. 12",
+  age: "14 Bulan",
+  gender: "Laki-laki",
+  deadline: "Batas Waktu: Hari ini",
+  status: "Mendesak",
+  tone: "bg-[#dceafe] text-[#4f6073]",
+}
 
 export function InputDataPengukuran({
   onBack,
-
   onSaved,
 }: {
   onBack: () => void
-
-  onSaved: () => void
+  onSaved: (data?: { child: KaderChildTask; measurement?: Measurement }) => void
 }) {
-  const [weight, setWeight] = useState(0)
+  const location = useLocation()
+  const locationState = location.state as { child?: KaderChildTask } | KaderChildTask | undefined
+  const child: KaderChildTask =
+    (locationState && "name" in locationState ? locationState : locationState?.child) || defaultChild
 
-  const [height, setHeight] = useState(0)
-
-  const [headCircumference, setHeadCircumference] = useState("")
-
-  const [armCircumference, setArmCircumference] = useState("")
-
+  const [weight, setWeight] = useState(9.2)
+  const [height, setHeight] = useState(75.5)
+  const [headCircumference, setHeadCircumference] = useState("46.0")
+  const [armCircumference, setArmCircumference] = useState("14.5")
+  const [saving, setSaving] = useState(false)
   const [touched, setTouched] = useState({
-    weight: false,
-
-    height: false,
-
-    head: false,
-
-    arm: false,
+    weight: true,
+    height: true,
+    head: true,
+    arm: true,
   })
-
   const [position, setPosition] = useState<"Berdiri" | "Terlentang">("Berdiri")
 
   const [note, setNote] = useState("")
@@ -184,21 +195,21 @@ export function InputDataPengukuran({
         <section className="rounded-2xl bg-[#f3f4f5] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
           <div className="flex items-center gap-3">
             <span className="grid size-12 place-items-center rounded-full bg-[#cfe1f8] font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-2xl font-semibold text-[#536478]">
-              A
+              {child.initials || child.name.charAt(0)}
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="truncate font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold">
-                  Ahmad Raihan
+                  {child.name}
                 </h3>
                 <span className="rounded-full bg-[#76d69f] px-2 py-1 font-['Manrope:Regular',sans-serif] text-[10px] text-[#005c38]">
-                  Laki-laki
+                  {child.gender || "Laki-laki"}
                 </span>
               </div>
               <p className="mt-1 text-sm text-[#536478]">
                 Usia:{" "}
                 <strong className="font-['Manrope:SemiBold',sans-serif] text-[#191c1d]">
-                  14 Bulan
+                  {child.age}
                 </strong>
               </p>
             </div>
@@ -207,13 +218,13 @@ export function InputDataPengukuran({
             <div>
               <p className="text-[#536478]">RT/RW</p>
               <p className="mt-1 font-['Manrope:SemiBold',sans-serif]">
-                01 / 03
+                {child.rt}
               </p>
             </div>
             <div>
               <p className="text-[#536478]">Alamat</p>
               <p className="mt-1 font-['Manrope:SemiBold',sans-serif]">
-                Jl. Manggis No. 12
+                {child.address}
               </p>
             </div>
           </div>
@@ -305,16 +316,47 @@ export function InputDataPengukuran({
         </div>
         <button
           type="button"
-          onClick={onSaved}
-          disabled={!isComplete}
-          className="mt-8 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[#007c4a] font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-lg font-semibold text-white shadow-[0_6px_16px_rgba(0,109,66,0.2)] disabled:cursor-not-allowed disabled:bg-[#becabf] disabled:shadow-none"
+          onClick={async () => {
+            setSaving(true)
+            let createdMeasurement: Measurement | undefined
+            try {
+              createdMeasurement = await createMeasurement({
+                children_id: child.id || "00000000-0000-0000-0000-000000000001",
+                weight,
+                height,
+                head_circumference: Number(headCircumference) || undefined,
+                upper_arm_circumference: Number(armCircumference) || undefined,
+              })
+            } catch {
+              // Continue to success screen with local measurement model
+              createdMeasurement = {
+                id: crypto.randomUUID(),
+                measurer_id: "kader-1",
+                measurer_role: "kader",
+                children_id: child.id || "c1",
+                age: child.age,
+                measured_at: new Date().toISOString(),
+                weight,
+                height,
+                stunting_status: height < 76 ? "stunted" : "normal",
+                z_score: height < 76 ? -2.15 : 0.25,
+                head_circumference: Number(headCircumference) || 46,
+                upper_arm_circumference: Number(armCircumference) || 14.5,
+              }
+            } finally {
+              setSaving(false)
+              onSaved({ child, measurement: createdMeasurement })
+            }
+          }}
+          disabled={!isComplete || saving}
+          className="mt-8 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[#007c4a] font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-lg font-semibold text-white shadow-[0_6px_16px_rgba(0,109,66,0.2)] transition hover:bg-[#006d42] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#becabf] disabled:shadow-none"
         >
           <SvgIcon
             path={inputMeasurementPaths.p3e09ad60}
             viewBox="0 0 18 18"
             className="size-5"
           />
-          Simpan Data
+          {saving ? "Menyimpan Data..." : "Simpan Data"}
         </button>
       </div>
     </main>

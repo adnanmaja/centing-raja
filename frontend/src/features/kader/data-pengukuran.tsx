@@ -1,8 +1,11 @@
+import { useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
 import { SvgIcon } from "../../components/ui/svg-icon"
+import { formatStuntingStatus, type Measurement } from "../../lib/api"
+import type { KaderChildTask } from "./tugas-bulan-ini"
 
 import measurementDataPaths from "../../assets/icon-measurement-data"
 
@@ -17,19 +20,42 @@ export function DataPengukuran({
   onMaterial: () => void
   onProfile: () => void
 }) {
+  const location = useLocation()
+  const stateData = location.state as
+    | { child?: KaderChildTask; measurement?: Measurement }
+    | undefined
+
+  const child = stateData?.child || {
+    name: "Ahmad Raihan",
+    initials: "AR",
+    age: "14 Bulan",
+    gender: "Laki-laki",
+    rt: "RT 01 / RW 03",
+  }
+
+  const measurement = stateData?.measurement
+  const heightVal = measurement?.height !== undefined ? String(measurement.height) : "75.5"
+  const weightVal = measurement?.weight !== undefined ? String(measurement.weight) : "9.2"
+  const headVal = measurement?.head_circumference !== undefined ? String(measurement.head_circumference) : "46"
+  const armVal = measurement?.upper_arm_circumference !== undefined ? String(measurement.upper_arm_circumference) : "14.5"
+
+  const stunting = formatStuntingStatus(measurement?.stunting_status || "stunted")
   const metrics = [
-    { label: "Tinggi Badan", value: "75.5", unit: "cm", tone: "text-[#007c4a]" },
-    { label: "Berat Badan", value: "9.2", unit: "kg", tone: "text-[#007c4a]" },
-    { label: "Lingkar Kepala", value: "46", unit: "cm", tone: "text-[#191c1d]" },
-    { label: "Lingkar Lengan Atas", value: "14.5", unit: "cm", tone: "text-[#191c1d]" },
+    { label: "Tinggi Badan", value: heightVal, unit: "cm", tone: "text-[#007c4a]" },
+    { label: "Berat Badan", value: weightVal, unit: "kg", tone: "text-[#007c4a]" },
+    { label: "Lingkar Kepala", value: headVal, unit: "cm", tone: "text-[#191c1d]" },
+    { label: "Lingkar Lengan Atas", value: armVal, unit: "cm", tone: "text-[#191c1d]" },
   ]
 
   const nutrition = [
+    { label: "Tinggi / Umur (TB/U)", value: stunting.shortLabel, tone: `${stunting.badgeBg} ${stunting.badgeText}` },
+    {
+      label: "Z-Score TB/U",
+      value: measurement?.z_score !== undefined ? `${measurement.z_score} SD` : "-2.15 SD",
+      tone: "bg-[#edf0ee] text-[#191c1d]",
+    },
     { label: "Berat / Umur (BB/U)", value: "Normal", tone: "bg-[#76d69f] text-[#006d42]" },
-    { label: "Tinggi / Umur (TB/U)", value: "Stunting", tone: "bg-[#ffdcd8] text-[#b3261e]" },
-    { label: "Berat / Tinggi (BB/TB)", value: "Berisiko", tone: "bg-[#f0cb69] text-[#765b06]" },
   ]
-
   return (
     <main className="min-h-svh bg-[#f8f9fa] pb-28 pt-16 text-[#191c1d]" aria-label="Data Pengukuran Ahmad Raihan">
       <ProfileHeader title="Data Pengukuran" onBack={onBack} />
@@ -43,21 +69,21 @@ export function DataPengukuran({
         <section className="rounded-2xl bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:p-6">
           <div className="flex items-center gap-4">
             <span className="grid size-16 shrink-0 place-items-center rounded-full bg-[#dceafe] font-['Manrope:SemiBold',sans-serif] text-lg text-[#4f6073]">
-              AR
+              {child.initials || child.name.charAt(0)}
             </span>
             <div>
               <h2 className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-lg font-semibold">
-                Ahmad Raihan
+                {child.name}
               </h2>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#3e4941]">
                 <span className="inline-flex items-center gap-1.5">
                   <SvgIcon path={measurementDataPaths.p2d24f5c0} viewBox="0 0 12 13.3333" className="h-4 w-3 text-[#3e4941]" />
-                  14 Bulan
+                  {child.age}
                 </span>
                 <span className="size-1 rounded-full bg-[#becabf]" />
                 <span className="inline-flex items-center gap-1.5">
                   <SvgIcon path={measurementDataPaths.p3d204080} viewBox="0 0 10.6667 10.6667" className="size-3 text-[#3e4941]" />
-                  Laki-laki
+                  {child.gender || "Laki-laki"}
                 </span>
               </div>
             </div>

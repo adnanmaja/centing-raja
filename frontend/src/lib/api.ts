@@ -273,6 +273,17 @@ export async function getChildMeasurements(childId: string): Promise<Measurement
   });
 }
 
+export async function getKaderMeasurements(): Promise<Measurement[]> {
+  return apiClient<Measurement[]>("/kader/measurements", {
+    method: "GET",
+  });
+}
+
+export async function getNakesMeasurements(limit = 100, offset = 0): Promise<Measurement[]> {
+  return apiClient<Measurement[]>(`/nakes/measurements?limit=${limit}&offset=${offset}`, {
+    method: "GET",
+  });
+}
 export async function getMeasurementById(id: string): Promise<Measurement> {
   return apiClient<Measurement>(`/nakes/measurements/${id}`, {
     method: "GET",

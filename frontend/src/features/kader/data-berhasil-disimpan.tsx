@@ -1,8 +1,11 @@
+import { useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Check } from "lucide-react"
 
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
+import type { Measurement } from "../../lib/api"
+import type { KaderChildTask } from "./tugas-bulan-ini"
 
 export function DataBerhasilDisimpan({
   onHome,
@@ -11,10 +14,15 @@ export function DataBerhasilDisimpan({
   onProfile,
 }: {
   onHome: () => void
-  onDetails: () => void
+  onDetails: (data?: { child?: KaderChildTask; measurement?: Measurement }) => void
   onMaterial: () => void
   onProfile: () => void
 }) {
+  const location = useLocation()
+  const stateData = location.state as
+    | { child?: KaderChildTask; measurement?: Measurement }
+    | undefined
+  const childName = stateData?.child?.name || "Ahmad Raihan"
   return (
     <main className="flex min-h-svh flex-col bg-[#f8f9fa] pb-20 pt-16 text-[#191c1d]" aria-label="Data Berhasil Disimpan">
       <ProfileHeader title="Beranda" />
@@ -69,7 +77,7 @@ export function DataBerhasilDisimpan({
                 Data Disimpan Untuk
               </p>
               <h2 className="mt-1 font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold">
-                Ahmad Raihan
+                {childName}
               </h2>
             </div>
           </motion.article>
@@ -90,7 +98,7 @@ export function DataBerhasilDisimpan({
           </button>
           <button
             type="button"
-            onClick={onDetails}
+            onClick={() => onDetails(stateData)}
             className="min-h-12 w-full rounded-full border border-[#007c4a] bg-white font-['Manrope:SemiBold',sans-serif] text-base font-semibold text-[#007c4a] transition hover:bg-[#e9f7ef] active:scale-[0.98]"
           >
             Lihat Detail Input
