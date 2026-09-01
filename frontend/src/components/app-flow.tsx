@@ -8,7 +8,9 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom"
-
+import { AuthProvider, useAuth } from "../context/auth-context"
+import { getRoleDashboardPath } from "../lib/auth-utils"
+import type { UserProfile } from "../lib/api"
 import { Loading } from "../features/onboarding/loading"
 import { Welcome } from "../features/onboarding/welcome"
 import { TentangCentingRaja } from "../features/onboarding/tentang-centing-raja"
@@ -41,7 +43,12 @@ import { InputPengukuranOrangTua } from "../features/parent/input-pengukuran-ora
 import { DetailPertumbuhan } from "../features/parent/detail-pertumbuhan"
 import { MateriEdukasi } from "../features/parent/materi-edukasi"
 import { DetailMateriEdukasi } from "../features/parent/detail-materi-edukasi"
-import { parentMaterialItems } from "../features/parent/parent-materials"
+import {
+  parentMaterialItems,
+  normalizeEducationMaterial,
+  type ParentMaterialItem,
+} from "../features/parent/parent-materials"
+import { getEducationMaterialById } from "../lib/api"
 import { ProfileParentScreen } from "../features/parent/profile-parent-screen"
 import { EditProfileParentScreen } from "../features/parent/edit-profile-parent-screen"
 import { ChangePasswordParentScreen } from "../features/parent/change-password-parent-screen"
@@ -133,26 +140,104 @@ function AppReveal() {
 
 function OtpRoute() {
   const location = useLocation()
-
   const navigate = useNavigate()
-
-  const state = (location.state ?? {}) as { phone?: string }
+  const state = (location.state ?? {}) as { phone?: string; isRegistration?: boolean }
 
   return (
     <VerifikasiOtp
       phone={state.phone ?? ""}
-      onBack={() => navigate("/auth/register")}
-      onVerified={() => navigate("/auth/sukses")}
+      onBack={() => navigate(state.isRegistration ? "/auth/register" : "/auth/login")}
+      onVerified={(user: UserProfile) => {
+        if (state.isRegistration) {
+          navigate("/auth/sukses")
+        } else {
+          navigate(getRoleDashboardPath(user.role))
+        }
+      }}
     />
   )
 }
 
+function ProtectedRoute({
+  allowedRoles,
+  children,
+}: {
+  allowedRoles: Array<"tenaga_kesehatan" | "kader" | "orang_tua">
+  children: React.ReactNode
+}) {
+  const { isAuthenticated, user } = useAuth()
+
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/auth/login" replace />
+  }
+
+  if (!allowedRoles.includes(user.role)) {
+    return <Navigate to={getRoleDashboardPath(user.role)} replace />
+  }
+
+  return <>{children}</>
+}
+function KaderProfileRoute() {
+  const navigate = useNavigate()
+  const { logout } = useAuth()
+
+  return (
+    <ProfileKader
+      onHome={() => navigate("/kader")}
+      onMaterial={() => navigate("/kader/materi")}
+      onEdit={() => navigate("/kader/profil/edit")}
+      onPassword={() => navigate("/kader/profil/kata-sandi")}
+      onHelp={() => navigate("/kader/bantuan")}
+      onPrivacy={() => navigate("/kader/privasi")}
+      onLogout={() => {
+        logout()
+        navigate("/auth")
+      }}
+    />
+  )
+}
 function MaterialDetailRoute() {
   const { id } = useParams()
-
   const navigate = useNavigate()
+  const [material, setMaterial] = useState<ParentMaterialItem | null>(() => {
+    return parentMaterialItems.find((item) => item.id === id) || null
+  })
+  const [isLoading, setIsLoading] = useState(!material)
 
-  const material = parentMaterialItems.find((item) => item.id === id)
+  useEffect(() => {
+    if (!id) return
+    const local = parentMaterialItems.find((item) => item.id === id)
+    if (local) {
+      setMaterial(local)
+      setIsLoading(false)
+      return
+    }
+
+    let active = true
+    getEducationMaterialById(id)
+      .then((data) => {
+        if (active && data) {
+          setMaterial(normalizeEducationMaterial(data))
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to fetch material by id:", err)
+      })
+      .finally(() => {
+        if (active) setIsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [id])
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-[#f8f9fa] text-xs text-[#536478]">
+        Memuat materi...
+      </div>
+    )
+  }
 
   if (!material) return <Navigate to="/orang-tua/materi" replace />
 
@@ -167,9 +252,9 @@ function MaterialDetailRoute() {
 
 function Flow() {
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [parentChildRegistered, setParentChildRegistered] = useState(false)
-
   return (
     <Routes>
       <Route path="/" element={<SplashGate />} />
@@ -238,17 +323,7 @@ function Flow() {
         element={
           <MasukCentingRaja
             onBack={() => navigate("/auth")}
-            onLogin={(role) =>
-              navigate(
-                role === "Kader"
-                  ? "/kader"
-                  : role === "Nakes"
-                    ? "/nakes"
-                    : role === "Orang Tua"
-                      ? "/orang-tua"
-                      : "/auth",
-              )
-            }
+            onLogin={(phone) => navigate("/auth/otp", { state: { phone, isRegistration: false } })}
           />
         }
       />
@@ -258,7 +333,7 @@ function Flow() {
           <DaftarCentingRaja
             onBack={() => navigate("/auth/login")}
             onReturn={() => navigate("/auth")}
-            onVerify={(phone) => navigate("/auth/otp", { state: { phone } })}
+            onVerify={(phone) => navigate("/auth/otp", { state: { phone, isRegistration: true } })}
           />
         }
       />
@@ -267,262 +342,433 @@ function Flow() {
         path="/auth/sukses"
         element={<DaftarBerhasil onContinue={() => navigate("/auth/login")} />}
       />
+      {/* Orang Tua Routes */}
       <Route
         path="/orang-tua"
         element={
-          <BerandaOrangTua
-            onMaterial={() => navigate("/orang-tua/materi")}
-            onInput={() =>
-              navigate(
-                parentChildRegistered
-                  ? "/orang-tua/input-pengukuran"
-                  : "/orang-tua/input-anak",
-              )
-            }
-          />
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <BerandaOrangTua
+              onMaterial={() => navigate("/orang-tua/materi")}
+              onInput={() =>
+                navigate(
+                  parentChildRegistered
+                    ? "/orang-tua/input-pengukuran"
+                    : "/orang-tua/input-anak",
+                )
+              }
+            />
+          </ProtectedRoute>
         }
       />
-      <Route path="/orang-tua/profil" element={<ProfileParentScreen />} />
+      <Route
+        path="/orang-tua/profil"
+        element={
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <ProfileParentScreen />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/orang-tua/profil/edit"
-        element={<EditProfileParentScreen />}
+        element={
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <EditProfileParentScreen />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/orang-tua/profil/kata-sandi"
-        element={<ChangePasswordParentScreen />}
+        element={
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <ChangePasswordParentScreen />
+          </ProtectedRoute>
+        }
       />
-      <Route path="/orang-tua/bantuan" element={<HelpParentScreen />} />
-      <Route path="/orang-tua/privasi" element={<PrivacyParentScreen />} />
+      <Route
+        path="/orang-tua/bantuan"
+        element={
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <HelpParentScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/orang-tua/privasi"
+        element={
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <PrivacyParentScreen />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/orang-tua/input-anak"
         element={
-          <InputDataAnak
-            onSaved={() => {
-              setParentChildRegistered(true)
-
-              navigate("/orang-tua/input-anak/berhasil")
-            }}
-            onHome={() => navigate("/orang-tua")}
-            onMaterial={() => navigate("/orang-tua/materi")}
-            onInput={() => undefined}
-          />
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <InputDataAnak
+              onSaved={() => {
+                setParentChildRegistered(true)
+                navigate("/orang-tua/input-anak/berhasil")
+              }}
+              onHome={() => navigate("/orang-tua")}
+              onMaterial={() => navigate("/orang-tua/materi")}
+              onInput={() => undefined}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/orang-tua/input-anak/berhasil"
         element={
-          <DataAnakBerhasilDisimpan
-            child
-            onContinue={() => navigate("/orang-tua/input-pengukuran")}
-            onHome={() => navigate("/orang-tua")}
-            onMaterial={() => navigate("/orang-tua/materi")}
-            onInput={() => navigate("/orang-tua/input-pengukuran")}
-          />
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <DataAnakBerhasilDisimpan
+              child
+              onContinue={() => navigate("/orang-tua/input-pengukuran")}
+              onHome={() => navigate("/orang-tua")}
+              onMaterial={() => navigate("/orang-tua/materi")}
+              onInput={() => navigate("/orang-tua/input-pengukuran")}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/orang-tua/input-pengukuran"
         element={
-          <InputPengukuranOrangTua
-            onBack={() => navigate("/orang-tua")}
-            onSaved={() => navigate("/orang-tua/input-pengukuran/berhasil")}
-            onHome={() => navigate("/orang-tua")}
-            onMaterial={() => navigate("/orang-tua/materi")}
-            onInput={() => undefined}
-          />
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <InputPengukuranOrangTua
+              onBack={() => navigate("/orang-tua")}
+              onSaved={() => navigate("/orang-tua/input-pengukuran/berhasil")}
+              onHome={() => navigate("/orang-tua")}
+              onMaterial={() => navigate("/orang-tua/materi")}
+              onInput={() => undefined}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/orang-tua/input-pengukuran/berhasil"
         element={
-          <DataAnakBerhasilDisimpan
-            onContinue={() => navigate("/orang-tua/detail-pertumbuhan")}
-            onHome={() => navigate("/orang-tua")}
-            onMaterial={() => navigate("/orang-tua/materi")}
-            onInput={() => navigate("/orang-tua/input-pengukuran")}
-          />
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <DataAnakBerhasilDisimpan
+              child={false}
+              onContinue={() => navigate("/orang-tua/detail-pertumbuhan", { state: location.state })}
+              onHome={() => navigate("/orang-tua")}
+              onMaterial={() => navigate("/orang-tua/materi")}
+              onInput={() => navigate("/orang-tua/input-pengukuran")}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/orang-tua/detail-pertumbuhan"
         element={
-          <DetailPertumbuhan
-            onBack={() => navigate("/orang-tua/input-pengukuran/berhasil")}
-            onViewChart={() => navigate("/orang-tua")}
-          />
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <DetailPertumbuhan
+              onBack={() => navigate("/orang-tua")}
+              onViewChart={() => navigate("/orang-tua")}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/orang-tua/materi"
         element={
-          <MateriEdukasi
-            onHome={() => navigate("/orang-tua")}
-            onInput={() =>
-              navigate(
-                parentChildRegistered
-                  ? "/orang-tua/input-pengukuran"
-                  : "/orang-tua/input-anak",
-              )
-            }
-            onOpen={(material) => navigate(`/orang-tua/materi/${material.id}`)}
-          />
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <MateriEdukasi
+              onHome={() => navigate("/orang-tua")}
+              onInput={() =>
+                navigate(
+                  parentChildRegistered
+                    ? "/orang-tua/input-pengukuran"
+                    : "/orang-tua/input-anak",
+                )
+              }
+              onOpen={(material) => navigate(`/orang-tua/materi/${material.id}`)}
+            />
+          </ProtectedRoute>
         }
       />
-      <Route path="/orang-tua/materi/:id" element={<MaterialDetailRoute />} />
-            <Route
+      <Route
+        path="/orang-tua/materi/:id"
+        element={
+          <ProtectedRoute allowedRoles={["orang_tua"]}>
+            <MaterialDetailRoute />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Kader Routes */}
+      <Route
         path="/kader"
         element={
-          <BerandaKader
-            onMaterial={() => navigate("/kader/materi")}
-            onTasks={() => navigate("/kader/tugas")}
-            onProfile={() => navigate("/kader/profil")}
-            onInput={() => navigate("/kader/tugas/input")}
-          />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <BerandaKader
+              onMaterial={() => navigate("/kader/materi")}
+              onTasks={() => navigate("/kader/tugas")}
+              onProfile={() => navigate("/kader/profil")}
+              onInput={() => navigate("/kader/tugas/input")}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/kader/tugas"
         element={
-          <TugasBulanIni
-            onHome={() => navigate("/kader")}
-            onMaterial={() => navigate("/kader/materi")}
-            onViewData={() => navigate("/kader/tugas/data")}
-            onInput={() => navigate("/kader/tugas/input")}
-            onProfile={() => navigate("/kader/profil")}
-          />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <TugasBulanIni
+              onHome={() => navigate("/kader")}
+              onMaterial={() => navigate("/kader/materi")}
+              onViewData={(child) => navigate("/kader/tugas/data", { state: { child } })}
+              onInput={(child) => navigate("/kader/tugas/input", { state: { child } })}
+              onProfile={() => navigate("/kader/profil")}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/kader/tugas/data"
         element={
-          <DataPengukuran
-            onBack={() => navigate("/kader/tugas")}
-            onHome={() => navigate("/kader")}
-            onMaterial={() => navigate("/kader/materi")}
-            onProfile={() => navigate("/kader/profil")}
-          />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <DataPengukuran
+              onBack={() => navigate("/kader/tugas")}
+              onHome={() => navigate("/kader")}
+              onMaterial={() => navigate("/kader/materi")}
+              onProfile={() => navigate("/kader/profil")}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/kader/tugas/input"
         element={
-          <InputDataPengukuran
-            onBack={() => navigate("/kader/tugas")}
-            onSaved={() => navigate("/kader/tugas/berhasil")}
-          />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <InputDataPengukuran
+              onBack={() => navigate("/kader/tugas")}
+              onSaved={(data) => navigate("/kader/tugas/berhasil", { state: data })}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/kader/tugas/berhasil"
         element={
-          <DataBerhasilDisimpan
-            onHome={() => navigate("/kader")}
-            onDetails={() => navigate("/kader/tugas/data")}
-            onMaterial={() => navigate("/kader/materi")}
-            onProfile={() => navigate("/kader/profil")}
-          />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <DataBerhasilDisimpan
+              onHome={() => navigate("/kader")}
+              onDetails={(data) => navigate("/kader/tugas/data", { state: data })}
+              onMaterial={() => navigate("/kader/materi")}
+              onProfile={() => navigate("/kader/profil")}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/kader/profil"
         element={
-          <ProfileKader
-            onHome={() => navigate("/kader")}
-            onMaterial={() => navigate("/kader/materi")}
-            onEdit={() => navigate("/kader/profil/edit")}
-            onPassword={() => navigate("/kader/profil/kata-sandi")}
-            onHelp={() => navigate("/kader/bantuan")}
-            onPrivacy={() => navigate("/kader/privasi")}
-            onLogout={() => navigate("/auth")}
-          />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <KaderProfileRoute />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/kader/bantuan"
         element={
-          <PusatBantuanKader
-            onHome={() => navigate("/kader")}
-            onMaterial={() => navigate("/kader/materi")}
-            onTasks={() => navigate("/kader/tugas")}
-            onProfile={() => navigate("/kader/profil")}
-          />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <PusatBantuanKader
+              onHome={() => navigate("/kader")}
+              onMaterial={() => navigate("/kader/materi")}
+              onTasks={() => navigate("/kader/tugas")}
+              onProfile={() => navigate("/kader/profil")}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/kader/privasi"
         element={
-          <KebijakanPrivasiKader
-            onHome={() => navigate("/kader")}
-            onMaterial={() => navigate("/kader/materi")}
-            onTasks={() => navigate("/kader/tugas")}
-            onProfile={() => navigate("/kader/profil")}
-          />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <KebijakanPrivasiKader
+              onHome={() => navigate("/kader")}
+              onMaterial={() => navigate("/kader/materi")}
+              onTasks={() => navigate("/kader/tugas")}
+              onProfile={() => navigate("/kader/profil")}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/kader/profil/edit"
-        element={<EditProfileKader onBack={() => navigate("/kader/profil")} />}
+        element={
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <EditProfileKader onBack={() => navigate("/kader/profil")} />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/kader/profil/kata-sandi"
         element={
-          <UbahKataSandiKader onBack={() => navigate("/kader/profil")} />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <UbahKataSandiKader onBack={() => navigate("/kader/profil")} />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/kader/materi"
         element={
-          <MateriKader
-            onHome={() => navigate("/kader")}
-            onTasks={() => navigate("/kader/tugas")}
-            onProfile={() => navigate("/kader/profil")}
-            onStartQuiz={() => navigate("/kader/materi/kuis")}
-          />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <MateriKader
+              onHome={() => navigate("/kader")}
+              onTasks={() => navigate("/kader/tugas")}
+              onProfile={() => navigate("/kader/profil")}
+              onStartQuiz={() => navigate("/kader/materi/kuis")}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/kader/materi/kuis"
         element={
-          <KuisKader
-            onBack={() => navigate("/kader/materi")}
-            onComplete={() => navigate("/kader/materi/hasil")}
-          />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <KuisKader
+              onBack={() => navigate("/kader/materi")}
+              onComplete={(resultData) => navigate("/kader/materi/hasil", { state: resultData })}
+            />
+          </ProtectedRoute>
         }
       />
       <Route
         path="/kader/materi/hasil"
         element={
-          <ResultKader
-            onBack={() => navigate("/kader/materi")}
-            onHome={() => navigate("/kader")}
-          />
+          <ProtectedRoute allowedRoles={["kader"]}>
+            <ResultKader
+              onBack={() => navigate("/kader/materi")}
+              onHome={() => navigate("/kader")}
+            />
+          </ProtectedRoute>
         }
       />
-      <Route path="/nakes" element={<BerandaNakesScreen />} />
-      <Route path="/nakes/data" element={<DataWilayahScreen />} />
+
+      {/* Nakes Routes */}
+      <Route
+        path="/nakes"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <BerandaNakesScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nakes/data"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <DataWilayahScreen />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/nakes/rekapitulasi"
-        element={<RekapitulasiDataBalitaScreen />}
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <RekapitulasiDataBalitaScreen />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/nakes/sebaran-stunting"
-        element={<AnalisisSebaranStuntingScreen />}
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <AnalisisSebaranStuntingScreen />
+          </ProtectedRoute>
+        }
       />
-      <Route path="/nakes/data/rt" element={<DataAnakRtScreen />} />
-      <Route path="/nakes/input" element={<InputDataAnakNakesScreen />} />
+      <Route
+        path="/nakes/data/rt"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <DataAnakRtScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nakes/input"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <InputDataAnakNakesScreen />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/nakes/input/berhasil"
-        element={<InputDataAnakBerhasilScreen />}
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <InputDataAnakBerhasilScreen />
+          </ProtectedRoute>
+        }
       />
-      <Route path="/nakes/pengukuran" element={<InputPengukuranNakesScreen />} />
-      <Route path="/nakes/pengukuran/berhasil" element={<HasilPengukuranNakesScreen />} />
-      <Route path="/nakes/pertumbuhan" element={<DetailPertumbuhanNakesScreen />} />
-      <Route path="/nakes/grafik-pertumbuhan" element={<GrafikPertumbuhanNakesScreen />} />
-      <Route path="/nakes/akun" element={<AkunNakesScreen />} />
-      <Route path="/nakes/tugas/baru" element={<TugasBaruScreen />} />
-      <Route path="/nakes/edukasi/materi/baru" element={<MateriBaruScreen />} />
-      <Route path="/nakes/edukasi/kuis/baru" element={<KuisBaruScreen />} />
-      
+      <Route
+        path="/nakes/pengukuran"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <InputPengukuranNakesScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nakes/pengukuran/berhasil"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <HasilPengukuranNakesScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nakes/pertumbuhan"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <DetailPertumbuhanNakesScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nakes/grafik-pertumbuhan"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <GrafikPertumbuhanNakesScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nakes/akun"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <AkunNakesScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nakes/tugas/baru"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <TugasBaruScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nakes/edukasi/materi/baru"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <MateriBaruScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nakes/edukasi/kuis/baru"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <KuisBaruScreen />
+          </ProtectedRoute>
+        }
+      />
+
       <Route path="*" element={<Navigate to="/" replace />} />
 
     </Routes>
@@ -531,9 +777,11 @@ function Flow() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppReveal />
-      <Flow />
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppReveal />
+        <Flow />
+      </BrowserRouter>
+    </AuthProvider>
   )
 }

@@ -1,10 +1,15 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 
 import { ParentBottomNav } from "../../components/parent/parent-bottom-nav"
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
 import { SvgIcon } from "../../components/ui/svg-icon"
-import { parentMaterialItems } from "./parent-materials"
+import { getEducationMaterials } from "../../lib/api"
+import {
+  parentMaterialItems,
+  normalizeEducationMaterial,
+  type ParentMaterialItem,
+} from "./parent-materials"
 
 const parentMaterialsLogo = "/logo/logo-centing-raja.png"
 
@@ -15,15 +20,38 @@ export function MateriEdukasi({
 }: {
   onHome: () => void
   onInput: () => void
-  onOpen: (material: typeof parentMaterialItems[number]) => void
+  onOpen: (material: ParentMaterialItem) => void
 }) {
   const [filter, setFilter] = useState("Semua")
+  const [materials, setMaterials] = useState<ParentMaterialItem[]>(parentMaterialItems)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    getEducationMaterials(50, 0)
+      .then((data) => {
+        if (active && Array.isArray(data) && data.length > 0) {
+          const normalizedApi = data.map(normalizeEducationMaterial)
+          const existingIds = new Set(normalizedApi.map((m) => m.id))
+          const merged = [...normalizedApi, ...parentMaterialItems.filter((m) => !existingIds.has(m.id))]
+          setMaterials(merged)
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to fetch education materials:", err)
+      })
+      .finally(() => {
+        if (active) setIsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   const filters = ["Semua", "Gizi & MPASI", "Pola Asuh", "Sanitasi"]
 
   const visible =
-    filter === "Semua" ? parentMaterialItems : parentMaterialItems.filter((item) => item.category === filter)
-
+    filter === "Semua" ? materials : materials.filter((item) => item.category === filter)
   return (
     <motion.main
       initial={{ opacity: 0, y: 24 }}
@@ -80,10 +108,14 @@ export function MateriEdukasi({
               className="flex min-h-[145px] flex-col rounded-xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.03)]"
             >
               <div className="flex gap-3">
-                <span className={`grid size-10 shrink-0 place-items-center rounded-full ${item.iconBox}`}>
-                  <SvgIcon path={item.icon} viewBox="0 0 21 25.083" className="size-5" />
+                <span className={`grid size-10 shrink-0 place-items-center rounded-full ${item.iconBox || "bg-[#76d69f] text-[#005c38]"}`}>
+                  {item.icon ? (
+                    <SvgIcon path={item.icon} viewBox="0 0 17 21" className="size-4" />
+                  ) : (
+                    <span>📖</span>
+                  )}
                 </span>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <h2 className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-base font-semibold leading-5">
                     {item.title}
                   </h2>

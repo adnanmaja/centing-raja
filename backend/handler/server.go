@@ -19,8 +19,10 @@ type Server struct {
 }
 
 func NewServer(svcs *service.Services) *Server {
+	router := gin.Default()
 	server := &Server{
 		services: svcs,
+		router:   router,
 	}
 
 	authHandler := NewAuthHandler(svcs.Auth)
@@ -29,7 +31,6 @@ func NewServer(svcs *service.Services) *Server {
 	measurementHandler := NewMeasurementHandler(svcs.Measurement)
 	notificationHandler := NewNotificationHandler(svcs.Notification)
 	quizHandler := NewQuizHandler(svcs.Quiz)
-	router := gin.Default()
 	router.Use(cors.New(cors.Config{
 		AllowAllOrigins:  true,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
@@ -97,23 +98,19 @@ func NewServer(svcs *service.Services) *Server {
 	kader := protected.Group("/kader")
 	kader.Use(RequireRole(db.UserRoleKader))
 	kader.GET("/submissions", quizHandler.ListQuizSubmissionsByKader)
+	kader.POST("/measurements", measurementHandler.CreateMeasurement)
+	kader.GET("/children/:id/measurements", measurementHandler.ListMeasurementsByChildID)
+	kader.GET("/measurements", measurementHandler.GetMeasurements)
 
 	ortu := protected.Group("/ortu")
 	ortu.Use(RequireRole(db.UserRoleOrangTua))
 	ortu.GET("/child", childrenHandler.ChildrenByParent)
+	ortu.POST("/child", childrenHandler.CreateChildren)
+	ortu.POST("/measurements", measurementHandler.CreateMeasurement)
 	ortu.GET("/children/:id/measurements", measurementHandler.ListMeasurementsByChildID)
-
-	server.router = router
 	return server
 }
 
-// healthCheck godoc
-// @Summary Health check
-// @Description Check server operational status
-// @Tags Health
-// @Produce json
-// @Success 200 {object} StatusResponse
-// @Router / [get]
 func healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "aman"})
 }

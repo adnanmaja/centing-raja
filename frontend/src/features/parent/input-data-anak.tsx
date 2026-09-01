@@ -4,6 +4,7 @@ import { Check } from "lucide-react"
 import { ParentBottomNav } from "../../components/parent/parent-bottom-nav"
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
 import { SvgIcon } from "../../components/ui/svg-icon"
+import { createChild } from "../../lib/api"
 import childInputPaths from "../../assets/icon-child-input"
 
 const childInputLogo = "/logo/logo-centing-raja.png"
@@ -20,14 +21,17 @@ export function InputDataAnak({
   onMaterial: () => void
   onInput: () => void
 }) {
+  const [nik, setNik] = useState("")
   const [name, setName] = useState("")
   const [age, setAge] = useState("")
   const [gender, setGender] = useState("Laki-laki")
   const [rt, setRt] = useState("")
   const [rw, setRw] = useState("")
   const [address, setAddress] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const complete = name.trim() && age && rt && rw && address.trim()
+  const complete = nik.length >= 16 && name.trim() && age && rt && rw && address.trim()
 
   const field =
     "mt-1 min-h-11 w-full rounded-xl bg-[#f3f4f5] px-3 font-['Manrope:Regular',sans-serif] text-sm text-[#191c1d] outline-none placeholder:text-[#b3bdb7] focus:ring-2 focus:ring-[#006d42]/30"
@@ -60,6 +64,16 @@ export function InputDataAnak({
               <SvgIcon path={childInputPaths.p2558b1c0} viewBox="0 0 15 15" className="size-4" />
               Identitas Anak
             </h2>
+            <label className="mt-4 block font-['Manrope:Regular',sans-serif] text-xs text-[#3e4941]">
+              Nomor Induk Kependudukan (NIK)
+              <input
+                value={nik}
+                onChange={(e) => setNik(e.target.value.replace(/\D/g, "").slice(0, 16))}
+                inputMode="numeric"
+                placeholder="16 digit NIK anak"
+                className={field}
+              />
+            </label>
             <label className="mt-4 block font-['Manrope:Regular',sans-serif] text-xs text-[#3e4941]">
               Nama Lengkap
               <input
@@ -137,15 +151,47 @@ export function InputDataAnak({
           </section>
         </div>
 
+        {errorMessage && (
+          <div className="mt-4 rounded-xl bg-red-50 p-3 text-center text-xs font-semibold text-red-600 font-['Manrope:SemiBold',sans-serif]">
+            {errorMessage}
+          </div>
+        )}
+
         <div className="mt-7 w-full">
           <button
             type="button"
-            disabled={!complete}
-            onClick={onSaved}
+            disabled={!complete || isSubmitting}
+            onClick={async () => {
+              if (!complete || isSubmitting) return
+              setIsSubmitting(true)
+              setErrorMessage(null)
+              try {
+                const months = parseInt(age, 10) || 0
+                const birthDateObj = new Date()
+                birthDateObj.setMonth(birthDateObj.getMonth() - months)
+                const birth_date = birthDateObj.toISOString()
+                const fullAddress = `RT ${rt} / RW ${rw}, ${address}`
+                const genderBackend = gender === "Laki-laki" ? "L" : "P"
+
+                await createChild({
+                  nik,
+                  full_name: name,
+                  gender: genderBackend,
+                  home_address: fullAddress,
+                  birth_date,
+                })
+                onSaved()
+              } catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : "Gagal menyimpan data anak."
+                setErrorMessage(msg)
+              } finally {
+                setIsSubmitting(false)
+              }
+            }}
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#007c4a] font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-base font-semibold text-white shadow-[0_4px_8px_rgba(0,109,66,0.18)] disabled:opacity-45"
           >
             <Check className="size-4" />
-            Simpan Data
+            {isSubmitting ? "Menyimpan..." : "Simpan Data"}
           </button>
         </div>
       </div>

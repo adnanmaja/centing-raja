@@ -70,18 +70,18 @@ Content-Type: application/json
 
 ```json
 {
-  "ID": "01950d87-35fc-79c2-9014-464a69b76620",
-  "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
-  "MeasurerRole": "tenaga_kesehatan",
-  "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
-  "Age": 365,
-  "MeasuredAt": "2024-01-15T10:30:00Z",
-  "Weight": 12.5,
-  "Height": 85.0,
-  "StuntingStatus": "normal",
-  "ZScore": 0,
-  "HeadCircumference": 46.0,
-  "UpperArmCircumference": 14.5
+  "id": "01950d87-35fc-79c2-9014-464a69b76620",
+  "measurer_id": "01950d87-35fc-79c2-9014-464a69b76610",
+  "measurer_role": "tenaga_kesehatan",
+  "children_id": "01950d87-35fc-79c2-9014-464a69b76615",
+  "age": 365,
+  "measured_at": "2024-01-15T10:30:00Z",
+  "weight": 12.5,
+  "height": 85.0,
+  "stunting_status": "normal",
+  "z_score": 0,
+  "head_circumference": 46.0,
+  "upper_arm_circumference": 14.5
 }
 ```
 
@@ -108,18 +108,18 @@ Authorization: Bearer <jwt_token>
 ```json
 [
   {
-    "ID": "01950d87-35fc-79c2-9014-464a69b76620",
-    "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
-    "MeasurerRole": "tenaga_kesehatan",
-    "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
-    "Age": 365,
-    "MeasuredAt": "2024-01-15T10:30:00Z",
-    "Weight": 12.5,
-    "Height": 85.0,
-    "StuntingStatus": "normal",
-    "ZScore": 0,
-    "HeadCircumference": 46.0,
-    "UpperArmCircumference": 14.5
+    "id": "01950d87-35fc-79c2-9014-464a69b76620",
+    "measurer_id": "01950d87-35fc-79c2-9014-464a69b76610",
+    "measurer_role": "tenaga_kesehatan",
+    "children_id": "01950d87-35fc-79c2-9014-464a69b76615",
+    "age": 365,
+    "measured_at": "2024-01-15T10:30:00Z",
+    "weight": 12.5,
+    "height": 85.0,
+    "stunting_status": "normal",
+    "z_score": 0,
+    "head_circumference": 46.0,
+    "upper_arm_circumference": 14.5
   }
 ]
 ```
@@ -146,18 +146,18 @@ Authorization: Bearer <jwt_token>
 
 ```json
 {
-  "ID": "01950d87-35fc-79c2-9014-464a69b76620",
-  "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
-  "MeasurerRole": "tenaga_kesehatan",
-  "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
-  "Age": 365,
-  "MeasuredAt": "2024-01-15T10:30:00Z",
-  "Weight": 12.5,
-  "Height": 85.0,
-  "StuntingStatus": "normal",
-  "ZScore": 0,
-  "HeadCircumference": 46.0,
-  "UpperArmCircumference": 14.5
+  "id": "01950d87-35fc-79c2-9014-464a69b76620",
+  "measurer_id": "01950d87-35fc-79c2-9014-464a69b76610",
+  "measurer_role": "tenaga_kesehatan",
+  "children_id": "01950d87-35fc-79c2-9014-464a69b76615",
+  "age": 365,
+  "measured_at": "2024-01-15T10:30:00Z",
+  "weight": 12.5,
+  "height": 85.0,
+  "stunting_status": "normal",
+  "z_score": 0,
+  "head_circumference": 46.0,
+  "upper_arm_circumference": 14.5
 }
 ```
 
@@ -185,18 +185,18 @@ Authorization: Bearer <jwt_token>
 ```json
 [
   {
-    "ID": "01950d87-35fc-79c2-9014-464a69b76620",
-    "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
-    "MeasurerRole": "tenaga_kesehatan",
-    "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
-    "Age": 365,
-    "MeasuredAt": "2024-01-15T10:30:00Z",
-    "Weight": 12.5,
-    "Height": 85.0,
-    "StuntingStatus": "normal",
-    "ZScore": 0,
-    "HeadCircumference": 46.0,
-    "UpperArmCircumference": 14.5
+    "id": "01950d87-35fc-79c2-9014-464a69b76620",
+    "measurer_id": "01950d87-35fc-79c2-9014-464a69b76610",
+    "measurer_role": "tenaga_kesehatan",
+    "children_id": "01950d87-35fc-79c2-9014-464a69b76615",
+    "age": 365,
+    "measured_at": "2024-01-15T10:30:00Z",
+    "weight": 12.5,
+    "height": 85.0,
+    "stunting_status": "normal",
+    "z_score": 0,
+    "head_circumference": 46.0,
+    "upper_arm_circumference": 14.5
   }
 ]
 ```
@@ -242,18 +242,18 @@ Content-Type: application/json
 
 ```json
 {
-  "ID": "01950d87-35fc-79c2-9014-464a69b76620",
-  "MeasurerID": "01950d87-35fc-79c2-9014-464a69b76610",
-  "MeasurerRole": "tenaga_kesehatan",
-  "ChildrenID": "01950d87-35fc-79c2-9014-464a69b76615",
-  "Age": 365,
-  "MeasuredAt": "2024-01-15T10:30:00Z",
-  "Weight": 13.0,
-  "Height": 86.5,
-  "StuntingStatus": "normal",
-  "ZScore": 0,
-  "HeadCircumference": 46.5,
-  "UpperArmCircumference": 15.0
+  "id": "01950d87-35fc-79c2-9014-464a69b76620",
+  "measurer_id": "01950d87-35fc-79c2-9014-464a69b76610",
+  "measurer_role": "tenaga_kesehatan",
+  "children_id": "01950d87-35fc-79c2-9014-464a69b76615",
+  "age": 365,
+  "measured_at": "2024-01-15T10:30:00Z",
+  "weight": 13.0,
+  "height": 86.5,
+  "stunting_status": "normal",
+  "z_score": 0,
+  "head_circumference": 46.5,
+  "upper_arm_circumference": 15.0
 }
 ```
 

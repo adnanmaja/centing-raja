@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useState } from "react"
 
 import { SvgIcon } from "../../components/ui/svg-icon"
-
+import { registerUser, requestOTP } from "../../lib/api"
+import { mapRoleToBackend } from "../../lib/auth-utils"
 import registerPaths from "../../assets/icon-register"
 
 const registerLogo =
@@ -17,17 +18,14 @@ export function DaftarCentingRaja({
   onBack: () => void
 
   onReturn: () => void
-
-  onVerify: (phone: string) => void
+  onVerify: (phone: string, isRegistration?: boolean) => void
 }) {
   const [role, setRole] = useState<string | null>(null)
-
   const [name, setName] = useState("")
-
   const [nik, setNik] = useState("")
-
   const [phone, setPhone] = useState("")
-
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const roles = [
     {
       name: "Orang Tua",
@@ -111,10 +109,36 @@ export function DaftarCentingRaja({
       </section>
       <form
         className="relative z-10 mt-6 w-full max-w-[400px] space-y-5 lg:col-span-2 lg:mt-0 lg:grid lg:max-w-[900px] lg:grid-cols-2 lg:items-start lg:gap-x-8 lg:gap-y-4 lg:space-y-0"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault()
+          if (!name || nik.length < 16 || !phone || !role || isSubmitting) return
 
-          if (name && nik.length >= 16 && phone && role) onVerify(phone)
+          setIsSubmitting(true)
+          setErrorMessage(null)
+          try {
+            const backendRole = mapRoleToBackend(role)
+            try {
+              await registerUser({
+                name,
+                phone_number: phone,
+                role: backendRole,
+              })
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : String(err)
+              // If user is already registered (409), we can still proceed to request OTP or show specific feedback
+              if (!msg.toLowerCase().includes("already exists")) {
+                throw err
+              }
+            }
+            const otpRes = await requestOTP(phone)
+            console.log("[Centing Auth] OTP message:", otpRes.message)
+            onVerify(phone, true)
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Gagal mendaftarkan akun. Silakan coba lagi."
+            setErrorMessage(msg)
+          } finally {
+            setIsSubmitting(false)
+          }
         }}
       >
         <section className="rounded-2xl bg-white p-4 shadow-[0_4px_6px_rgba(0,0,0,0.05)] lg:col-start-1 lg:row-span-2">
@@ -216,12 +240,17 @@ export function DaftarCentingRaja({
             ))}
           </div>
         </section>
+        {errorMessage && (
+          <div className="rounded-lg bg-red-50 p-3 text-center font-['Manrope:Regular',sans-serif] text-xs text-red-600 lg:col-start-2">
+            {errorMessage}
+          </div>
+        )}
         <button
           type="submit"
-          disabled={!name || nik.length < 16 || !phone || !role}
+          disabled={!name || nik.length < 16 || !phone || !role || isSubmitting}
           className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#006d42] lg:col-start-2 font-['Manrope:Regular',sans-serif] text-base text-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.10)] disabled:opacity-45"
         >
-          Daftar Sekarang{" "}
+          {isSubmitting ? "Memproses..." : "Daftar Sekarang"}{" "}
           <SvgIcon
             path={registerPaths.p32510800}
             viewBox="0 0 13.333 13.333"

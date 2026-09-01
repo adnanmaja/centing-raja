@@ -3,16 +3,18 @@ import { useNavigate } from "react-router-dom"
 import { Check, Pencil, User, CreditCard, Phone, MapPin } from "lucide-react"
 
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
+import { useAuth } from "../../context/auth-context"
 
 const logo = "/logo/logo-centing-raja.png"
 
 export function EditProfileParentScreen() {
   const navigate = useNavigate()
+  const { user, setUser } = useAuth()
 
   const [form, setForm] = useState({
-    nama: "Ibu Nisa",
+    nama: user?.name || "Ibu Nisa",
     nik: "3201987654321001",
-    whatsapp: "08123456789",
+    whatsapp: user?.phone_number || "08123456789",
     alamat: "Jl. Mawar Merah No. 12",
     rtRw: "03/05",
     kecamatan: "Cibiru",
@@ -25,7 +27,11 @@ export function EditProfileParentScreen() {
     }
 
   const handleSave = () => {
-    // TODO: kirim form ke API
+    const updated = user
+      ? { ...user, name: form.nama, phone_number: form.whatsapp }
+      : { id: "p1", name: form.nama, phone_number: form.whatsapp, role: "orang_tua" as const }
+    localStorage.setItem("centing_user", JSON.stringify(updated))
+    if (setUser) setUser(updated)
     navigate("/orang-tua/profil")
   }
 
@@ -64,8 +70,8 @@ export function EditProfileParentScreen() {
       </div>
 
       {/* Form */}
-+      <div className="flex-1 px-5 pt-6 pb-32 flex flex-col gap-4 mx-auto w-full max-w-6xl sm:px-8">
-          <div className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col gap-4">
+      <div className="flex-1 px-5 pt-6 pb-32 flex flex-col gap-4 mx-auto w-full max-w-6xl sm:px-8">
+        <div className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <User className="size-3.5 text-emerald-800" />
             <span className="text-black text-xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif]">

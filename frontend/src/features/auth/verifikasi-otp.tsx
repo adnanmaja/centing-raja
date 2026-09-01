@@ -1,21 +1,23 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useRef, useState } from "react"
+import { requestOTP, verifyOTP } from "../../lib/api"
+import { useAuth } from "../../context/auth-context"
+import type { UserProfile } from "../../lib/api"
 
 export function VerifikasiOtp({
   phone,
-
   onBack,
-
   onVerified,
 }: {
   phone: string
-
   onBack: () => void
-
-  onVerified: () => void
+  onVerified: (user: UserProfile) => void
 }) {
-  const [code, setCode] = useState(["", "", "", "", ""])
-
+  const { login } = useAuth()
+  const [code, setCode] = useState(["", "", "", "", "", ""])
   const [resendNote, setResendNote] = useState("")
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
 
   const inputs = useRef<Array<HTMLInputElement | null>>([])
 
@@ -28,9 +30,8 @@ export function VerifikasiOtp({
       previous.map((item, itemIndex) => (itemIndex === index ? digit : item)),
     )
 
-    if (digit && index < 4) inputs.current[index + 1]?.focus()
+    if (digit && index < 5) inputs.current[index + 1]?.focus()
   }
-
   const onKeyDown = (
     index: number,
 
@@ -44,20 +45,15 @@ export function VerifikasiOtp({
     event.preventDefault()
 
     const digits = event.clipboardData
-
       .getData("text")
-
       .replace(/\D/g, "")
-
-      .slice(0, 5)
-
+      .slice(0, 6)
       .split("")
 
-    setCode(Array.from({ length: 5 }, (_, index) => digits[index] ?? ""))
+    setCode(Array.from({ length: 6 }, (_, index) => digits[index] ?? ""))
 
-    inputs.current[Math.min(digits.length, 4)]?.focus()
+    inputs.current[Math.min(digits.length, 5)]?.focus()
   }
-
   const completed = code.every(Boolean)
 
   return (
@@ -119,19 +115,51 @@ export function VerifikasiOtp({
             />
           ))}
         </div>
+        {errorMessage && (
+          <p className="mt-4 text-xs font-semibold text-rose-300" role="alert">
+            {errorMessage}
+          </p>
+        )}
         <button
           type="button"
-          onClick={onVerified}
-          disabled={!completed}
+          onClick={async () => {
+            if (!completed || isSubmitting) return
+            setIsSubmitting(true)
+            setErrorMessage(null)
+            try {
+              const otpCode = code.join("")
+              const res = await verifyOTP(phone, otpCode)
+              login(res.token, res.user)
+              onVerified(res.user)
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : "Verifikasi OTP gagal. Periksa kembali kode Anda."
+              setErrorMessage(msg)
+            } finally {
+              setIsSubmitting(false)
+            }
+          }}
+          disabled={!completed || isSubmitting}
           className="mt-11 inline-flex min-h-11 min-w-32 items-center justify-center rounded-[10px] bg-[#ffbb02] px-6 font-['SF_Compact_Rounded:Bold',sans-serif] text-base font-bold text-white shadow-[0_4px_0_#ff8601] transition hover:brightness-105 active:translate-y-px active:shadow-[0_2px_0_#ff8601] disabled:cursor-not-allowed disabled:opacity-45"
         >
-          Verifikasi
+          {isSubmitting ? "Memverifikasi..." : "Verifikasi"}
         </button>
         <p className="mt-10 font-['Inter:Regular',sans-serif] text-[13px] text-white/90">
           Tidak melihat kode?{" "}
           <button
             type="button"
-            onClick={() => setResendNote("Kode OTP baru telah dikirim.")}
+            onClick={async () => {
+              setErrorMessage(null)
+              try {
+                const res = await requestOTP(phone)
+                console.log("[Centing Auth] OTP message:", res.message)
+                setResendNote("Kode OTP baru telah dikirim.")
+                setCode(["", "", "", "", "", ""])
+                inputs.current[0]?.focus()
+              } catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : "Gagal mengirim ulang OTP."
+                setErrorMessage(msg)
+              }
+            }}
             className="font-semibold text-[#ffbb02] underline decoration-2 underline-offset-4"
           >
             kirim ulang

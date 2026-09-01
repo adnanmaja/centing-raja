@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { AlertTriangle, Calendar, CheckCircle2, MapPin, Search, Trash2 } from "lucide-react"
-
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 import { ConfirmDeleteModal } from "../../components/ui/confirm-delete-modal"
+import { createNotification } from "../../lib/api"
 
-type StatusTugas = "belum-diukur" | "selesai"
+export type StatusTugas = "belum-diukur" | "selesai"
 
 type AnakTugas = {
   id: string
@@ -53,7 +53,7 @@ export function TugasBaruScreen() {
     setAnakList((prev) => prev.map((a) => (a.id === id ? { ...a, batasWaktu } : a)))
   }
 
-  const handleAssign = (anak: AnakTugas) => {
+  const handleAssign = async (anak: AnakTugas) => {
     if (!anak.kader) {
       window.alert("Pilih Kader terlebih dahulu.")
       return
@@ -62,10 +62,32 @@ export function TugasBaruScreen() {
       window.alert("Tentukan batas waktu terlebih dahulu.")
       return
     }
+
+    try {
+      // Dispatch live notification broadcast
+      const userJson = localStorage.getItem("centing_user")
+      let userId = "00000000-0000-0000-0000-000000000001"
+      if (userJson) {
+        try {
+          const user = JSON.parse(userJson)
+          userId = user.id || userId
+        } catch {
+          // fallback
+        }
+      }
+
+      await createNotification({
+        user_id: userId,
+        title: `Tugas Pengukuran: ${anak.nama}`,
+        message: `Kader ${anak.kader} ditugaskan untuk melakukan pengukuran balita ${anak.nama} (RT ${anak.rt} / RW ${anak.rw}) dengan batas waktu ${anak.batasWaktu}.`,
+      })
+    } catch {
+      // ignore network errors so assignment still updates
+    }
+
     setAnakList((prev) => prev.map((a) => (a.id === anak.id ? { ...a, status: "selesai" } : a)))
     window.alert(`Tugas untuk ${anak.nama} berhasil ditugaskan ke ${anak.kader}.`)
   }
-
   const filterTabs: FilterTab[] = ["Semua", "Selesai", "Belum Diukur"]
 
   return (

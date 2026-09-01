@@ -3,15 +3,120 @@ import { motion } from "framer-motion"
 
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { SvgIcon } from "../../components/ui/svg-icon"
+import {
+  getQuizzes,
+  getQuizQuestions,
+  submitQuiz as submitQuizApi,
+  type Quiz,
+  type QuizQuestion,
+} from "../../lib/api"
 
 import quizPaths from "../../assets/icon-quiz"
+
+export interface QuizResultSummaryItem {
+  question: string
+  answer: string
+  detail?: string
+  correct: boolean
+}
+
+export interface QuizCompletionData {
+  score: number
+  totalQuestions: number
+  correctCount: number
+  summary: QuizResultSummaryItem[]
+}
+
+interface LocalQuestion {
+  id: string
+  question: string
+  hint: string
+  options: string[]
+  correctAnsIndex: number
+}
+
+const defaultQuestions: LocalQuestion[] = [
+  {
+    id: "q1",
+    question: "Apa definisi stunting yang paling tepat menurut WHO?",
+    hint: "Pilih satu jawaban yang paling tepat berdasarkan materi Mengenal Stunting yang telah Anda pelajari.",
+    options: [
+      "Anak yang berat badannya kurang dari standar usianya.",
+      "Gangguan pertumbuhan dan perkembangan akibat kekurangan gizi kronis dan infeksi berulang.",
+      "Anak yang lahir dengan kondisi prematur.",
+      "Kondisi anak yang mengalami demam tinggi dan diare.",
+    ],
+    correctAnsIndex: 1,
+  },
+  {
+    id: "q2",
+    question: "Kapan periode 1000 Hari Pertama Kehidupan dimulai?",
+    hint: "Pilih jawaban yang paling tepat.",
+    options: [
+      "Saat anak mulai sekolah.",
+      "Sejak masa kehamilan hingga anak berusia dua tahun.",
+      "Saat bayi lahir hingga usia satu tahun.",
+      "Setelah anak berusia dua tahun.",
+    ],
+    correctAnsIndex: 1,
+  },
+  {
+    id: "q3",
+    question: "Salah satu langkah penting mencegah stunting adalah?",
+    hint: "Ingat kembali materi gizi ibu dan anak.",
+    options: [
+      "Menunda imunisasi anak.",
+      "Memberikan makanan bergizi seimbang dan memantau pertumbuhan.",
+      "Mengurangi kunjungan ke Posyandu.",
+      "Memberikan minuman manis setiap hari.",
+    ],
+    correctAnsIndex: 1,
+  },
+  {
+    id: "q4",
+    question: "Pengukuran panjang badan balita dilakukan dengan?",
+    hint: "Pilih alat dan posisi yang tepat.",
+    options: [
+      "Timbangan dewasa.",
+      "Pita ukur kain biasa.",
+      "Alat ukur panjang badan sesuai usia anak.",
+      "Menggunakan perkiraan orang tua.",
+    ],
+    correctAnsIndex: 2,
+  },
+  {
+    id: "q5",
+    question: "Peran kader dalam pencegahan stunting adalah?",
+    hint: "Pilih peran yang paling sesuai.",
+    options: [
+      "Mencatat, mengedukasi, dan merujuk bila ditemukan risiko.",
+      "Memberikan diagnosis medis sendiri.",
+      "Menggantikan seluruh peran tenaga kesehatan.",
+      "Hanya hadir saat kegiatan besar.",
+    ],
+    correctAnsIndex: 0,
+  },
+]
+
+function parseOptions(options: string[] | string | undefined): string[] {
+  if (Array.isArray(options)) return options
+  if (typeof options === "string") {
+    try {
+      const parsed = JSON.parse(options)
+      if (Array.isArray(parsed)) return parsed
+    } catch {
+      return options.split("\n").filter(Boolean)
+    }
+  }
+  return []
+}
 
 export function KuisKader({
   onBack,
   onComplete,
 }: {
   onBack: () => void
-  onComplete: () => void
+  onComplete: (data?: QuizCompletionData) => void
 }) {
   const quizDurationSeconds = 15 * 60
 
@@ -19,64 +124,60 @@ export function KuisKader({
   const [questionIndex, setQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
+  const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null)
+  const [questions, setQuestions] = useState<LocalQuestion[]>(defaultQuestions)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const questions = [
-    {
-      question: "Apa definisi stunting yang paling tepat menurut WHO?",
-      hint: "Pilih satu jawaban yang paling tepat berdasarkan materi Mengenal Stunting yang telah Anda pelajari.",
-      options: [
-        "Anak yang berat badannya kurang dari standar usianya.",
-        "Gangguan pertumbuhan dan perkembangan akibat kekurangan gizi kronis dan infeksi berulang.",
-        "Anak yang lahir dengan kondisi prematur.",
-        "Kondisi anak yang mengalami demam tinggi dan diare.",
-      ],
-      answer: 1,
-    },
-    {
-      question: "Kapan periode 1000 Hari Pertama Kehidupan dimulai?",
-      hint: "Pilih jawaban yang paling tepat.",
-      options: [
-        "Saat anak mulai sekolah.",
-        "Sejak masa kehamilan hingga anak berusia dua tahun.",
-        "Saat bayi lahir hingga usia satu tahun.",
-        "Setelah anak berusia dua tahun.",
-      ],
-      answer: 1,
-    },
-    {
-      question: "Salah satu langkah penting mencegah stunting adalah?",
-      hint: "Ingat kembali materi gizi ibu dan anak.",
-      options: [
-        "Menunda imunisasi anak.",
-        "Memberikan makanan bergizi seimbang dan memantau pertumbuhan.",
-        "Mengurangi kunjungan ke Posyandu.",
-        "Memberikan minuman manis setiap hari.",
-      ],
-      answer: 1,
-    },
-    {
-      question: "Pengukuran panjang badan balita dilakukan dengan?",
-      hint: "Pilih alat dan posisi yang tepat.",
-      options: [
-        "Timbangan dewasa.",
-        "Pita ukur kain biasa.",
-        "Alat ukur panjang badan sesuai usia anak.",
-        "Menggunakan perkiraan orang tua.",
-      ],
-      answer: 2,
-    },
-    {
-      question: "Peran kader dalam pencegahan stunting adalah?",
-      hint: "Pilih peran yang paling sesuai.",
-      options: [
-        "Mencatat, mengedukasi, dan merujuk bila ditemukan risiko.",
-        "Memberikan diagnosis medis sendiri.",
-        "Menggantikan seluruh peran tenaga kesehatan.",
-        "Hanya hadir saat kegiatan besar.",
-      ],
-      answer: 0,
-    },
-  ]
+  useEffect(() => {
+    let active = true
+    getQuizzes(10, 0)
+      .then(async (quizList) => {
+        if (!active || !Array.isArray(quizList) || quizList.length === 0) {
+          if (active) setLoading(false)
+          return
+        }
+        const quiz = quizList[0]
+        setActiveQuiz(quiz)
+        try {
+          const qData = await getQuizQuestions(quiz.id)
+          if (active && Array.isArray(qData) && qData.length > 0) {
+            const formatted: LocalQuestion[] = qData.map((q, idx) => {
+              const opts = parseOptions(q.options)
+              let correctIdx = 0
+              if (q.correct_ans !== undefined && q.correct_ans !== null) {
+                const num = Number.parseInt(q.correct_ans, 10)
+                if (!Number.isNaN(num) && num >= 0 && num < opts.length) {
+                  correctIdx = num
+                } else {
+                  const textIdx = opts.findIndex((opt) => opt.trim() === q.correct_ans?.trim())
+                  if (textIdx >= 0) correctIdx = textIdx
+                }
+              }
+              return {
+                id: q.id || `q-${idx}`,
+                question: q.question_text,
+                hint: "Pilih satu jawaban yang paling tepat.",
+                options: opts.length > 0 ? opts : ["A", "B", "C", "D"],
+                correctAnsIndex: correctIdx,
+              }
+            })
+            setQuestions(formatted)
+          }
+        } catch {
+          // fallback to defaultQuestions
+        } finally {
+          if (active) setLoading(false)
+        }
+      })
+      .catch(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     const timer = window.setInterval(() => setSecondsLeft((value) => Math.max(0, value - 1)), 1000)
@@ -100,9 +201,58 @@ export function KuisKader({
     else setQuestionIndex((value) => value - 1)
   }
 
-  const submitQuiz = () => {
+  const handleSubmitQuiz = async () => {
     setShowSubmitConfirm(false)
-    onComplete()
+    setIsSubmitting(true)
+
+    let correctCount = 0
+    const summary: QuizResultSummaryItem[] = []
+    const submissionAnswers = questions.map((q, idx) => {
+      const chosenIndex = answers[idx]
+      const isChosen = chosenIndex !== undefined
+      const chosenText = isChosen ? q.options[chosenIndex] : "Tidak dijawab"
+      const isCorrect = isChosen && chosenIndex === q.correctAnsIndex
+      const correctText = q.options[q.correctAnsIndex] || ""
+
+      if (isCorrect) {
+        correctCount++
+      }
+
+      summary.push({
+        question: q.question,
+        answer: isCorrect ? `Jawaban: ${chosenText}` : `Jawaban Anda: ${chosenText}`,
+        detail: isCorrect ? undefined : `Benar: ${correctText}`,
+        correct: isCorrect,
+      })
+
+      return {
+        question_id: q.id,
+        selected_option: chosenText,
+        is_correct: isCorrect,
+      }
+    })
+
+    const score = Math.round((correctCount / (questions.length || 1)) * 100)
+    const resultData: QuizCompletionData = {
+      score,
+      totalQuestions: questions.length,
+      correctCount,
+      summary,
+    }
+
+    if (activeQuiz) {
+      try {
+        await submitQuizApi(activeQuiz.id, {
+          score,
+          answers: submissionAnswers,
+        })
+      } catch {
+        // ignore submission API error so user gets score regardless
+      }
+    }
+
+    setIsSubmitting(false)
+    onComplete(resultData)
   }
 
   return (
@@ -143,11 +293,11 @@ export function KuisKader({
           </button>
         </div>
         <h1 className="mt-5 font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold leading-7 sm:text-2xl">
-          {question.question}
+          {question?.question || "Memuat pertanyaan..."}
         </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-5 text-[#3e4941]">{question.hint}</p>
+        <p className="mt-3 max-w-2xl text-sm leading-5 text-[#3e4941]">{question?.hint || ""}</p>
         <div className="mt-7 space-y-3">
-          {question.options.map((option, index) => (
+          {(question?.options || []).map((option, index) => (
             <button
               key={option}
               type="button"
@@ -200,12 +350,22 @@ export function KuisKader({
             <p className="mt-2 font-['Manrope:Regular',sans-serif] text-sm leading-6 text-[#3e4941]">
               Apakah Anda yakin ingin mengirim jawaban?
             </p>
-            <div className="mt-7 flex gap-3">
-              <button type="button" onClick={() => setShowSubmitConfirm(false)} className="min-h-12 flex-1 rounded-full border border-[#cfd8d3] font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-[#3e4941]">
-                Batal
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setShowSubmitConfirm(false)}
+                disabled={isSubmitting}
+                className="min-h-11 rounded-full bg-[#f3f4f5] font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-[#3e4941] transition hover:bg-[#e7e9e8]"
+              >
+                Periksa Lagi
               </button>
-              <button type="button" onClick={submitQuiz} className="min-h-12 flex-1 rounded-full bg-[#006d42] font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-white">
-                Iya, Kirim
+              <button
+                type="button"
+                onClick={handleSubmitQuiz}
+                disabled={isSubmitting}
+                className="min-h-11 rounded-full bg-[#007c4a] font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,109,66,0.20)] transition hover:bg-[#006d42]"
+              >
+                {isSubmitting ? "Mengirim..." : "Ya, Selesaikan"}
               </button>
             </div>
           </section>

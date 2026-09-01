@@ -1,29 +1,21 @@
+import React from "react"
+import { ArrowLeft, ChevronRight, Key, HelpCircle, Shield, LogOut, User, Pencil, Ruler, Lock } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import {
-  ChevronRight,
-  HelpCircle,
-  LogOut,
-  Lock,
-  Pencil,
-  Ruler,
-  Shield,
-  User,
-} from "lucide-react"
-
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
 import { ParentBottomNav } from "../../components/parent/parent-bottom-nav"
+import { useAuth } from "../../context/auth-context"
 
 const logo = "/logo/logo-centing-raja.png"
-
 export function ProfileParentScreen() {
   const navigate = useNavigate()
+  const { logout, user } = useAuth()
 
   return (
     <div className="w-full min-h-screen bg-gray-50 flex flex-col">
       <ParentInputHeader logo={logo} title="Profil" />
 
-    {/* Hero */}
-    <div className="w-full px-5 pt-6 pb-8 flex flex-col items-center mx-auto max-w-6xl sm:px-8">
+      {/* Hero */}
+      <div className="w-full px-5 pt-6 pb-8 flex flex-col items-center mx-auto max-w-6xl sm:px-8">
         <div className="relative">
           <div className="absolute -inset-1 bg-emerald-800/20 rounded-full blur-md" />
           <div className="size-24 bg-zinc-100 rounded-full shadow-sm overflow-hidden">
@@ -117,7 +109,10 @@ export function ProfileParentScreen() {
         <div className="pt-2">
           <button
             type="button"
-            onClick={() => navigate("/auth")}
+            onClick={() => {
+              logout()
+              navigate("/auth")
+            }}
             className="w-full p-4 bg-rose-200 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex justify-center items-center gap-3"
           >
             <LogOut className="size-4 text-red-800" />
