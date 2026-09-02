@@ -57,23 +57,38 @@ const defaultMockAnak: AnakData[] = [
   { nama: "Ahmad Fauzi", umurBulan: 36, jenisKelamin: "L", status: "aman", zScore: -0.5 },
   { nama: "Rina Melati", umurBulan: 12, jenisKelamin: "P", status: "aman", zScore: 0.2 },
 ]
-// TODO: ganti dengan fetch agregat per RW dari GET /api/wilayah/{kecamatan}/rw
 type RwSummary = { rw: string; totalAnak: number; stuntingRate: number }
-const rwList: RwSummary[] = [
+const defaultRwList: RwSummary[] = [
   { rw: "01", totalAnak: 42, stuntingRate: 9.5 },
   { rw: "02", totalAnak: 38, stuntingRate: 15.8 },
   { rw: "03", totalAnak: 55, stuntingRate: 12.7 },
   { rw: "04", totalAnak: 30, stuntingRate: 6.7 },
 ]
 
-// TODO: ganti dengan fetch agregat per RT dari GET /api/wilayah/{kecamatan}/{rw}/rt
 type RtSummary = { rt: string; totalAnak: number; stuntingRate: number }
-const rtList: RtSummary[] = [
+const defaultRtList: RtSummary[] = [
   { rt: "01", totalAnak: 12, stuntingRate: 16.7 },
   { rt: "02", totalAnak: 10, stuntingRate: 10.0 },
   { rt: "03", totalAnak: 15, stuntingRate: 6.7 },
 ]
 
+function parseAddressWilayah(address?: string): { rt: string; rw: string; kecamatan: string } {
+  let rt = "01"
+  let rw = "03"
+  let kecamatan = "Kebayoran Baru"
+  if (!address) return { rt, rw, kecamatan }
+
+  const rtMatch = address.match(/RT\s*0?(\d+)/i)
+  const rwMatch = address.match(/RW\s*0?(\d+)/i)
+  if (rtMatch) rt = rtMatch[1].padStart(2, "0")
+  if (rwMatch) rw = rwMatch[1].padStart(2, "0")
+
+  const parts = address.split(",")
+  if (parts.length > 0 && parts[0].trim().length > 2) {
+    kecamatan = parts[0].trim()
+  }
+  return { rt, rw, kecamatan }
+}
 type FilterOption = "semua" | StatusAnak
 type ViewLevel = "kecamatan" | "rw" | "rt"
 
@@ -87,8 +102,22 @@ export function DataAnakRtScreen() {
     rt?: string
   }
 
-  const kecamatan = state.kecamatan ?? "Kebayoran Baru"
+  const [liveChildren, setLiveChildren] = useState<Child[]>([])
+  const [liveMeasurements, setLiveMeasurements] = useState<Measurement[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
+  const inferredKecamatan = useMemo(() => {
+    if (state.kecamatan) return state.kecamatan
+    for (const c of liveChildren) {
+      if (c.home_address) {
+        const { kecamatan: k } = parseAddressWilayah(c.home_address)
+        if (k) return k
+      }
+    }
+    return "Kebayoran Baru"
+  }, [state.kecamatan, liveChildren])
+
+  const kecamatan = inferredKecamatan
   const [view, setView] = useState<ViewLevel>("rt")
   const [selectedRw, setSelectedRw] = useState(state.rw ?? "03")
   const [selectedRt, setSelectedRt] = useState(state.rt ?? "01")
@@ -96,9 +125,6 @@ export function DataAnakRtScreen() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filter, setFilter] = useState<FilterOption>("semua")
   const [visibleCount, setVisibleCount] = useState(10)
-  const [liveChildren, setLiveChildren] = useState<Child[]>([])
-  const [liveMeasurements, setLiveMeasurements] = useState<Measurement[]>([])
-  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     let active = true
@@ -127,7 +153,7 @@ export function DataAnakRtScreen() {
     }
   }, [])
 
-  const displayAnakList: AnakData[] = useMemo(() => {
+  const { displayAnakList, rwList, rtList } = useMemo(() => {
     if (liveChildren.length > 0) {
       const latestMap = new Map<string, Measurement>()
       for (const m of liveMeasurements) {
@@ -137,7 +163,7 @@ export function DataAnakRtScreen() {
         }
       }
 
-      return liveChildren.map((c) => {
+      const childrenWithWilayah = liveChildren.map((c) => {
         const m = latestMap.get(c.id)
         let status: StatusAnak = "aman"
         let zScore = 0.0
@@ -151,6 +177,7 @@ export function DataAnakRtScreen() {
             status = "aman"
           }
         }
+        const { rt, rw } = parseAddressWilayah(c.home_address)
         return {
           id: c.id,
           nama: c.full_name,
@@ -159,12 +186,54 @@ export function DataAnakRtScreen() {
           status,
           zScore,
           childObj: c,
+          rt,
+          rw,
         }
       })
-    }
-    return defaultMockAnak
-  }, [liveChildren, liveMeasurements])
 
+      // Compute RW summary
+      const rwMap = new Map<string, { total: number; stunting: number }>()
+      for (const c of childrenWithWilayah) {
+        const current = rwMap.get(c.rw) || { total: 0, stunting: 0 }
+        current.total += 1
+        if (c.status === "stunting") current.stunting += 1
+        rwMap.set(c.rw, current)
+      }
+
+      const dynamicRwList: RwSummary[] = Array.from(rwMap.entries()).map(([rw, val]) => ({
+        rw,
+        totalAnak: val.total,
+        stuntingRate: Number(((val.stunting / (val.total || 1)) * 100).toFixed(1)),
+      }))
+
+      // Compute RT summary for selectedRw
+      const rtMap = new Map<string, { total: number; stunting: number }>()
+      for (const c of childrenWithWilayah.filter((c) => c.rw === selectedRw)) {
+        const current = rtMap.get(c.rt) || { total: 0, stunting: 0 }
+        current.total += 1
+        if (c.status === "stunting") current.stunting += 1
+        rtMap.set(c.rt, current)
+      }
+
+      const dynamicRtList: RtSummary[] = Array.from(rtMap.entries()).map(([rt, val]) => ({
+        rt,
+        totalAnak: val.total,
+        stuntingRate: Number(((val.stunting / (val.total || 1)) * 100).toFixed(1)),
+      }))
+
+      return {
+        displayAnakList: childrenWithWilayah,
+        rwList: dynamicRwList.length > 0 ? dynamicRwList : defaultRwList,
+        rtList: dynamicRtList.length > 0 ? dynamicRtList : defaultRtList,
+      }
+    }
+
+    return {
+      displayAnakList: defaultMockAnak,
+      rwList: defaultRwList,
+      rtList: defaultRtList,
+    }
+  }, [liveChildren, liveMeasurements, selectedRw])
   const counts = useMemo(
     () => ({
       stunting: displayAnakList.filter((a) => a.status === "stunting").length,

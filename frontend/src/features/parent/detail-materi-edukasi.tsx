@@ -76,6 +76,29 @@ export function DetailMateriEdukasi({
             membantu keluarga mengambil langkah kecil yang konsisten bagi tumbuh
             kembang si kecil.
           </p>
+          {material.video_url && (
+            <div className="mt-4 aspect-video w-full overflow-hidden rounded-xl bg-black/90">
+              {material.video_url.includes("youtube.com") || material.video_url.includes("youtu.be") ? (
+                <iframe
+                  src={
+                    material.video_url.includes("watch?v=")
+                      ? material.video_url.replace("watch?v=", "embed/")
+                      : material.video_url
+                  }
+                  title={material.title}
+                  className="size-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={material.video_url}
+                  controls
+                  className="size-full object-cover"
+                />
+              )}
+            </div>
+          )}
           {(material.link || material.video_url) ? (
             <a
               href={material.link || material.video_url}

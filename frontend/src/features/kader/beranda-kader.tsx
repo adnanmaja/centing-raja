@@ -4,8 +4,13 @@ import { motion } from "framer-motion"
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
 import { SvgIcon } from "../../components/ui/svg-icon"
+import {
+  getEducationMaterials,
+  getKaderChildren,
+  getKaderMeasurements,
+  type EducationMaterial,
+} from "../../lib/api"
 import { useAuth } from "../../context/auth-context"
-import { getKaderChildren, getKaderMeasurements } from "../../lib/api"
 import kaderNavPaths from "../../assets/icon-kader-nav"
 import kaderActionPaths from "../../assets/icon-kader-action"
 import kaderReminderPaths from "../../assets/icon-kader-reminder"
@@ -13,6 +18,60 @@ import kaderTaskPaths from "../../assets/icon-kader-task"
 
 const kaderEducationImage = "/images/poster-protein-hewani-cegah-stunting.png"
 const kaderNewsImage = "/images/kegiatan-posyandu.png"
+interface KaderNewsItem {
+  id?: string
+  image: string
+  category: string
+  categoryClass: string
+  title: string
+  time: string
+  video_url?: string
+}
+
+const defaultNews: KaderNewsItem[] = [
+  {
+    image: kaderEducationImage,
+    category: "Gizi",
+    categoryClass: "bg-[#cfe1f8] text-[#536478]",
+    title: "Pentingnya Protein Hewani untuk Mencegah Stunting",
+    time: "2 jam yang lalu",
+  },
+  {
+    image: kaderNewsImage,
+    category: "Kegiatan",
+    categoryClass: "bg-[#e9f7ef] text-[#006d42]",
+    title: "Jadwal Kelas Ibu Balita Desa Suka Maju Bulan November",
+    time: "1 hari yang lalu",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1681378128359-a5c2492a3535?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=80&w=900",
+    category: "Resep",
+    categoryClass: "bg-[#fbefc8] text-[#765b06]",
+    title: "Menu Seimbang untuk Mendukung Tumbuh Kembang Anak",
+    time: "2 hari yang lalu",
+  },
+  {
+    image:
+      "https://images.unsplash.com/photo-1655740005902-2436216b82b8?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=80&w=900",
+    category: "Edukasi",
+    categoryClass: "bg-[#e9f7ef] text-[#006d42]",
+    title: "Ide Bekal Bergizi yang Disukai Anak",
+    time: "3 hari yang lalu",
+  },
+]
+
+function formatNewsTime(dateStr?: string): string {
+  if (!dateStr) return "Baru saja"
+  const diffMs = Date.now() - new Date(dateStr).getTime()
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  if (diffHours < 1) return "Baru saja"
+  if (diffHours < 24) return `${diffHours} jam yang lalu`
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffDays === 1) return "1 hari yang lalu"
+  if (diffDays < 30) return `${diffDays} hari yang lalu`
+  return `${Math.floor(diffDays / 30)} bulan yang lalu`
+}
 
 export function BerandaKader({
   onMaterial,
@@ -27,14 +86,16 @@ export function BerandaKader({
 }) {
   const { user } = useAuth()
   const [unmeasuredCount, setUnmeasuredCount] = useState<number | null>(null)
+  const [newsList, setNewsList] = useState<KaderNewsItem[]>(defaultNews)
 
   useEffect(() => {
     let mounted = true
     async function loadStats() {
       try {
-        const [children, measurements] = await Promise.all([
+        const [children, measurements, educationData] = await Promise.all([
           getKaderChildren(100, 0),
           getKaderMeasurements().catch(() => []),
+          getEducationMaterials(10, 0).catch(() => [] as EducationMaterial[]),
         ])
         if (!mounted) return
         const currentYear = new Date().getFullYear()
@@ -49,6 +110,47 @@ export function BerandaKader({
         )
         const pending = children.filter((c) => !measuredIds.has(c.id)).length
         setUnmeasuredCount(pending)
+
+        if (Array.isArray(educationData) && educationData.length > 0) {
+          const fallbackImages = [
+            kaderEducationImage,
+            kaderNewsImage,
+            "https://images.unsplash.com/photo-1681378128359-a5c2492a3535?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=80&w=900",
+            "https://images.unsplash.com/photo-1655740005902-2436216b82b8?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=80&w=900",
+          ]
+          const mappedNews: KaderNewsItem[] = educationData.map((item, idx) => {
+            const titleLower = item.title.toLowerCase()
+            const isGizi = titleLower.includes("gizi") || titleLower.includes("mpasi") || titleLower.includes("nutrisi")
+            const isKegiatan = titleLower.includes("kegiatan") || titleLower.includes("posyandu") || titleLower.includes("jadwal")
+            const isResep = titleLower.includes("resep") || titleLower.includes("menu") || titleLower.includes("makan")
+
+            const category = isGizi ? "Gizi" : isKegiatan ? "Kegiatan" : isResep ? "Resep" : "Edukasi"
+            const categoryClass = isGizi
+              ? "bg-[#cfe1f8] text-[#536478]"
+              : isKegiatan
+              ? "bg-[#e9f7ef] text-[#006d42]"
+              : isResep
+              ? "bg-[#fbefc8] text-[#765b06]"
+              : "bg-[#e9f7ef] text-[#006d42]"
+
+            return {
+              id: item.id,
+              image: fallbackImages[idx % fallbackImages.length],
+              category,
+              categoryClass,
+              title: item.title,
+              time: formatNewsTime(item.created_at),
+              video_url: item.video_url,
+            }
+          })
+
+          const existingTitles = new Set(mappedNews.map((n) => n.title.toLowerCase()))
+          const merged = [
+            ...mappedNews,
+            ...defaultNews.filter((n) => !existingTitles.has(n.title.toLowerCase())),
+          ]
+          setNewsList(merged)
+        }
       } catch (err) {
         console.error("Failed to load kader stats:", err)
       }
@@ -64,39 +166,6 @@ export function BerandaKader({
     month: "long",
     year: "numeric",
   })
-
-  const news = [
-    {
-      image: kaderEducationImage,
-      category: "Gizi",
-      categoryClass: "bg-[#cfe1f8] text-[#536478]",
-      title: "Pentingnya Protein Hewani untuk Mencegah Stunting",
-      time: "2 jam yang lalu",
-    },
-    {
-      image: kaderNewsImage,
-      category: "Kegiatan",
-      categoryClass: "bg-[#e9f7ef] text-[#006d42]",
-      title: "Jadwal Kelas Ibu Balita Desa Suka Maju Bulan November",
-      time: "1 hari yang lalu",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1681378128359-a5c2492a3535?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=80&w=900",
-      category: "Resep",
-      categoryClass: "bg-[#fbefc8] text-[#765b06]",
-      title: "Menu Seimbang untuk Mendukung Tumbuh Kembang Anak",
-      time: "2 hari yang lalu",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1655740005902-2436216b82b8?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=80&w=900",
-      category: "Edukasi",
-      categoryClass: "bg-[#e9f7ef] text-[#006d42]",
-      title: "Ide Bekal Bergizi yang Disukai Anak",
-      time: "3 hari yang lalu",
-    },
-  ]
 
   return (
     <main className="min-h-svh overflow-x-hidden bg-[#f8f9fa] pb-28 pt-16 text-[#191c1d]">
@@ -215,15 +284,20 @@ export function BerandaKader({
               <h2 className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold">
                 Berita &amp; Edukasi
               </h2>
-              <button type="button" className="font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#006d42]">
+              <button
+                type="button"
+                onClick={onMaterial}
+                className="font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#006d42] transition-colors hover:underline cursor-pointer"
+              >
                 Lihat Semua
               </button>
             </div>
             <div className="news-scroll mt-3 flex w-full max-w-full snap-x snap-mandatory gap-3 overflow-x-scroll overscroll-x-contain pb-3 pr-5 touch-pan-x xl:pr-10">
-              {news.map((item) => (
+              {newsList.map((item) => (
                 <article
                   key={item.title}
-                  className="news-card w-[78vw] max-w-[280px] shrink-0 snap-start overflow-hidden rounded-xl bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] xl:w-[360px]"
+                  onClick={onMaterial}
+                  className="news-card w-[78vw] max-w-[280px] shrink-0 snap-start overflow-hidden rounded-xl bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] xl:w-[360px] cursor-pointer"
                 >
                   <img src={item.image} alt="" className="h-36 w-full object-cover" />
                   <div className="p-3">
