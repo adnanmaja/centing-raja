@@ -28,38 +28,6 @@ interface KaderNewsItem {
   video_url?: string
 }
 
-const defaultNews: KaderNewsItem[] = [
-  {
-    image: kaderEducationImage,
-    category: "Gizi",
-    categoryClass: "bg-[#cfe1f8] text-[#536478]",
-    title: "Pentingnya Protein Hewani untuk Mencegah Stunting",
-    time: "2 jam yang lalu",
-  },
-  {
-    image: kaderNewsImage,
-    category: "Kegiatan",
-    categoryClass: "bg-[#e9f7ef] text-[#006d42]",
-    title: "Jadwal Kelas Ibu Balita Desa Suka Maju Bulan November",
-    time: "1 hari yang lalu",
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1681378128359-a5c2492a3535?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=80&w=900",
-    category: "Resep",
-    categoryClass: "bg-[#fbefc8] text-[#765b06]",
-    title: "Menu Seimbang untuk Mendukung Tumbuh Kembang Anak",
-    time: "2 hari yang lalu",
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1655740005902-2436216b82b8?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&q=80&w=900",
-    category: "Edukasi",
-    categoryClass: "bg-[#e9f7ef] text-[#006d42]",
-    title: "Ide Bekal Bergizi yang Disukai Anak",
-    time: "3 hari yang lalu",
-  },
-]
 
 function formatNewsTime(dateStr?: string): string {
   if (!dateStr) return "Baru saja"
@@ -86,7 +54,7 @@ export function BerandaKader({
 }) {
   const { user } = useAuth()
   const [unmeasuredCount, setUnmeasuredCount] = useState<number | null>(null)
-  const [newsList, setNewsList] = useState<KaderNewsItem[]>(defaultNews)
+  const [newsList, setNewsList] = useState<KaderNewsItem[]>([])
 
   useEffect(() => {
     let mounted = true
@@ -143,13 +111,9 @@ export function BerandaKader({
               video_url: item.video_url,
             }
           })
-
-          const existingTitles = new Set(mappedNews.map((n) => n.title.toLowerCase()))
-          const merged = [
-            ...mappedNews,
-            ...defaultNews.filter((n) => !existingTitles.has(n.title.toLowerCase())),
-          ]
-          setNewsList(merged)
+          setNewsList(mappedNews)
+        } else {
+          setNewsList([])
         }
       } catch (err) {
         console.error("Failed to load kader stats:", err)
@@ -293,24 +257,30 @@ export function BerandaKader({
               </button>
             </div>
             <div className="news-scroll mt-3 flex w-full max-w-full snap-x snap-mandatory gap-3 overflow-x-scroll overscroll-x-contain pb-3 pr-5 touch-pan-x xl:pr-10">
-              {newsList.map((item) => (
-                <article
-                  key={item.title}
-                  onClick={onMaterial}
-                  className="news-card w-[78vw] max-w-[280px] shrink-0 snap-start overflow-hidden rounded-xl bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] xl:w-[360px] cursor-pointer"
-                >
-                  <img src={item.image} alt="" className="h-36 w-full object-cover" />
-                  <div className="p-3">
-                    <span className={`inline-flex rounded px-2 py-0.5 font-['Manrope:Regular',sans-serif] text-[10px] ${item.categoryClass}`}>
-                      {item.category}
-                    </span>
-                    <h3 className="mt-2 font-['Manrope:SemiBold',sans-serif] text-sm font-semibold leading-5">
-                      {item.title}
-                    </h3>
-                    <p className="mt-2 text-xs text-[#63747a]">{item.time}</p>
-                  </div>
-                </article>
-              ))}
+              {newsList.length > 0 ? (
+                newsList.map((item) => (
+                  <article
+                    key={item.id || item.title}
+                    onClick={onMaterial}
+                    className="news-card w-[78vw] max-w-[280px] shrink-0 snap-start overflow-hidden rounded-xl bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] xl:w-[360px] cursor-pointer"
+                  >
+                    <img src={item.image} alt="" className="h-36 w-full object-cover" />
+                    <div className="p-3">
+                      <span className={`inline-flex rounded px-2 py-0.5 font-['Manrope:Regular',sans-serif] text-[10px] ${item.categoryClass}`}>
+                        {item.category}
+                      </span>
+                      <h3 className="mt-2 font-['Manrope:SemiBold',sans-serif] text-sm font-semibold leading-5">
+                        {item.title}
+                      </h3>
+                      <p className="mt-2 text-xs text-[#63747a]">{item.time}</p>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="w-full p-6 bg-white rounded-xl text-center text-xs text-[#63747a] shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
+                  Belum ada artikel atau berita edukasi terbaru.
+                </div>
+              )}
             </div>
           </section>
         </div>

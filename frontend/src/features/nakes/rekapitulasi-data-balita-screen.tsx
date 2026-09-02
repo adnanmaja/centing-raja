@@ -164,6 +164,16 @@ export function RekapitulasiDataBalitaScreen() {
     }
   }, [])
 
+  function escapeXml(str: string | number | undefined | null): string {
+    if (str === undefined || str === null) return ""
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;")
+  }
+
   const handleExport = () => {
     const headers = [
       "No",
@@ -182,37 +192,74 @@ export function RekapitulasiDataBalitaScreen() {
       "Tanggal Pengukuran",
     ]
 
-    const csvRows = [
-      headers.join(","),
-      ...dataRows.map((row, index) => {
-        const statusInfo = formatStuntingStatus(row.stuntingStatus)
-        const values = [
-          index + 1,
-          `"${row.kecamatan.replace(/"/g, '""')}"`,
-          `"${row.rt}"`,
-          `"${row.rw}"`,
-          `"${row.nama.replace(/"/g, '""')}"`,
-          row.umurBulan,
-          row.jenisKelamin === "L" ? "Laki-laki" : "Perempuan",
-          row.tinggiBadan.toFixed(1),
-          (row.beratBadan ?? 0).toFixed(1),
-          row.lingkarKepala.toFixed(1),
-          (row.lingkarLengan ?? 0).toFixed(1),
-          `"${statusInfo.label}"`,
-          row.zScore !== undefined ? row.zScore.toFixed(2) : "-",
-          `"${row.measuredAt ? new Date(row.measuredAt).toLocaleDateString("id-ID") : "-"}"`,
-        ]
-        return values.join(",")
-      }),
-    ]
+    const xmlRows = dataRows.map((row, index) => {
+      const statusInfo = formatStuntingStatus(row.stuntingStatus)
+      const measuredDate = row.measuredAt ? new Date(row.measuredAt).toLocaleDateString("id-ID") : "-"
+      return `<tr>
+        <td>${index + 1}</td>
+        <td>${escapeXml(row.kecamatan)}</td>
+        <td>${escapeXml(row.rt)}</td>
+        <td>${escapeXml(row.rw)}</td>
+        <td>${escapeXml(row.nama)}</td>
+        <td>${row.umurBulan}</td>
+        <td>${row.jenisKelamin === "L" ? "Laki-laki" : "Perempuan"}</td>
+        <td>${row.tinggiBadan.toFixed(1)}</td>
+        <td>${(row.beratBadan ?? 0).toFixed(1)}</td>
+        <td>${row.lingkarKepala.toFixed(1)}</td>
+        <td>${(row.lingkarLengan ?? 0).toFixed(1)}</td>
+        <td>${escapeXml(statusInfo.label)}</td>
+        <td>${row.zScore !== undefined ? row.zScore.toFixed(2) : "-"}</td>
+        <td>${escapeXml(measuredDate)}</td>
+      </tr>`
+    })
 
-    const csvContent = "\uFEFF" + csvRows.join("\r\n")
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const tableHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+          <!--[if gte mso 9]>
+          <xml>
+            <x:ExcelWorkbook>
+              <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                  <x:Name>Rekapitulasi Balita</x:Name>
+                  <x:WorksheetOptions>
+                    <x:DisplayGridlines/>
+                  </x:WorksheetOptions>
+                </x:ExcelWorksheet>
+              </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+          </xml>
+          <![endif]-->
+          <style>
+            table { border-collapse: collapse; font-family: sans-serif; font-size: 11pt; }
+            th { background-color: #006d42; color: #ffffff; font-weight: bold; padding: 8px; border: 1px solid #dcdcdc; }
+            td { padding: 6px; border: 1px solid #dcdcdc; }
+          </style>
+        </head>
+        <body>
+          <table>
+            <thead>
+              <tr>
+                ${headers.map((h) => `<th>${escapeXml(h)}</th>`).join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${xmlRows.join("")}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `
+
+    const blob = new Blob([tableHtml], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8;",
+    })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     const timestamp = new Date().toISOString().slice(0, 10)
     link.setAttribute("href", url)
-    link.setAttribute("download", `Rekapitulasi_Balita_Centing_Raja_${timestamp}.csv`)
+    link.setAttribute("download", `Rekapitulasi_Balita_Centing_Raja_${timestamp}.xlsx`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)

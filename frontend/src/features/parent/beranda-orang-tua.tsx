@@ -51,22 +51,6 @@ interface ParentArticle {
   image: string
 }
 
-const defaultArticles: ParentArticle[] = [
-  {
-    id: "hpk",
-    type: "Nutrisi",
-    title: "Ide MPASI Padat Gizi untuk Kejar Berat Badan",
-    copy: "Resep mudah dengan bahan lokal yang terbukti efektif meningkatkan berat badan...",
-    image: parentEducationFood,
-  },
-  {
-    id: "gizi-seimbang",
-    type: "Stimulasi",
-    title: "Pentingnya Stimulasi untuk Tumbuh Kembang Emas",
-    copy: "Tinggi badan dipengaruhi nutrisi serta perkembangan anak sehari-hari...",
-    image: parentEducationPlay,
-  },
-]
 
 export function BerandaOrangTua({
   onMaterial,
@@ -84,7 +68,7 @@ export function BerandaOrangTua({
   const [metric, setMetric] = useState<"Tinggi Badan" | "Berat Badan">("Tinggi Badan")
   const [isChildPickerOpen, setIsChildPickerOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [articleList, setArticleList] = useState<ParentArticle[]>(defaultArticles)
+  const [articleList, setArticleList] = useState<ParentArticle[]>([])
 
   useEffect(() => {
     let active = true
@@ -124,13 +108,9 @@ export function BerandaOrangTua({
               image,
             }
           })
-
-          const existingTitles = new Set(mappedArticles.map((a) => a.title.toLowerCase()))
-          const merged = [
-            ...mappedArticles,
-            ...defaultArticles.filter((a) => !existingTitles.has(a.title.toLowerCase())),
-          ]
-          setArticleList(merged)
+          setArticleList(mappedArticles)
+        } else {
+          setArticleList([])
         }
       })
       .catch((err) => {
@@ -395,32 +375,38 @@ export function BerandaOrangTua({
               </button>
             </div>
             <div className="mt-3 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] sm:grid sm:grid-cols-2 lg:grid-cols-2">
-              {articleList.map((article) => (
-                <article
-                  key={article.title}
-                  onClick={() => {
-                    if (article.id) {
-                      navigate(`/orang-tua/materi/${article.id}`)
-                    } else {
-                      onMaterial()
-                    }
-                  }}
-                  className="min-w-[190px] overflow-hidden rounded-xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)] sm:min-w-0 cursor-pointer transition-transform hover:scale-[1.01]"
-                >
-                  <img src={article.image} alt="" className="aspect-[1.65/1] w-full object-cover" />
-                  <div className="p-2.5">
-                    <span className="rounded bg-[#eaf3ff] px-2 py-1 font-['Manrope:Regular',sans-serif] text-[9px] text-[#58718e]">
-                      {article.type}
-                    </span>
-                    <h3 className="mt-2 font-['Manrope:SemiBold',sans-serif] text-[11px] leading-4 text-[#191c1d] line-clamp-2">
-                      {article.title}
-                    </h3>
-                    <p className="mt-2 font-['Manrope:Regular',sans-serif] text-[10px] leading-4 text-[#65736c] line-clamp-2">
-                      {article.copy}
-                    </p>
-                  </div>
-                </article>
-              ))}
+              {articleList.length > 0 ? (
+                articleList.map((article) => (
+                  <article
+                    key={article.id || article.title}
+                    onClick={() => {
+                      if (article.id) {
+                        navigate(`/orang-tua/materi/${article.id}`)
+                      } else {
+                        onMaterial()
+                      }
+                    }}
+                    className="min-w-[190px] overflow-hidden rounded-xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)] sm:min-w-0 cursor-pointer transition-transform hover:scale-[1.01]"
+                  >
+                    <img src={article.image} alt="" className="aspect-[1.65/1] w-full object-cover" />
+                    <div className="p-2.5">
+                      <span className="rounded bg-[#eaf3ff] px-2 py-1 font-['Manrope:Regular',sans-serif] text-[9px] text-[#58718e]">
+                        {article.type}
+                      </span>
+                      <h3 className="mt-2 font-['Manrope:SemiBold',sans-serif] text-[11px] leading-4 text-[#191c1d] line-clamp-2">
+                        {article.title}
+                      </h3>
+                      <p className="mt-2 font-['Manrope:Regular',sans-serif] text-[10px] leading-4 text-[#65736c] line-clamp-2">
+                        {article.copy}
+                      </p>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="col-span-2 p-6 rounded-xl bg-white text-center text-xs text-[#536478] shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+                  Belum ada materi edukasi stunting yang tersedia.
+                </div>
+              )}
             </div>
           </section>
         </div>

@@ -746,6 +746,14 @@ function Flow() {
         }
       />
       <Route
+        path="/nakes/akun/semua"
+        element={
+          <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>
+            <AkunNakesScreen viewAll />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/nakes/tugas/baru"
         element={
           <ProtectedRoute allowedRoles={["tenaga_kesehatan"]}>

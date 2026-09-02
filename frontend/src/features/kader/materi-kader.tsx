@@ -27,44 +27,6 @@ type ModuleItem = {
   video_url?: string
 }
 
-const initialModules: ModuleItem[] = [
-  {
-    module: "MODUL 1 • DASAR",
-    title: "Mengenal Apa Itu Stunting",
-    description: "Definisi, penyebab utama, dan dampak jangka panjang stunting pada anak.",
-    duration: "10 mnt",
-    durationSeconds: 10 * 60,
-    status: "Selesai",
-    category: "Dasar",
-    action: "Lihat Ulang",
-    icon: materiPaths.p3cf2be00,
-    viewBox: "0 0 11.6667 11.6667",
-  },
-  {
-    module: "MODUL 2 • GIZI",
-    title: "Pentingnya 1000 Hari Pertama",
-    description: "Panduan nutrisi ibu hamil dan menyusui untuk mencegah stunting sejak dini.",
-    duration: "15 mnt",
-    durationSeconds: 15 * 60,
-    status: "Sedang Berjalan",
-    category: "Gizi",
-    action: "Lanjutkan",
-    icon: materiPaths.p3808c500,
-    viewBox: "0 0 18 18",
-  },
-  {
-    module: "MODUL 3 • PENGUKURAN",
-    title: "Cara Mengukur dengan Benar",
-    description: "Teknik pengukuran panjang badan dan berat badan balita yang akurat di Posyandu.",
-    duration: "12 mnt",
-    durationSeconds: 12 * 60,
-    status: "Belum Mulai",
-    category: "Dasar",
-    action: "Mulai Belajar",
-    icon: materiPaths.p23220f80,
-    viewBox: "0 0 18 18",
-  },
-]
 
 const statusTone: Record<ModuleStatus, string> = {
   Selesai: "bg-[#e9f7ef] text-[#006d42]",
@@ -185,7 +147,7 @@ export function MateriKader({
 }) {
   const [showQuizConfirm, setShowQuizConfirm] = useState(false)
   const [filter, setFilter] = useState("Semua")
-  const [modules, setModules] = useState<ModuleItem[]>(initialModules)
+  const [modules, setModules] = useState<ModuleItem[]>([])
   const [activeModule, setActiveModule] = useState<ModuleItem | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -193,7 +155,7 @@ export function MateriKader({
     let active = true
     getEducationMaterials(50, 0)
       .then((data) => {
-        if (active && Array.isArray(data) && data.length > 0) {
+        if (active && Array.isArray(data)) {
           const apiModules: ModuleItem[] = data.map((item, idx) => {
             const titleLower = item.title.toLowerCase()
             const category = titleLower.includes("gizi") || titleLower.includes("mpasi") || titleLower.includes("nutrisi")
@@ -217,10 +179,7 @@ export function MateriKader({
               video_url: item.video_url,
             }
           })
-
-          const existingTitles = new Set(apiModules.map((m) => m.title.toLowerCase()))
-          const merged = [...apiModules, ...initialModules.filter((m) => !existingTitles.has(m.title.toLowerCase()))]
-          setModules(merged)
+          setModules(apiModules)
         }
       })
       .catch((err) => {
@@ -277,7 +236,7 @@ export function MateriKader({
             <SvgIcon path={materiTrophyPaths.p3a3ede80} viewBox="0 0 24 24" className="size-6" />
           </span>
           <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/70 xl:mt-0 xl:w-[52%]">
-            <div className="h-full rounded-full bg-[#006d42]" style={{ width: `${(completedCount / modules.length) * 100}%` }} />
+            <div className="h-full rounded-full bg-[#006d42]" style={{ width: `${modules.length > 0 ? (completedCount / modules.length) * 100 : 0}%` }} />
           </div>
         </section>
 
@@ -297,40 +256,62 @@ export function MateriKader({
         </div>
 
         <section className="mt-6 grid gap-4 xl:grid-cols-3 xl:gap-6">
-          {visibleModules.map((item) => (
-            <article key={item.title} className="flex min-w-0 flex-col rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-              <div className="flex items-start justify-between gap-3">
-                <span className="font-['Manrope:SemiBold',sans-serif] text-xs font-semibold tracking-[0.06em] text-[#63747a]">
-                  {item.module}
-                </span>
-                <span className={`grid size-8 shrink-0 place-items-center rounded-full ${statusTone[item.status]}`}>
-                  <SvgIcon path={item.icon} viewBox={item.viewBox} className="size-4" />
-                </span>
-              </div>
-              <h2 className="mt-4 font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold leading-7">
-                {item.title}
-              </h2>
-              <p className="mt-2 flex-1 font-['Manrope:Regular',sans-serif] text-sm leading-5 text-[#3e4941]">
-                {item.description}
-              </p>
-              <div className="mt-5 flex items-center justify-between">
-                <span className="inline-flex items-center gap-1 text-xs text-[#536478]">
-                  <SvgIcon path={materiPaths.p8e10ae0} viewBox="0 0 13.3333 13.3333" className="size-3.5" />
-                  {item.duration}
-                </span>
-                <span className={`rounded-full px-2 py-1 font-['Manrope:SemiBold',sans-serif] text-[10px] ${statusTone[item.status]}`}>
-                  {item.status}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveModule(item)}
-                className="mt-5 min-h-11 rounded-full bg-[#006d42] px-4 font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-white transition hover:bg-[#005c38] active:scale-[0.98]"
-              >
-                {item.action}
-              </button>
-            </article>
-          ))}
+          {visibleModules.length > 0 ? (
+            visibleModules.map((item) => (
+              <article key={item.title} className="flex min-w-0 flex-col rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="font-['Manrope:SemiBold',sans-serif] text-xs font-semibold tracking-[0.06em] text-[#63747a]">
+                    {item.module}
+                  </span>
+                  <span className={`grid size-8 shrink-0 place-items-center rounded-full ${statusTone[item.status]}`}>
+                    <SvgIcon path={item.icon} viewBox={item.viewBox} className="size-4" />
+                  </span>
+                </div>
+                <h2 className="mt-4 font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold leading-7">
+                  {item.title}
+                </h2>
+                <p className="mt-2 flex-1 font-['Manrope:Regular',sans-serif] text-sm leading-5 text-[#3e4941]">
+                  {item.description}
+                </p>
+                {item.video_url && (
+                  <div className="mt-3 flex items-center gap-1.5 text-xs text-red-600 font-semibold font-['Manrope:SemiBold',sans-serif]">
+                    <span className="flex size-4 items-center justify-center rounded-sm bg-red-600 text-[9px] text-white">▶</span>
+                    <a
+                      href={item.video_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="truncate hover:underline"
+                    >
+                      {item.video_url.includes("youtube.com") || item.video_url.includes("youtu.be")
+                        ? "Buka di YouTube ↗"
+                        : "Lihat Video Materi ↗"}
+                    </a>
+                  </div>
+                )}
+                <div className="mt-5 flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1 text-xs text-[#536478]">
+                    <SvgIcon path={materiPaths.p8e10ae0} viewBox="0 0 13.3333 13.3333" className="size-3.5" />
+                    {item.duration}
+                  </span>
+                  <span className={`rounded-full px-2 py-1 font-['Manrope:SemiBold',sans-serif] text-[10px] ${statusTone[item.status]}`}>
+                    {item.status}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveModule(item)}
+                  className="mt-5 min-h-11 rounded-full bg-[#006d42] px-4 font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-white transition hover:bg-[#005c38] active:scale-[0.98] cursor-pointer"
+                >
+                  {item.action}
+                </button>
+              </article>
+            ))
+          ) : (
+            <div className="col-span-full rounded-2xl bg-white p-8 text-center text-sm text-[#536478] shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+              {isLoading ? "Memuat materi edukasi kader..." : "Belum ada materi edukasi stunting yang tersedia."}
+            </div>
+          )}
         </section>
 
         <section className="relative mt-6 flex flex-col items-center overflow-hidden rounded-2xl bg-[#cfe1f8] p-6 text-center shadow-[0_4px_12px_rgba(0,0,0,0.05)] xl:p-8">
