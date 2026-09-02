@@ -3,12 +3,97 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/adnanmaja/centing-raja/db"
 	"github.com/adnanmaja/centing-raja/service"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
+
+type QuizResponse struct {
+	ID          string    `json:"id"`
+	CreatorID   string    `json:"creator_id"`
+	Title       string    `json:"title"`
+	Description *string   `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+func toQuizResponse(q db.Quiz) QuizResponse {
+	return QuizResponse{
+		ID:          uuid.UUID(q.ID.Bytes).String(),
+		CreatorID:   uuid.UUID(q.CreatorID.Bytes).String(),
+		Title:       q.Title,
+		Description: q.Description,
+		CreatedAt:   q.CreatedAt.Time,
+		UpdatedAt:   q.UpdatedAt.Time,
+	}
+}
+
+func toQuizzesResponse(quizzes []db.Quiz) []QuizResponse {
+	res := make([]QuizResponse, len(quizzes))
+	for i, q := range quizzes {
+		res[i] = toQuizResponse(q)
+	}
+	return res
+}
+
+type QuizQuestionResponse struct {
+	ID           string          `json:"id"`
+	QuizID       string          `json:"quiz_id"`
+	QuestionText string          `json:"question_text"`
+	QuestionType string          `json:"question_type"`
+	Options      json.RawMessage `json:"options"`
+	CorrectAns   *string         `json:"correct_ans"`
+}
+
+func toQuizQuestionResponse(q db.QuizQuestion) QuizQuestionResponse {
+	return QuizQuestionResponse{
+		ID:           uuid.UUID(q.ID.Bytes).String(),
+		QuizID:       uuid.UUID(q.QuizID.Bytes).String(),
+		QuestionText: q.QuestionText,
+		QuestionType: string(q.QuestionType),
+		Options:      json.RawMessage(q.Options),
+		CorrectAns:   q.CorrectAns,
+	}
+}
+
+func toQuizQuestionsResponse(questions []db.QuizQuestion) []QuizQuestionResponse {
+	res := make([]QuizQuestionResponse, len(questions))
+	for i, q := range questions {
+		res[i] = toQuizQuestionResponse(q)
+	}
+	return res
+}
+
+type QuizSubmissionResponse struct {
+	ID          string          `json:"id"`
+	KaderID     string          `json:"kader_id"`
+	QuizID      string          `json:"quiz_id"`
+	Score       float64         `json:"score"`
+	Answers     json.RawMessage `json:"answers"`
+	SubmittedAt time.Time       `json:"submitted_at"`
+}
+
+func toQuizSubmissionResponse(s db.QuizSubmission) QuizSubmissionResponse {
+	return QuizSubmissionResponse{
+		ID:          uuid.UUID(s.ID.Bytes).String(),
+		KaderID:     uuid.UUID(s.KaderID.Bytes).String(),
+		QuizID:      uuid.UUID(s.QuizID.Bytes).String(),
+		Score:       numericToFloat64(s.Score),
+		Answers:     json.RawMessage(s.Answers),
+		SubmittedAt: s.SubmittedAt.Time,
+	}
+}
+
+func toQuizSubmissionsResponse(submissions []db.QuizSubmission) []QuizSubmissionResponse {
+	res := make([]QuizSubmissionResponse, len(submissions))
+	for i, s := range submissions {
+		res[i] = toQuizSubmissionResponse(s)
+	}
+	return res
+}
 
 type CreateQuizRequest struct {
 	Title       string `json:"title" binding:"required"`
@@ -73,7 +158,7 @@ func (h *QuizHandler) CreateQuiz(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, quiz)
+	c.JSON(http.StatusCreated, toQuizResponse(quiz))
 }
 
 func (h *QuizHandler) GetQuizByID(c *gin.Context) {
@@ -89,7 +174,7 @@ func (h *QuizHandler) GetQuizByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, quiz)
+	c.JSON(http.StatusOK, toQuizResponse(quiz))
 }
 
 func (h *QuizHandler) ListQuizzes(c *gin.Context) {
@@ -112,7 +197,7 @@ func (h *QuizHandler) ListQuizzes(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, quizzes)
+	c.JSON(http.StatusOK, toQuizzesResponse(quizzes))
 }
 
 func (h *QuizHandler) UpdateQuiz(c *gin.Context) {
@@ -134,7 +219,7 @@ func (h *QuizHandler) UpdateQuiz(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, quiz)
+	c.JSON(http.StatusOK, toQuizResponse(quiz))
 }
 
 func (h *QuizHandler) DeleteQuiz(c *gin.Context) {
@@ -171,7 +256,7 @@ func (h *QuizHandler) CreateQuizQuestion(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, question)
+	c.JSON(http.StatusCreated, toQuizQuestionResponse(question))
 }
 
 func (h *QuizHandler) GetQuizQuestionByID(c *gin.Context) {
@@ -187,7 +272,7 @@ func (h *QuizHandler) GetQuizQuestionByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, question)
+	c.JSON(http.StatusOK, toQuizQuestionResponse(question))
 }
 
 func (h *QuizHandler) ListQuizQuestionsByQuizID(c *gin.Context) {
@@ -203,7 +288,7 @@ func (h *QuizHandler) ListQuizQuestionsByQuizID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, questions)
+	c.JSON(http.StatusOK, toQuizQuestionsResponse(questions))
 }
 
 func (h *QuizHandler) UpdateQuizQuestion(c *gin.Context) {
@@ -225,7 +310,7 @@ func (h *QuizHandler) UpdateQuizQuestion(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, question)
+	c.JSON(http.StatusOK, toQuizQuestionResponse(question))
 }
 
 func (h *QuizHandler) DeleteQuizQuestion(c *gin.Context) {
@@ -268,7 +353,7 @@ func (h *QuizHandler) CreateQuizSubmission(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, submission)
+	c.JSON(http.StatusCreated, toQuizSubmissionResponse(submission))
 }
 
 func (h *QuizHandler) GetQuizSubmissionByID(c *gin.Context) {
@@ -284,7 +369,7 @@ func (h *QuizHandler) GetQuizSubmissionByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, submission)
+	c.JSON(http.StatusOK, toQuizSubmissionResponse(submission))
 }
 
 func (h *QuizHandler) ListQuizSubmissionsByQuizID(c *gin.Context) {
@@ -300,7 +385,7 @@ func (h *QuizHandler) ListQuizSubmissionsByQuizID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, submissions)
+	c.JSON(http.StatusOK, toQuizSubmissionsResponse(submissions))
 }
 
 func (h *QuizHandler) ListQuizSubmissionsByKader(c *gin.Context) {
@@ -316,7 +401,7 @@ func (h *QuizHandler) ListQuizSubmissionsByKader(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, submissions)
+	c.JSON(http.StatusOK, toQuizSubmissionsResponse(submissions))
 }
 
 func (h *QuizHandler) DeleteQuizSubmission(c *gin.Context) {

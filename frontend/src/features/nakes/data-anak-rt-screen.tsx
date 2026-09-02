@@ -8,11 +8,13 @@ import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 type StatusAnak = "stunting" | "berisiko" | "aman"
 
 type AnakData = {
+  id?: string
   nama: string
   umurBulan: number
   jenisKelamin: "L" | "P"
   status: StatusAnak
   zScore: number
+  childObj?: Child
 }
 
 type StatusConfigEntry = {
@@ -150,11 +152,13 @@ export function DataAnakRtScreen() {
           }
         }
         return {
+          id: c.id,
           nama: c.full_name,
           umurBulan: getAgeMonths(c.birth_date),
           jenisKelamin: (c.gender === "P" || c.gender === "Perempuan" ? "P" : "L") as "L" | "P",
           status,
           zScore,
+          childObj: c,
         }
       })
     }
@@ -382,6 +386,23 @@ export function DataAnakRtScreen() {
                         <button
                           key={anak.nama}
                           type="button"
+                          onClick={() =>
+                            navigate("/nakes/pertumbuhan", {
+                              state: {
+                                child: anak.childObj || {
+                                  id: anak.id,
+                                  full_name: anak.nama,
+                                  gender: anak.jenisKelamin,
+                                },
+                                anak: {
+                                  id: anak.id,
+                                  nama: anak.nama,
+                                  usiaBulan: `${anak.umurBulan} Bulan`,
+                                  jenisKelamin: anak.jenisKelamin === "L" ? "Laki-laki" : "Perempuan",
+                                },
+                              },
+                            })
+                          }
                           className="p-4 bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] flex justify-between items-center text-left cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.99]"
                         >
                           <div className="flex items-center gap-4">
@@ -443,6 +464,23 @@ export function DataAnakRtScreen() {
                           return (
                             <tr
                               key={anak.nama}
+                              onClick={() =>
+                                navigate("/nakes/pertumbuhan", {
+                                  state: {
+                                    child: anak.childObj || {
+                                      id: anak.id,
+                                      full_name: anak.nama,
+                                      gender: anak.jenisKelamin,
+                                    },
+                                    anak: {
+                                      id: anak.id,
+                                      nama: anak.nama,
+                                      usiaBulan: `${anak.umurBulan} Bulan`,
+                                      jenisKelamin: anak.jenisKelamin === "L" ? "Laki-laki" : "Perempuan",
+                                    },
+                                  },
+                                })
+                              }
                               className={`border-t border-zinc-200 cursor-pointer transition-colors hover:bg-emerald-50 ${
                                 i % 2 === 1 ? "bg-gray-50" : ""
                               }`}

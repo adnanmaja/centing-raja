@@ -1,12 +1,12 @@
+import { useEffect, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
 import { SvgIcon } from "../../components/ui/svg-icon"
-import { formatStuntingStatus, type Measurement } from "../../lib/api"
+import { formatStuntingStatus, getChildMeasurements, type Measurement } from "../../lib/api"
 import type { KaderChildTask } from "./tugas-bulan-ini"
-
 import measurementDataPaths from "../../assets/icon-measurement-data"
 
 export function DataPengukuran({
@@ -25,15 +25,43 @@ export function DataPengukuran({
     | { child?: KaderChildTask; measurement?: Measurement }
     | undefined
 
-  const child = stateData?.child || {
+  const child: KaderChildTask = stateData?.child || {
     name: "Ahmad Raihan",
     initials: "AR",
     age: "14 Bulan",
     gender: "Laki-laki",
     rt: "RT 01 / RW 03",
+    address: "Jl. Melati No. 4",
+    status: "Belum Diukur",
+    deadline: "12 Des",
+    tone: "bg-[#dceafe] text-[#4f6073]",
   }
 
-  const measurement = stateData?.measurement
+  const [measurement, setMeasurement] = useState<Measurement | null>(stateData?.measurement ?? null)
+
+  const childId = stateData?.child?.id
+
+  useEffect(() => {
+    if (!stateData?.measurement && childId) {
+      let active = true
+      getChildMeasurements(childId)
+        .then((data) => {
+          if (active && Array.isArray(data) && data.length > 0) {
+            const sorted = [...data].sort(
+              (a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()
+            )
+            setMeasurement(sorted[0])
+          }
+        })
+        .catch((err) => {
+          console.warn("[Centing] Failed to fetch measurement for kader:", err)
+        })
+      return () => {
+        active = false
+      }
+    }
+  }, [stateData?.measurement, childId])
+
   const heightVal = measurement?.height !== undefined ? String(measurement.height) : "75.5"
   const weightVal = measurement?.weight !== undefined ? String(measurement.weight) : "9.2"
   const headVal = measurement?.head_circumference !== undefined ? String(measurement.head_circumference) : "46"

@@ -208,7 +208,8 @@ export function AkunNakesScreen() {
   }
 
   const handleCreateAkun = async (data: AkunBaruData) => {
-    const isDuplicate = akunList.some((akun) => akun.nik === data.nik)
+    const phone = data.noHp || data.nik
+    const isDuplicate = akunList.some((akun) => akun.nik === data.nik || akun.nik === phone)
     if (isDuplicate) {
       window.alert("Nomor telepon/NIK ini sudah terdaftar. Gunakan nomor lain.")
       return
@@ -217,14 +218,15 @@ export function AkunNakesScreen() {
     try {
       const createdUser = await createNakesUser({
         name: data.nama,
-        phone_number: data.nik,
+        phone_number: phone,
         role: data.role === "Kader" ? "kader" : "orang_tua",
+        nik: data.nik || undefined,
       })
 
       const palette = avatarPalette[akunList.length % avatarPalette.length]
       const newAkun: Akun = {
         nama: createdUser.name,
-        nik: createdUser.phone_number,
+        nik: createdUser.nik || createdUser.phone_number,
         role: data.role,
         initial: createdUser.name.charAt(0).toUpperCase(),
         avatarBg: palette.bg,

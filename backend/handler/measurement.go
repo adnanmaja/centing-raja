@@ -82,6 +82,11 @@ type UpdateMeasurementRequest struct {
 	HeadCircumference     float64 `json:"head_circumference"`
 	UpperArmCircumference float64 `json:"upper_arm_circumference"`
 }
+type ListMeasurementsRequest struct {
+	Limit  int32 `form:"limit"`
+	Offset int32 `form:"offset"`
+}
+
 
 type MeasurementHandler struct {
 	measurementService *service.MeasurementService
@@ -166,6 +171,29 @@ func (h *MeasurementHandler) GetMeasurementByID(c *gin.Context) {
 }
 
 func (h *MeasurementHandler) GetMeasurements(c *gin.Context) {
+	var req ListMeasurementsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.Limit <= 0 {
+		req.Limit = 100
+	}
+	if req.Offset < 0 {
+		req.Offset = 0
+	}
+
+	roleVal, exists := c.Get("role")
+	if exists && (roleVal == db.UserRoleTenagaKesehatan || roleVal == string(db.UserRoleTenagaKesehatan)) {
+		measurements, err := h.measurementService.ListAllMeasurements(c, req.Limit, req.Offset)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, toMeasurementsResponse(measurements))
+		return
+	}
+
 	userIdStr := c.GetString("user_id")
 	if userIdStr == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -185,7 +213,6 @@ func (h *MeasurementHandler) GetMeasurements(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, toMeasurementsResponse(measurements))
-
 }
 
 func (h *MeasurementHandler) ListMeasurementsByChildID(c *gin.Context) {

@@ -122,6 +122,7 @@ export function DaftarCentingRaja({
                 name,
                 phone_number: phone,
                 role: backendRole,
+                nik,
               })
             } catch (err: unknown) {
               const msg = err instanceof Error ? err.message : String(err)

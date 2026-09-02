@@ -11,6 +11,7 @@ export interface RegisterPayload {
   name: string;
   phone_number: string;
   role: string;
+  nik?: string;
 }
 
 export interface AuthResponse {

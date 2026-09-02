@@ -289,15 +289,16 @@ func (q *Queries) CreateQuizSubmission(ctx context.Context, arg CreateQuizSubmis
 
 const createUser = `-- name: CreateUser :one
 
-INSERT INTO users (name, phone_number, role)
-VALUES ($1, $2, $3)
-RETURNING id, name, phone_number, role, created_at
+INSERT INTO users (name, phone_number, role, nik)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, phone_number, role, nik, created_at
 `
 
 type CreateUserParams struct {
 	Name        string
 	PhoneNumber *string
 	Role        UserRole
+	Nik         *string
 }
 
 type CreateUserRow struct {
@@ -305,18 +306,25 @@ type CreateUserRow struct {
 	Name        string
 	PhoneNumber *string
 	Role        UserRole
+	Nik         *string
 	CreatedAt   pgtype.Timestamptz
 }
 
 // Users --
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.Name, arg.PhoneNumber, arg.Role)
+	row := q.db.QueryRow(ctx, createUser,
+		arg.Name,
+		arg.PhoneNumber,
+		arg.Role,
+		arg.Nik,
+	)
 	var i CreateUserRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.PhoneNumber,
 		&i.Role,
+		&i.Nik,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -653,6 +661,50 @@ func (q *Queries) GetUserByPhoneNumber(ctx context.Context, phoneNumber *string)
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const listAllMeasurements = `-- name: ListAllMeasurements :many
+SELECT id, measurer_id, measurer_role, children_id, age, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference FROM measurement
+ORDER BY measured_at DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListAllMeasurementsParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) ListAllMeasurements(ctx context.Context, arg ListAllMeasurementsParams) ([]Measurement, error) {
+	rows, err := q.db.Query(ctx, listAllMeasurements, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Measurement
+	for rows.Next() {
+		var i Measurement
+		if err := rows.Scan(
+			&i.ID,
+			&i.MeasurerID,
+			&i.MeasurerRole,
+			&i.ChildrenID,
+			&i.Age,
+			&i.MeasuredAt,
+			&i.Weight,
+			&i.Height,
+			&i.StuntingStatus,
+			&i.ZScore,
+			&i.HeadCircumference,
+			&i.UpperArmCircumference,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listChildren = `-- name: ListChildren :many
