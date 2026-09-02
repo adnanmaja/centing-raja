@@ -97,7 +97,7 @@ const initialKuisHistory: KuisHistoryItem[] = [
   { id: "1", judul: "Deteksi Dini Stunting Balita", durasi: "15 Menit", jumlahSoal: 5 },
 ]
 
-export function AkunNakesScreen() {
+export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
   const navigate = useNavigate()
   const [akunList, setAkunList] = useState<Akun[]>(initialAkunList)
   const [searchQuery, setSearchQuery] = useState("")
@@ -246,15 +246,17 @@ export function AkunNakesScreen() {
 
   return (
     <main className="min-h-svh bg-gray-50 pb-24 flex flex-col">
-      <NakesHeader title="Akun" />
+      <NakesHeader title={viewAll ? "Semua Akun" : "Akun"} onBack={viewAll ? () => navigate("/nakes/akun") : undefined} />
 
       <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 py-6 flex flex-col gap-8">
         <div className="flex flex-col gap-2">
           <h1 className="text-zinc-900 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-8">
-            Manajemen Akun &amp; Edukasi
+            {viewAll ? "Semua Akun Terdaftar" : "Manajemen Akun & Edukasi"}
           </h1>
           <p className="text-neutral-700 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] leading-5">
-            Kelola akun Kader dan Orang Tua, serta publikasikan konten edukasi.
+            {viewAll
+              ? "Daftar lengkap akun Kader dan Orang Tua yang terdaftar di sistem."
+              : "Kelola akun Kader dan Orang Tua, serta publikasikan konten edukasi."}
           </p>
         </div>
 
@@ -418,18 +420,22 @@ export function AkunNakesScreen() {
               </>
             )}
 
-            <button
-              type="button"
-              onClick={() => navigate("/nakes/akun/semua")}
-              className="w-full px-3 pt-4 pb-3.5 bg-zinc-100 flex justify-center cursor-pointer transition-colors hover:bg-zinc-200"
-            >
-              <span className="text-emerald-800 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-4">
-                Lihat Semua Akun
-              </span>
-            </button>
+            {!viewAll && (
+              <button
+                type="button"
+                onClick={() => navigate("/nakes/akun/semua")}
+                className="w-full px-3 pt-4 pb-3.5 bg-zinc-100 flex justify-center cursor-pointer transition-colors hover:bg-zinc-200"
+              >
+                <span className="text-emerald-800 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-4">
+                  Lihat Semua Akun
+                </span>
+              </button>
+            )}
           </div>
         </section>
 
+        {!viewAll && (
+          <>
         <section className="flex flex-col gap-4">
           <h2 className="text-zinc-900 text-xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-7">
             Konten Edukasi
@@ -545,6 +551,8 @@ export function AkunNakesScreen() {
             </div>
           )}
         </section>
+          </>
+        )}
       </div>
 
       {isModalOpen && (

@@ -30,11 +30,9 @@ export function MateriEdukasi({
     let active = true
     getEducationMaterials(50, 0)
       .then((data) => {
-        if (active && Array.isArray(data) && data.length > 0) {
+        if (active && Array.isArray(data)) {
           const normalizedApi = data.map(normalizeEducationMaterial)
-          const existingIds = new Set(normalizedApi.map((m) => m.id))
-          const merged = [...normalizedApi, ...parentMaterialItems.filter((m) => !existingIds.has(m.id))]
-          setMaterials(merged)
+          setMaterials(normalizedApi)
         }
       })
       .catch((err) => {
@@ -99,40 +97,46 @@ export function MateriEdukasi({
         </div>
 
         <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {visible.map((item, index) => (
-            <motion.article
-              key={item.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.05, ease: "easeOut" }}
-              className="flex min-h-[145px] flex-col rounded-xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.03)]"
-            >
-              <div className="flex gap-3">
-                <span className={`grid size-10 shrink-0 place-items-center rounded-full ${item.iconBox || "bg-[#76d69f] text-[#005c38]"}`}>
-                  {item.icon ? (
-                    <SvgIcon path={item.icon} viewBox="0 0 17 21" className="size-4" />
-                  ) : (
-                    <span>📖</span>
-                  )}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h2 className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-base font-semibold leading-5">
-                    {item.title}
-                  </h2>
-                  <p className="mt-1 font-['Manrope:Regular',sans-serif] text-xs leading-4 text-[#65736c]">
-                    {item.description}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => onOpen(item)}
-                className="mt-auto self-end pt-4 font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#007c4a]"
+          {visible.length > 0 ? (
+            visible.map((item, index) => (
+              <motion.article
+                key={item.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.05, ease: "easeOut" }}
+                className="flex min-h-[145px] flex-col rounded-xl bg-white p-4 shadow-[0_1px_4px_rgba(0,0,0,0.03)]"
               >
-                Buka Materi →
-              </button>
-            </motion.article>
-          ))}
+                <div className="flex gap-3">
+                  <span className={`grid size-10 shrink-0 place-items-center rounded-full ${item.iconBox || "bg-[#76d69f] text-[#005c38]"}`}>
+                    {item.icon ? (
+                      <SvgIcon path={item.icon} viewBox="0 0 17 21" className="size-4" />
+                    ) : (
+                      <span>📖</span>
+                    )}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-base font-semibold leading-5">
+                      {item.title}
+                    </h2>
+                    <p className="mt-1 font-['Manrope:Regular',sans-serif] text-xs leading-4 text-[#65736c]">
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onOpen(item)}
+                  className="mt-auto self-end pt-4 font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#007c4a] cursor-pointer"
+                >
+                  Buka Materi →
+                </button>
+              </motion.article>
+            ))
+          ) : (
+            <div className="col-span-full rounded-xl bg-white p-8 text-center text-sm text-[#536478] shadow-[0_1px_4px_rgba(0,0,0,0.03)]">
+              {isLoading ? "Memuat materi edukasi..." : "Belum ada materi edukasi pada kategori ini."}
+            </div>
+          )}
         </section>
       </div>
 

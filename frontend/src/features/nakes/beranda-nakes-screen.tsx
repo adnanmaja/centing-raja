@@ -35,22 +35,6 @@ interface ArticleItem {
   video_url?: string
 }
 
-const defaultArticles: ArticleItem[] = [
-  {
-    category: "INFO KADER",
-    categoryColor: "text-[#007c4a]",
-    title: "Panduan Pengukuran Antropometri Terbaru 2024",
-    time: "2 Hari yang lalu",
-    image: infoKaderImage,
-  },
-  {
-    category: "GIZI ANAK",
-    categoryColor: "text-slate-600",
-    title: "Resep MPASI Tinggi Protein untuk Kejar Tumbuh",
-    time: "5 Hari yang lalu",
-    image: giziAnakImage,
-  },
-]
 
 function formatRelativeTime(dateStr?: string): string {
   if (!dateStr) return "Baru saja"
@@ -128,7 +112,7 @@ export function BerandaNakesScreen() {
   const [monitoringCoverage, setMonitoringCoverage] = useState<number>(0)
   const [activeTasks, setActiveTasks] = useState<number>(0)
   const [trendState, setTrendState] = useState(() => computeTrendData([]))
-  const [articleList, setArticleList] = useState<ArticleItem[]>(defaultArticles)
+  const [articleList, setArticleList] = useState<ArticleItem[]>([])
 
   useEffect(() => {
     let active = true
@@ -193,12 +177,9 @@ export function BerandaNakesScreen() {
             }
           })
 
-          const existingTitles = new Set(mappedArticles.map((a) => a.title.toLowerCase()))
-          const merged = [
-            ...mappedArticles,
-            ...defaultArticles.filter((a) => !existingTitles.has(a.title.toLowerCase())),
-          ]
-          setArticleList(merged)
+          setArticleList(mappedArticles)
+        } else {
+          setArticleList([])
         }
       } catch (err) {
         console.error("Failed to load nakes stats:", err)
@@ -311,36 +292,44 @@ export function BerandaNakesScreen() {
           </div>
 
           <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] sm:grid sm:grid-cols-2">
-            {articleList.map((article) => (
-              <article
-                key={article.title}
-                onClick={() => {
-                  if (article.video_url) {
-                    window.open(article.video_url, "_blank", "noopener,noreferrer")
-                  } else {
-                    navigate("/nakes/akun")
-                  }
-                }}
-                className="min-w-60 sm:min-w-0 bg-zinc-100 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col cursor-pointer transition-transform hover:scale-[1.01]"
-              >
-                <img src={article.image} alt="" className="h-32 w-full object-cover" />
-                <div className="flex-1 p-3 flex flex-col justify-between gap-1.5">
-                  <div className="flex flex-col gap-1.5">
-                    <span
-                      className={`font-['Plus_Jakarta_Sans:Bold',sans-serif] text-xs font-bold ${article.categoryColor}`}
-                    >
-                      {article.category}
+            {articleList.length > 0 ? (
+              articleList.map((article) => (
+                <article
+                  key={article.id || article.title}
+                  onClick={() => {
+                    if (article.video_url) {
+                      window.open(article.video_url, "_blank", "noopener,noreferrer")
+                    } else {
+                      navigate("/nakes/akun")
+                    }
+                  }}
+                  className="min-w-60 sm:min-w-0 bg-zinc-100 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col cursor-pointer transition-transform hover:scale-[1.01]"
+                >
+                  <img src={article.image} alt="" className="h-32 w-full object-cover" />
+                  <div className="flex-1 p-3 flex flex-col justify-between gap-1.5">
+                    <div className="flex flex-col gap-1.5">
+                      <span
+                        className={`font-['Plus_Jakarta_Sans:Bold',sans-serif] text-xs font-bold ${article.categoryColor}`}
+                      >
+                        {article.category}
+                      </span>
+                      <h3 className="font-['Plus_Jakarta_Sans:Bold',sans-serif] text-sm font-bold text-zinc-900 leading-5">
+                        {article.title}
+                      </h3>
+                    </div>
+                    <span className="font-['Plus_Jakarta_Sans:Regular',sans-serif] text-[10px] text-neutral-700">
+                      {article.time}
                     </span>
-                    <h3 className="font-['Plus_Jakarta_Sans:Bold',sans-serif] text-sm font-bold text-zinc-900 leading-5">
-                      {article.title}
-                    </h3>
                   </div>
-                  <span className="font-['Plus_Jakarta_Sans:Regular',sans-serif] text-[10px] text-neutral-700">
-                    {article.time}
-                  </span>
-                </div>
-              </article>
-            ))}
+                </article>
+              ))
+            ) : (
+              <div className="min-w-60 sm:min-w-0 col-span-2 p-6 bg-zinc-100 rounded-xl flex flex-col items-center justify-center text-center">
+                <span className="font-['Plus_Jakarta_Sans:Regular',sans-serif] text-xs text-neutral-500">
+                  Belum ada materi edukasi yang dipublikasikan.
+                </span>
+              </div>
+            )}
 
             <button
               type="button"
