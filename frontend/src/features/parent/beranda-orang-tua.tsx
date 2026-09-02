@@ -8,8 +8,10 @@ import { SvgIcon } from "../../components/ui/svg-icon"
 import {
   formatStuntingStatus,
   getChildMeasurements,
+  getEducationMaterials,
   getParentChildren,
   type Child,
+  type EducationMaterial,
   type Measurement,
 } from "../../lib/api"
 import { useAuth } from "../../context/auth-context"
@@ -41,6 +43,30 @@ function getInitials(name?: string): string {
     .toUpperCase()
   return letters || "A"
 }
+interface ParentArticle {
+  id?: string
+  type: string
+  title: string
+  copy: string
+  image: string
+}
+
+const defaultArticles: ParentArticle[] = [
+  {
+    id: "hpk",
+    type: "Nutrisi",
+    title: "Ide MPASI Padat Gizi untuk Kejar Berat Badan",
+    copy: "Resep mudah dengan bahan lokal yang terbukti efektif meningkatkan berat badan...",
+    image: parentEducationFood,
+  },
+  {
+    id: "gizi-seimbang",
+    type: "Stimulasi",
+    title: "Pentingnya Stimulasi untuk Tumbuh Kembang Emas",
+    copy: "Tinggi badan dipengaruhi nutrisi serta perkembangan anak sehari-hari...",
+    image: parentEducationPlay,
+  },
+]
 
 export function BerandaOrangTua({
   onMaterial,
@@ -58,20 +84,57 @@ export function BerandaOrangTua({
   const [metric, setMetric] = useState<"Tinggi Badan" | "Berat Badan">("Tinggi Badan")
   const [isChildPickerOpen, setIsChildPickerOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [articleList, setArticleList] = useState<ParentArticle[]>(defaultArticles)
 
   useEffect(() => {
     let active = true
-    getParentChildren()
-      .then((data) => {
-        if (active && Array.isArray(data)) {
-          setChildren(data)
-          if (data.length > 0) {
-            setSelectedChild(data[0])
+    Promise.all([
+      getParentChildren().catch(() => [] as Child[]),
+      getEducationMaterials(10, 0).catch(() => [] as EducationMaterial[]),
+    ])
+      .then(([childData, eduData]) => {
+        if (!active) return
+        if (Array.isArray(childData)) {
+          setChildren(childData)
+          if (childData.length > 0) {
+            setSelectedChild(childData[0])
           }
+        }
+        if (Array.isArray(eduData) && eduData.length > 0) {
+          const mappedArticles: ParentArticle[] = eduData.map((item, idx) => {
+            const titleLower = item.title.toLowerCase()
+            const isNutrisi =
+              titleLower.includes("gizi") ||
+              titleLower.includes("mpasi") ||
+              titleLower.includes("nutrisi") ||
+              titleLower.includes("makan")
+            const isSanitasi =
+              titleLower.includes("sanitasi") ||
+              titleLower.includes("cuci") ||
+              titleLower.includes("kebersihan")
+
+            const type = isNutrisi ? "Nutrisi" : isSanitasi ? "Sanitasi" : "Pola Asuh"
+            const image = idx % 2 === 0 ? parentEducationFood : parentEducationPlay
+
+            return {
+              id: item.id,
+              type,
+              title: item.title,
+              copy: item.description || "Panduan nutrisi dan edukasi stunting untuk orang tua.",
+              image,
+            }
+          })
+
+          const existingTitles = new Set(mappedArticles.map((a) => a.title.toLowerCase()))
+          const merged = [
+            ...mappedArticles,
+            ...defaultArticles.filter((a) => !existingTitles.has(a.title.toLowerCase())),
+          ]
+          setArticleList(merged)
         }
       })
       .catch((err) => {
-        console.warn("[Centing] Failed to load parent children:", err)
+        console.warn("[Centing] Failed to load parent dashboard data:", err)
       })
       .finally(() => {
         if (active) setIsLoading(false)
@@ -80,7 +143,6 @@ export function BerandaOrangTua({
       active = false
     }
   }, [])
-
   useEffect(() => {
     if (!selectedChild) {
       setMeasurements([])
@@ -133,21 +195,6 @@ export function BerandaOrangTua({
       range: latestMeasurement ? "Tercatat" : "Belum ada data",
     },
   ]
-  const articles = [
-    {
-      type: "Nutrisi",
-      title: "Ide MPASI Padat Gizi untuk Kejar Berat Badan",
-      copy: "Resep mudah dengan bahan lokal yang terbukti efektif meningkatkan berat badan...",
-      image: parentEducationFood,
-    },
-    {
-      type: "Stimulasi",
-      title: "Pentingnya Stimulasi untuk Tumbuh Kembang Emas",
-      copy: "Tinggi badan dipengaruhi nutrisi serta perkembangan anak sehari-hari...",
-      image: parentEducationPlay,
-    },
-  ]
-
   return (
     <main data-reveal-page className="min-h-svh bg-[#f8f9fa] pb-24 text-[#191c1d]" aria-label="Beranda Orang Tua">
       <ParentInputHeader logo={parentDashboardLogo} title="Beranda" />
@@ -341,26 +388,34 @@ export function BerandaOrangTua({
               </h2>
               <button
                 type="button"
-                className="font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#007c4a]"
+                onClick={onMaterial}
+                className="font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#007c4a] transition-colors hover:underline cursor-pointer"
               >
                 Lihat Semua
               </button>
             </div>
             <div className="mt-3 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] sm:grid sm:grid-cols-2 lg:grid-cols-2">
-              {articles.map((article) => (
+              {articleList.map((article) => (
                 <article
                   key={article.title}
-                  className="min-w-[190px] overflow-hidden rounded-xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)] sm:min-w-0"
+                  onClick={() => {
+                    if (article.id) {
+                      navigate(`/orang-tua/materi/${article.id}`)
+                    } else {
+                      onMaterial()
+                    }
+                  }}
+                  className="min-w-[190px] overflow-hidden rounded-xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)] sm:min-w-0 cursor-pointer transition-transform hover:scale-[1.01]"
                 >
                   <img src={article.image} alt="" className="aspect-[1.65/1] w-full object-cover" />
                   <div className="p-2.5">
                     <span className="rounded bg-[#eaf3ff] px-2 py-1 font-['Manrope:Regular',sans-serif] text-[9px] text-[#58718e]">
                       {article.type}
                     </span>
-                    <h3 className="mt-2 font-['Manrope:SemiBold',sans-serif] text-[11px] leading-4 text-[#191c1d]">
+                    <h3 className="mt-2 font-['Manrope:SemiBold',sans-serif] text-[11px] leading-4 text-[#191c1d] line-clamp-2">
                       {article.title}
                     </h3>
-                    <p className="mt-2 font-['Manrope:Regular',sans-serif] text-[10px] leading-4 text-[#65736c]">
+                    <p className="mt-2 font-['Manrope:Regular',sans-serif] text-[10px] leading-4 text-[#65736c] line-clamp-2">
                       {article.copy}
                     </p>
                   </div>

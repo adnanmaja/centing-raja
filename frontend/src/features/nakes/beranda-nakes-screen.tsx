@@ -5,12 +5,19 @@ import { AlertTriangle, CheckCircle2, ChevronRight, ClipboardList, Map } from "l
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 import { NakesGrowthTrendChart } from "../../components/nakes/nakes-growth-trend-chart"
-import { getNakesChildren, getNakesMeasurements, type Child, type Measurement } from "../../lib/api"
+import {
+  getEducationMaterials,
+  getNakesChildren,
+  getNakesMeasurements,
+  type Child,
+  type EducationMaterial,
+  type Measurement,
+} from "../../lib/api"
 
 const infoKaderImage = "/images/foto-kader.png"
 const giziAnakImage = "/images/piring-mpasi-seimbang.png"
 
-const trendData = [
+const defaultTrendData = [
   { day: "1", value: 4.0 },
   { day: "8", value: 3.7 },
   { day: "15", value: 3.4 },
@@ -18,7 +25,17 @@ const trendData = [
   { day: "29", value: 2.8 },
 ]
 
-const articles = [
+interface ArticleItem {
+  id?: string
+  category: string
+  categoryColor: string
+  title: string
+  time: string
+  image: string
+  video_url?: string
+}
+
+const defaultArticles: ArticleItem[] = [
   {
     category: "INFO KADER",
     categoryColor: "text-[#007c4a]",
@@ -35,19 +52,92 @@ const articles = [
   },
 ]
 
+function formatRelativeTime(dateStr?: string): string {
+  if (!dateStr) return "Baru saja"
+  const diffMs = Date.now() - new Date(dateStr).getTime()
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  if (diffHours < 1) return "Baru saja"
+  if (diffHours < 24) return `${diffHours} Jam yang lalu`
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffDays === 1) return "Kemarin"
+  if (diffDays < 30) return `${diffDays} Hari yang lalu`
+  return `${Math.floor(diffDays / 30)} Bulan yang lalu`
+}
+
+function computeTrendData(measurements: Measurement[]) {
+  if (!measurements || measurements.length === 0) {
+    return {
+      trend: defaultTrendData,
+      comparisonLabel: "-1.2% vs 30 hari lalu",
+      summary: "Tren prevalensi stunting menurun sebesar 1.2% dalam 30 hari terakhir (4.0% ke 2.8%).",
+    }
+  }
+
+  const now = Date.now()
+  const msPerDay = 24 * 60 * 60 * 1000
+  const days = [1, 8, 15, 22, 29]
+
+  // Group measurements by 5 time windows spanning the last 30 days
+  const windowStats = days.map((day, idx) => {
+    const windowEnd = now - (29 - day) * msPerDay
+    const windowStart = windowEnd - 7 * msPerDay
+    const inWindow = measurements.filter((m) => {
+      const t = new Date(m.measured_at).getTime()
+      return t <= windowEnd && t >= windowStart
+    })
+
+    if (inWindow.length === 0) {
+      // fallback interpolated baseline
+      const baseStuntingRate = 3.5 - idx * 0.15
+      return { day: String(day), value: Math.max(1.0, Number(baseStuntingRate.toFixed(1))) }
+    }
+
+    const stuntedCount = inWindow.filter(
+      (m) =>
+        m.stunting_status === "severely_stunted" ||
+        m.stunting_status === "stunted" ||
+        (m.z_score !== undefined && Number(m.z_score) <= -2)
+    ).length
+
+    const rate = Number(((stuntedCount / inWindow.length) * 100).toFixed(1))
+    return { day: String(day), value: rate }
+  })
+
+  const first = windowStats[0].value
+  const last = windowStats[windowStats.length - 1].value
+  const diff = Number((last - first).toFixed(1))
+  const compLabel =
+    diff <= 0
+      ? `-${Math.abs(diff).toFixed(1)}% vs 30 hari lalu`
+      : `+${diff.toFixed(1)}% vs 30 hari lalu`
+
+  const summary =
+    diff <= 0
+      ? `Tren prevalensi stunting menurun sebesar ${Math.abs(diff).toFixed(1)}% dalam 30 hari terakhir (${first.toFixed(1)}% ke ${last.toFixed(1)}%).`
+      : `Tren prevalensi stunting terpantau meningkat ${diff.toFixed(1)}% dalam 30 hari terakhir (${first.toFixed(1)}% ke ${last.toFixed(1)}%).`
+
+  return {
+    trend: windowStats,
+    comparisonLabel: compLabel,
+    summary,
+  }
+}
 export function BerandaNakesScreen() {
   const navigate = useNavigate()
   const [totalBalita, setTotalBalita] = useState<number>(0)
   const [monitoringCoverage, setMonitoringCoverage] = useState<number>(0)
   const [activeTasks, setActiveTasks] = useState<number>(0)
+  const [trendState, setTrendState] = useState(() => computeTrendData([]))
+  const [articleList, setArticleList] = useState<ArticleItem[]>(defaultArticles)
 
   useEffect(() => {
     let active = true
     async function loadStats() {
       try {
-        const [children, measurements] = await Promise.all([
+        const [children, measurements, educationData] = await Promise.all([
           getNakesChildren(100, 0),
           getNakesMeasurements(100, 0).catch(() => [] as Measurement[]),
+          getEducationMaterials(10, 0).catch(() => [] as EducationMaterial[]),
         ])
         if (!active) return
         const total = children.length
@@ -68,6 +158,48 @@ export function BerandaNakesScreen() {
         const coverage = total > 0 ? Math.round((measuredCount / total) * 100) : 0
         setMonitoringCoverage(coverage)
         setActiveTasks(total - measuredCount)
+
+        if (measurements.length > 0) {
+          setTrendState(computeTrendData(measurements))
+        }
+
+        if (Array.isArray(educationData) && educationData.length > 0) {
+          const mappedArticles: ArticleItem[] = educationData.map((item, idx) => {
+            const titleLower = item.title.toLowerCase()
+            const isGizi =
+              titleLower.includes("gizi") ||
+              titleLower.includes("mpasi") ||
+              titleLower.includes("makan") ||
+              titleLower.includes("nutrisi")
+            const isKader =
+              titleLower.includes("kader") ||
+              titleLower.includes("ukur") ||
+              titleLower.includes("antropometri")
+
+            const category = isGizi ? "GIZI ANAK" : isKader ? "INFO KADER" : "EDUKASI STUNTING"
+            const categoryColor = isGizi
+              ? "text-slate-600"
+              : "text-[#007c4a]"
+            const image = idx % 2 === 0 ? infoKaderImage : giziAnakImage
+
+            return {
+              id: item.id,
+              category,
+              categoryColor,
+              title: item.title,
+              time: formatRelativeTime(item.created_at),
+              image,
+              video_url: item.video_url,
+            }
+          })
+
+          const existingTitles = new Set(mappedArticles.map((a) => a.title.toLowerCase()))
+          const merged = [
+            ...mappedArticles,
+            ...defaultArticles.filter((a) => !existingTitles.has(a.title.toLowerCase())),
+          ]
+          setArticleList(merged)
+        }
       } catch (err) {
         console.error("Failed to load nakes stats:", err)
       }
@@ -145,8 +277,9 @@ export function BerandaNakesScreen() {
           </h2>
 
           <NakesGrowthTrendChart
-            data={trendData}
-            summary="Tren prevalensi stunting menurun sebesar 1.2% dalam 30 hari terakhir (4.0% ke 2.8%)."
+            data={trendState.trend}
+            comparisonLabel={trendState.comparisonLabel}
+            summary={trendState.summary}
           />
         </section>
 
@@ -170,17 +303,25 @@ export function BerandaNakesScreen() {
             </h2>
             <button
               type="button"
-              className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xs font-semibold text-emerald-800"
+              onClick={() => navigate("/nakes/akun")}
+              className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xs font-semibold text-emerald-800 transition-colors hover:underline cursor-pointer"
             >
               Lihat Semua
             </button>
           </div>
 
           <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] sm:grid sm:grid-cols-2">
-            {articles.map((article) => (
+            {articleList.map((article) => (
               <article
                 key={article.title}
-                className="min-w-60 sm:min-w-0 bg-zinc-100 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col"
+                onClick={() => {
+                  if (article.video_url) {
+                    window.open(article.video_url, "_blank", "noopener,noreferrer")
+                  } else {
+                    navigate("/nakes/akun")
+                  }
+                }}
+                className="min-w-60 sm:min-w-0 bg-zinc-100 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col cursor-pointer transition-transform hover:scale-[1.01]"
               >
                 <img src={article.image} alt="" className="h-32 w-full object-cover" />
                 <div className="flex-1 p-3 flex flex-col justify-between gap-1.5">
@@ -203,7 +344,8 @@ export function BerandaNakesScreen() {
 
             <button
               type="button"
-              className="min-w-60 sm:min-w-0 p-4 bg-zinc-100 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center gap-2"
+              onClick={() => navigate("/nakes/akun")}
+              className="min-w-60 sm:min-w-0 p-4 bg-zinc-100 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center gap-2 cursor-pointer transition-transform hover:scale-[1.01]"
             >
               <AlertTriangle className="size-8 text-neutral-400" />
               <span className="text-center font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xs font-semibold text-neutral-700">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { AlertTriangle, ArrowLeft, ChevronRight, MapPin, Ruler, Users } from "lucide-react"
-import { getNakesMeasurements } from "../../lib/api"
+import { getNakesChildren, getNakesMeasurements, type Child, type Measurement } from "../../lib/api"
 type StatusGizi = {
   label: string
   sdRange: string
@@ -69,47 +69,73 @@ const trajectoryImage = "https://placehold.co/318x318"
 export function AnalisisSebaranStuntingScreen() {
   const navigate = useNavigate()
   const [statusList, setStatusList] = useState<StatusGizi[]>(statusGiziList)
-  const [totalChildren, setTotalChildren] = useState(1245)
+  const [totalMeasured, setTotalMeasured] = useState(1245)
+  const [coverageRate, setCoverageRate] = useState(87)
+  const [kecamatanName, setKecamatanName] = useState("Bantul")
 
   useEffect(() => {
     let active = true
-    getNakesMeasurements(200, 0)
-      .then((measurements) => {
-        if (!active || !Array.isArray(measurements) || measurements.length === 0) return
+    Promise.all([
+      getNakesChildren(100, 0).catch(() => [] as Child[]),
+      getNakesMeasurements(200, 0).catch(() => [] as Measurement[]),
+    ])
+      .then(([children, measurements]) => {
+        if (!active) return
 
-        let severelyCount = 0
-        let stuntedCount = 0
-        let normalCount = 0
-        let tallCount = 0
-
-        for (const m of measurements) {
-          if (m.stunting_status === "severely_stunted") severelyCount++
-          else if (m.stunting_status === "stunted") stuntedCount++
-          else if (m.stunting_status === "tall") tallCount++
-          else normalCount++
+        if (Array.isArray(children) && children.length > 0) {
+          // infer kecamatan from child home addresses
+          for (const c of children) {
+            if (c.home_address) {
+              const parts = c.home_address.split(",")
+              if (parts.length > 0 && parts[0].trim().length > 2) {
+                setKecamatanName(parts[0].trim())
+                break
+              }
+            }
+          }
         }
 
-        setTotalChildren(measurements.length)
-        setStatusList([
-          {
-            ...statusGiziList[0],
-            count: severelyCount,
-            countUnknown: severelyCount === 0,
-          },
-          {
-            ...statusGiziList[1],
-            count: stuntedCount,
-          },
-          {
-            ...statusGiziList[2],
-            count: normalCount,
-          },
-          {
-            ...statusGiziList[3],
-            count: tallCount,
-            countUnknown: tallCount === 0,
-          },
-        ])
+        if (Array.isArray(measurements) && measurements.length > 0) {
+          let severelyCount = 0
+          let stuntedCount = 0
+          let normalCount = 0
+          let tallCount = 0
+
+          for (const m of measurements) {
+            if (m.stunting_status === "severely_stunted") severelyCount++
+            else if (m.stunting_status === "stunted") stuntedCount++
+            else if (m.stunting_status === "tall") tallCount++
+            else normalCount++
+          }
+
+          const measuredChildIds = new Set(measurements.map((m) => m.children_id))
+          const measuredCount = measuredChildIds.size || measurements.length
+          const totalCount = Math.max(children.length, measuredCount)
+          const cov = totalCount > 0 ? Math.round((measuredCount / totalCount) * 100) : 87
+
+          setTotalMeasured(measurements.length)
+          setCoverageRate(cov)
+          setStatusList([
+            {
+              ...statusGiziList[0],
+              count: severelyCount,
+              countUnknown: severelyCount === 0,
+            },
+            {
+              ...statusGiziList[1],
+              count: stuntedCount,
+            },
+            {
+              ...statusGiziList[2],
+              count: normalCount,
+            },
+            {
+              ...statusGiziList[3],
+              count: tallCount,
+              countUnknown: tallCount === 0,
+            },
+          ])
+        }
       })
       .catch(() => {
         // keep fallback values
@@ -157,7 +183,7 @@ export function AnalisisSebaranStuntingScreen() {
               <h3 className="pr-20 text-zinc-900 text-xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-7">
                 Ringkasan Kecamatan:
                 <br />
-                Bantul
+                {kecamatanName}
               </h3>
               <MapPin className="size-4 text-emerald-800 shrink-0" />
             </div>
@@ -179,7 +205,7 @@ export function AnalisisSebaranStuntingScreen() {
                   Total Anak Diukur
                 </span>
                 <span className="text-emerald-800 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-8">
-                  {totalChildren.toLocaleString("id-ID")}
+                  {totalMeasured.toLocaleString("id-ID")}
                 </span>
               </div>
               <div className="flex-1 p-3 bg-gray-50 rounded-lg flex flex-col gap-1">
@@ -187,7 +213,7 @@ export function AnalisisSebaranStuntingScreen() {
                   Cakupan Pengukuran
                 </span>
                 <span className="text-emerald-800 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-8">
-                  87%
+                  {coverageRate}%
                 </span>
               </div>
             </div>

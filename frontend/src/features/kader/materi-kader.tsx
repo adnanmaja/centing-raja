@@ -122,10 +122,33 @@ function VideoModuleModal({
           </button>
         </div>
 
-        <div className="mt-4 aspect-video w-full overflow-hidden rounded-xl bg-black/90">
-          <div className="flex h-full items-center justify-center font-['Manrope:Regular',sans-serif] text-sm text-white/70">
-            ▶ Memutar video materi...
-          </div>
+        <div className="mt-4 aspect-video w-full overflow-hidden rounded-xl bg-black/90 relative flex items-center justify-center">
+          {module.video_url ? (
+            module.video_url.includes("youtube.com") || module.video_url.includes("youtu.be") ? (
+              <iframe
+                src={
+                  module.video_url.includes("watch?v=")
+                    ? module.video_url.replace("watch?v=", "embed/")
+                    : module.video_url
+                }
+                title={module.title}
+                className="size-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <video
+                src={module.video_url}
+                controls
+                className="size-full object-cover"
+                onEnded={onFinished}
+              />
+            )
+          ) : (
+            <div className="flex h-full items-center justify-center font-['Manrope:Regular',sans-serif] text-sm text-white/70">
+              ▶ Memutar video materi edukasi...
+            </div>
+          )}
         </div>
 
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e1e3e4]">
