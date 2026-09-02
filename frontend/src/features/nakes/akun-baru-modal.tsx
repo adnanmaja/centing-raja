@@ -6,6 +6,7 @@ export type Role = "Kader" | "Orang Tua"
 export type AkunBaruData = {
   nama: string
   nik: string
+  noHp: string
   role: Role
 }
 
@@ -18,16 +19,17 @@ export function AkunBaruModal({
 }) {
   const [nama, setNama] = useState("")
   const [nik, setNik] = useState("")
+  const [noHp, setNoHp] = useState("")
   const [role, setRole] = useState<Role>("Kader")
 
-  const isValid = nama.trim().length > 0 && nik.trim().length >= 10
+  const isValid = nama.trim().length > 0 && noHp.trim().length >= 10
 
   const handleSubmit = () => {
     if (!isValid) {
-      window.alert("Lengkapi nama dan NIK (minimal 10 digit) terlebih dahulu.")
+      window.alert("Lengkapi nama dan nomor HP/WhatsApp (minimal 10 digit) terlebih dahulu.")
       return
     }
-    onSubmit({ nama: nama.trim(), nik: nik.trim(), role })
+    onSubmit({ nama: nama.trim(), nik: nik.trim(), noHp: noHp.trim(), role })
   }
 
   return (
@@ -78,6 +80,19 @@ export function AkunBaruModal({
               className="h-11 px-3 bg-zinc-100 rounded-lg text-sm font-normal font-['Manrope:Regular',sans-serif] placeholder:text-gray-400 focus:outline focus:outline-2 focus:outline-emerald-800"
             />
           </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-neutral-700 text-xs font-semibold font-['Manrope:SemiBold',sans-serif]">
+              Nomor WhatsApp / HP
+            </label>
+            <input
+              value={noHp}
+              onChange={(e) => setNoHp(e.target.value.replace(/\D/g, ""))}
+              placeholder="Contoh: 08123456789"
+              type="tel"
+              className="h-11 px-3 bg-zinc-100 rounded-lg text-sm font-normal font-['Manrope:Regular',sans-serif] placeholder:text-gray-400 focus:outline focus:outline-2 focus:outline-emerald-800"
+            />
+          </div>
+
 
           <div className="flex flex-col gap-1">
             <label className="text-neutral-700 text-xs font-semibold font-['Manrope:SemiBold',sans-serif]">

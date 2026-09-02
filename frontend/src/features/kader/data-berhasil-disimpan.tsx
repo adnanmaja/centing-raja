@@ -10,11 +10,13 @@ import type { KaderChildTask } from "./tugas-bulan-ini"
 export function DataBerhasilDisimpan({
   onHome,
   onDetails,
+  onTasks,
   onMaterial,
   onProfile,
 }: {
   onHome: () => void
   onDetails: (data?: { child?: KaderChildTask; measurement?: Measurement }) => void
+  onTasks: () => void
   onMaterial: () => void
   onProfile: () => void
 }) {
@@ -106,7 +108,7 @@ export function DataBerhasilDisimpan({
         </motion.section>
       </motion.div>
 
-      <ProfileBottomNav active="Beranda" onHome={onHome} onMaterial={onMaterial} onTasks={onDetails} onProfile={onProfile} />
+      <ProfileBottomNav active="Beranda" onHome={onHome} onMaterial={onMaterial} onTasks={onTasks} onProfile={onProfile} />
     </main>
   )
 }

@@ -1,9 +1,9 @@
 -- Users --
 
 -- name: CreateUser :one
-INSERT INTO users (name, phone_number, role)
-VALUES ($1, $2, $3)
-RETURNING id, name, phone_number, role, created_at;
+INSERT INTO users (name, phone_number, role, nik)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, phone_number, role, nik, created_at;
 
 -- name: GetUserByID :one
 SELECT id, name, phone_number, role, reset_token, reset_token_expiry, created_at
@@ -117,6 +117,10 @@ SELECT * FROM measurement
 WHERE measurer_id = $1
 ORDER BY measured_at DESC;
 
+-- name: ListAllMeasurements :many
+SELECT * FROM measurement
+ORDER BY measured_at DESC
+LIMIT $1 OFFSET $2;
 -- name: ListMeasurementsByChildID :many
 SELECT * FROM measurement
 WHERE children_id = $1

@@ -19,9 +19,10 @@ type VerifyOTPRequest struct {
 }
 
 type RegisterRequest struct {
-	PhoneNumber string `json:"phone_number" binding:"required"`
-	Role        string `json:"role" binding:"required,oneof=tenaga_kesehatan kader orang_tua"`
-	Name        string `json:"name" binding:"required"`
+	PhoneNumber string  `json:"phone_number" binding:"required"`
+	Role        string  `json:"role" binding:"required,oneof=tenaga_kesehatan kader orang_tua"`
+	Name        string  `json:"name" binding:"required"`
+	Nik         *string `json:"nik,omitempty"`
 }
 
 type AuthResponse struct {
@@ -67,7 +68,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	user, err := h.authService.Register(c, req.Name, req.PhoneNumber, req.Role)
+	user, err := h.authService.Register(c, req.Name, req.PhoneNumber, req.Role, req.Nik)
 	if err != nil {
 		if err.Error() == "user already exists" {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
@@ -90,6 +91,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		PhoneNumber: phone,
 		Role:        string(user.Role),
 		Name:        user.Name,
+		Nik:         user.Nik,
 	})
 }
 

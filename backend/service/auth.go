@@ -35,7 +35,7 @@ func NewAuthService(db *db.Queries, jwtSecret []byte) *AuthService {
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, name, phoneNumber string, roleStr string) (db.CreateUserRow, error) {
+func (s *AuthService) Register(ctx context.Context, name, phoneNumber string, roleStr string, nik *string) (db.CreateUserRow, error) {
 	role := db.UserRole(roleStr)
 	if role != db.UserRoleTenagaKesehatan && role != db.UserRoleKader && role != db.UserRoleOrangTua {
 		return db.CreateUserRow{}, errors.New("invalid role")
@@ -45,6 +45,7 @@ func (s *AuthService) Register(ctx context.Context, name, phoneNumber string, ro
 		Name:        name,
 		PhoneNumber: &phoneNumber,
 		Role:        role,
+		Nik:         nik,
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError

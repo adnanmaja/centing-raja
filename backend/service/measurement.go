@@ -62,6 +62,13 @@ func (s *MeasurementService) GetMeasurementByID(ctx context.Context, id uuid.UUI
 func (s *MeasurementService) GetMeasurements(ctx context.Context, measurerID uuid.UUID) ([]db.Measurement, error) {
 	return s.db.GetMeasurements(ctx, pgtype.UUID{Bytes: measurerID, Valid: true})
 }
+func (s *MeasurementService) ListAllMeasurements(ctx context.Context, limit, offset int32) ([]db.Measurement, error) {
+	return s.db.ListAllMeasurements(ctx, db.ListAllMeasurementsParams{
+		Limit:  limit,
+		Offset: offset,
+	})
+}
+
 
 func (s *MeasurementService) ListMeasurementsByChildID(ctx context.Context, childID uuid.UUID) ([]db.Measurement, error) {
 	return s.db.ListMeasurementsByChildID(ctx, pgtype.UUID{Bytes: childID, Valid: true})

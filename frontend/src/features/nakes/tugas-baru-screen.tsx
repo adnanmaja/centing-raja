@@ -30,10 +30,10 @@ export function TugasBaruScreen() {
   const navigate = useNavigate()
   const [anakList, setAnakList] = useState<AnakTugas[]>(initialAnakList)
   const [kaderOptions, setKaderOptions] = useState<string[]>(defaultKaderOptions)
+  const [kaderUsers, setKaderUsers] = useState<UserProfile[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [filterTab, setFilterTab] = useState<FilterTab>("Semua")
   const [anakToDelete, setAnakToDelete] = useState<AnakTugas | null>(null)
-
   useEffect(() => {
     let active = true
     Promise.all([
@@ -59,11 +59,11 @@ export function TugasBaruScreen() {
           setAnakList(mapped)
         }
         if (Array.isArray(usersData) && usersData.length > 0) {
-          const kaders = usersData
-            .filter((u) => u.role === "kader")
-            .map((u) => u.name)
-          if (kaders.length > 0) {
-            setKaderOptions(kaders)
+          const kaders = usersData.filter((u) => u.role === "kader")
+          setKaderUsers(kaders)
+          const names = kaders.map((u) => u.name)
+          if (names.length > 0) {
+            setKaderOptions(names)
           }
         }
       })
@@ -104,23 +104,28 @@ export function TugasBaruScreen() {
     }
 
     try {
-      // Dispatch live notification broadcast
-      const userJson = localStorage.getItem("centing_user")
-      let userId = "00000000-0000-0000-0000-000000000001"
-      if (userJson) {
-        try {
-          const user = JSON.parse(userJson)
-          userId = user.id || userId
-        } catch {
-          // fallback
+      const targetKader = kaderUsers.find((u) => u.name === anak.kader)
+      let targetUserId = targetKader?.id
+
+      if (!targetUserId) {
+        const userJson = localStorage.getItem("centing_user")
+        if (userJson) {
+          try {
+            const user = JSON.parse(userJson)
+            targetUserId = user.id
+          } catch {
+            // fallback
+          }
         }
       }
 
-      await createNotification({
-        user_id: userId,
-        title: `Tugas Pengukuran: ${anak.nama}`,
-        message: `Kader ${anak.kader} ditugaskan untuk melakukan pengukuran balita ${anak.nama} (RT ${anak.rt} / RW ${anak.rw}) dengan batas waktu ${anak.batasWaktu}.`,
-      })
+      if (targetUserId) {
+        await createNotification({
+          user_id: targetUserId,
+          title: `Tugas Pengukuran: ${anak.nama}`,
+          message: `Kader ${anak.kader} ditugaskan untuk melakukan pengukuran balita ${anak.nama} (RT ${anak.rt} / RW ${anak.rw}) dengan batas waktu ${anak.batasWaktu}.`,
+        })
+      }
     } catch {
       // ignore network errors so assignment still updates
     }

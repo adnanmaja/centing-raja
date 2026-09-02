@@ -555,6 +555,7 @@ function Flow() {
             <DataBerhasilDisimpan
               onHome={() => navigate("/kader")}
               onDetails={(data) => navigate("/kader/tugas/data", { state: data })}
+              onTasks={() => navigate("/kader/tugas")}
               onMaterial={() => navigate("/kader/materi")}
               onProfile={() => navigate("/kader/profil")}
             />
