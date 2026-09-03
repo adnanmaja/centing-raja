@@ -26,12 +26,14 @@ type Claims struct {
 type AuthService struct {
 	db        *db.Queries
 	jwtSecret []byte
+	waSender  OTPSender
 }
 
-func NewAuthService(db *db.Queries, jwtSecret []byte) *AuthService {
+func NewAuthService(db *db.Queries, jwtSecret []byte, waSender OTPSender) *AuthService {
 	return &AuthService{
 		db:        db,
 		jwtSecret: jwtSecret,
+		waSender:  waSender,
 	}
 }
 
@@ -81,6 +83,13 @@ func (s *AuthService) RequestOTP(ctx context.Context, phoneNumber string) (strin
 	if err != nil {
 		log.Printf("storing OTP failed: %v", err)
 		return "", errors.New("failed to send OTP")
+	}
+	log.Printf("[DEV OTP] Phone: %s, Code: %s", phoneNumber, otpCode)
+
+	if s.waSender != nil {
+		if err := s.waSender.SendOTP(ctx, phoneNumber, otpCode); err != nil {
+			log.Printf("[WhatsApp] Failed to send OTP to %s: %v", phoneNumber, err)
+		}
 	}
 
 	return otpCode, nil

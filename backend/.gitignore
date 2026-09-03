@@ -5,3 +5,7 @@
 prd.md
 project_overview.md
 key.json
+
+# SQLite databases
+whatsapp.db*
+*.db

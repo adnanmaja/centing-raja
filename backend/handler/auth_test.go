@@ -16,7 +16,7 @@ func init() {
 }
 
 func TestRegisterValidation(t *testing.T) {
-	authHandler := NewAuthHandler(service.NewAuthService(nil, []byte("test-secret")), nil)
+	authHandler := NewAuthHandler(service.NewAuthService(nil, []byte("test-secret"), nil), nil)
 	router := gin.New()
 	router.POST("/register", authHandler.Register)
 
@@ -69,7 +69,7 @@ func TestRegisterValidation(t *testing.T) {
 }
 
 func TestRequestOTPValidation(t *testing.T) {
-	authHandler := NewAuthHandler(service.NewAuthService(nil, []byte("test-secret")), nil)
+	authHandler := NewAuthHandler(service.NewAuthService(nil, []byte("test-secret"), nil), nil)
 	router := gin.New()
 	router.POST("/login/request-otp", authHandler.RequestOTP)
 
@@ -86,7 +86,7 @@ func TestRequestOTPValidation(t *testing.T) {
 }
 
 func TestVerifyOTPValidation(t *testing.T) {
-	authHandler := NewAuthHandler(service.NewAuthService(nil, []byte("test-secret")), nil)
+	authHandler := NewAuthHandler(service.NewAuthService(nil, []byte("test-secret"), nil), nil)
 	router := gin.New()
 	router.POST("/login/verify-otp", authHandler.VerifyOTP)
 
