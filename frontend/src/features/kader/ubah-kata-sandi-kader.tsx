@@ -113,7 +113,6 @@ export function UbahKataSandiKader({ onBack }: { onBack: () => void }) {
     <main
       data-reveal-page
       className="min-h-svh bg-[#f8f9fa] pb-24 pt-16 text-[#191c1d]"
-      aria-label="Ubah Kata Sandi"
     >
       <header className="fixed inset-x-0 top-0 z-30 border-b border-black/[0.03] bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-4xl items-center justify-between px-3 sm:px-8 xl:px-10">
@@ -162,21 +161,6 @@ export function UbahKataSandiKader({ onBack }: { onBack: () => void }) {
         </div>
       </header>
       <div className="mx-auto flex w-full max-w-xl flex-col px-5 py-8 sm:px-8 xl:py-12">
-        <section className="text-center">
-          <span className="mx-auto grid size-16 place-items-center rounded-full bg-[#76d69f] text-[#005c38]">
-            <SvgIcon
-              path={changePasswordPaths.p2d47e8c0}
-              viewBox="0 0 26.6667 26.6667"
-              className="size-8"
-            />
-          </span>
-          <h1 className="mt-4 font-['Plus_Jakarta_Sans:Bold',sans-serif] text-xl font-bold">
-            Ubah Kata Sandi
-          </h1>
-          <p className="mt-2 font-['Plus_Jakarta_Sans:Regular',sans-serif] text-xs text-[#63747a]">
-            Pastikan kata sandi baru Anda kuat dan tidak mudah ditebak.
-          </p>
-        </section>
         <section className="mt-10 rounded-2xl bg-white p-4 shadow-[0_2px_12px_rgba(0,0,0,0.06)] sm:p-5">
           <div className="space-y-6">
             <Field

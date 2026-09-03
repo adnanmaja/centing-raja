@@ -273,12 +273,6 @@ export function KuisKader({
             {Math.round(((questionIndex + 1) / questions.length) * 100)}% Selesai
           </span>
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e1e3e4]">
-          <div
-            className="h-full rounded-full bg-[#006d42] transition-[width] duration-300"
-            style={{ width: `${((questionIndex + 1) / questions.length) * 100}%` }}
-          />
-        </div>
         <div className="mt-5 flex items-center justify-between gap-4">
           <span className="grid size-12 place-items-center rounded-full bg-[#e9f7ef] text-[#005c38]">
             <SvgIcon path={quizPaths.p1a168100} viewBox="0 0 15.8125 16.6667" className="size-6" />

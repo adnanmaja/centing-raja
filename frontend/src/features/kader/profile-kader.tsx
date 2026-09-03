@@ -41,7 +41,6 @@ export function ProfileKader({
   const { user } = useAuth()
   const actionRows = [
     { label: "Edit Profil", icon: "✥" },
-    { label: "Ubah Kata Sandi", icon: "◉" },
   ]
 
   const infoRows = [
