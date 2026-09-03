@@ -34,32 +34,6 @@ type Akun = {
   avatarText: string
 }
 
-const initialAkunList: Akun[] = [
-  {
-    nama: "Siti Rahmawati",
-    nik: "3201234567890001",
-    role: "Kader",
-    initial: "S",
-    avatarBg: "bg-transparent",
-    avatarText: "text-emerald-800",
-  },
-  {
-    nama: "Budi Santoso",
-    nik: "3201987654320002",
-    role: "Orang Tua",
-    initial: "B",
-    avatarBg: "bg-orange-300",
-    avatarText: "text-yellow-900",
-  },
-  {
-    nama: "Ayu Lestari",
-    nik: "3201456789120003",
-    role: "Kader",
-    initial: "A",
-    avatarBg: "bg-rose-200",
-    avatarText: "text-red-800",
-  },
-]
 
 const roleBadgeStyle: Record<Role, string> = {
   Kader: "bg-blue-100 text-slate-600",
@@ -92,7 +66,8 @@ type KuisHistoryItem = {
 
 export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
   const navigate = useNavigate()
-  const [akunList, setAkunList] = useState<Akun[]>(initialAkunList)
+  const [akunList, setAkunList] = useState<Akun[]>([])
+  const [isLoadingAkun, setIsLoadingAkun] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("Semua")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
@@ -106,32 +81,36 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
   const [quizToDelete, setQuizToDelete] = useState<KuisHistoryItem | null>(null)
   useEffect(() => {
     let active = true
+    setIsLoadingAkun(true)
     getNakesUsers(100, 0)
       .then((users: UserProfile[]) => {
-        if (active && Array.isArray(users) && users.length > 0) {
+        if (active && Array.isArray(users)) {
           const mapped: Akun[] = users
             .filter((u) => u.role === "kader" || u.role === "orang_tua")
             .map((u, idx) => {
               const palette = avatarPalette[idx % avatarPalette.length]
               const roleLabel: Role = u.role === "kader" ? "Kader" : "Orang Tua"
+              const displayName = u.name || "Pengguna"
               return {
-                nama: u.name,
-                nik: u.phone_number,
+                nama: displayName,
+                nik: u.nik || u.phone_number || "-",
                 role: roleLabel,
-                initial: u.name.charAt(0).toUpperCase(),
+                initial: displayName.charAt(0).toUpperCase() || "?",
                 avatarBg: palette.bg,
                 avatarText: palette.text,
               }
             })
-          if (mapped.length > 0) {
-            setAkunList(mapped)
-          }
+          setAkunList(mapped)
         }
       })
       .catch((err) => {
         console.warn("[Centing] Failed to fetch users for nakes:", err)
       })
-
+      .finally(() => {
+        if (active) {
+          setIsLoadingAkun(false)
+        }
+      })
     getEducationMaterials(50, 0)
       .then((data) => {
         if (!active) return
@@ -344,13 +323,21 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
               )}
             </div>
 
-            {filteredAkun.length === 0 && (
+            {isLoadingAkun ? (
               <div className="py-10 flex flex-col items-center gap-2 text-center">
                 <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
-                  Tidak ada akun yang cocok.
+                  Memuat data akun...
                 </span>
               </div>
-            )}
+            ) : filteredAkun.length === 0 ? (
+              <div className="py-10 flex flex-col items-center gap-2 text-center">
+                <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                  {akunList.length === 0
+                    ? "Belum ada data akun terdaftar di database."
+                    : "Tidak ada akun yang cocok dengan filter atau pencarian."}
+                </span>
+              </div>
+            ) : null}
 
             {filteredAkun.length > 0 && (
               <>
