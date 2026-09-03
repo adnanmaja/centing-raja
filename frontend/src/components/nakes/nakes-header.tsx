@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { ArrowLeft, Bell, Leaf, User } from "lucide-react"
+import { useAuth } from "../../context/auth-context"
 
 const nakesLogo = "/logo/logo-centing-raja.png"
 
@@ -15,6 +16,9 @@ export function NakesHeader({
   onBack?: () => void
 }) {
   const [logoFailed, setLogoFailed] = useState(false)
+  const [imgError, setImgError] = useState(false)
+  const { user } = useAuth()
+  const profilePic = !imgError ? user?.avatar_url : null
 
   return (
     <header className="sticky top-0 z-30 border-b border-black/[0.03] bg-white/95 backdrop-blur-xl">
@@ -58,9 +62,18 @@ export function NakesHeader({
               <span className="absolute right-2 top-2 size-2 rounded-full bg-[#e24c4b]" />
             )}
           </button>
-          <span className="grid size-8 place-items-center rounded-full bg-[#007c4a] text-white">
-            <User className="size-4" />
-          </span>
+          {profilePic ? (
+            <img
+              src={profilePic}
+              alt={user?.name || "Profil"}
+              className="size-8 rounded-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <span className="grid size-8 place-items-center rounded-full bg-[#007c4a] text-white">
+              <User className="size-4" />
+            </span>
+          )}
         </div>
       </div>
     </header>

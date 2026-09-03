@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
+import { useAuth } from "../../context/auth-context"
 
 import { SvgIcon } from "../../components/ui/svg-icon"
 
@@ -12,6 +13,9 @@ const changePasswordLogo =
   "/logo/logo-centing-raja.png"
 
 export function UbahKataSandiKader({ onBack }: { onBack: () => void }) {
+  const { user } = useAuth()
+  const [imgError, setImgError] = useState(false)
+  const profilePic = !imgError ? (user?.avatar_url || "/images/foto-kader.png") : null
   const [currentPassword, setCurrentPassword] = useState("")
 
   const [newPassword, setNewPassword] = useState("")
@@ -137,14 +141,23 @@ export function UbahKataSandiKader({ onBack }: { onBack: () => void }) {
           </div>
           <button
             type="button"
-            className="grid size-8 place-items-center rounded-full bg-[#007c4a] text-white"
+            className="grid size-8 place-items-center rounded-full bg-[#007c4a] text-white overflow-hidden"
             aria-label="Profil"
           >
-            <SvgIcon
-              path={taskProfilePaths.p3189a600}
-              viewBox="0 0 12 12"
-              className="size-4"
-            />
+            {profilePic ? (
+              <img
+                src={profilePic}
+                alt={user?.name || "Profil"}
+                className="size-8 rounded-full object-cover"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <SvgIcon
+                path={taskProfilePaths.p3189a600}
+                viewBox="0 0 12 12"
+                className="size-4"
+              />
+            )}
           </button>
         </div>
       </header>

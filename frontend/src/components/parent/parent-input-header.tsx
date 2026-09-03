@@ -4,6 +4,7 @@ import { SvgIcon } from "../ui/svg-icon"
 import parentDashboardPaths from "../../assets/icon-parent-dashboard"
 import parentNotificationPaths from "../../assets/icon-parent-notification"
 import { ParentNotification } from "./parent-notification"
+import { useAuth } from "../../context/auth-context"
 
 export function ParentInputHeader({
   logo,
@@ -15,6 +16,9 @@ export function ParentInputHeader({
   onBack?: () => void
 }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  const [imgError, setImgError] = useState(false)
+  const { user } = useAuth()
+  const profilePic = !imgError ? user?.avatar_url : null
 
   return (
     <>
@@ -49,9 +53,18 @@ export function ParentInputHeader({
               />
               <span className="absolute right-0 top-0 size-2 rounded-full bg-[#e24c4b]" />
             </button>
-            <span className="grid size-8 place-items-center rounded-full bg-[#007c4a] text-white">
-              <SvgIcon path={parentDashboardPaths.p3189a600} viewBox="0 0 12 12" className="size-4" />
-            </span>
+            {profilePic ? (
+              <img
+                src={profilePic}
+                alt={user?.name || "Profil"}
+                className="size-8 rounded-full object-cover"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <span className="grid size-8 place-items-center rounded-full bg-[#007c4a] text-white">
+                <SvgIcon path={parentDashboardPaths.p3189a600} viewBox="0 0 12 12" className="size-4" />
+              </span>
+            )}
           </div>
         </div>
       </header>
