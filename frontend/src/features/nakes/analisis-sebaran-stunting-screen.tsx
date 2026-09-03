@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { AlertTriangle, ArrowLeft, ChevronRight, MapPin, Ruler, Users } from "lucide-react"
+import { AlertTriangle, ArrowLeft, ChevronRight, ExternalLink, MapPin, Ruler, Users } from "lucide-react"
 import { getNakesChildren, getNakesMeasurements, type Child, type Measurement } from "../../lib/api"
 type StatusGizi = {
   label: string
@@ -188,15 +188,30 @@ export function AnalisisSebaranStuntingScreen() {
               <MapPin className="size-4 text-emerald-800 shrink-0" />
             </div>
 
-            <div className="rounded-lg overflow-hidden">
-              <div className="h-60 p-3 bg-gradient-to-l from-gray-200/80 to-gray-200/0 flex flex-col justify-end">
-                <div className="px-2 py-1 bg-rose-200 rounded-full flex items-center gap-1 self-start">
-                  <span className="size-1.5 bg-red-700 rounded-full" />
-                  <span className="text-red-800 text-[10px] font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-4">
-                    Area Risiko Tinggi
-                  </span>
-                </div>
+            <div className="relative rounded-xl overflow-hidden border border-zinc-200 bg-zinc-200 shadow-inner">
+              <iframe
+                title="Peta Wilayah Bantul"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=110.24%2C-7.98%2C110.44%2C-7.80&layer=mapnik&marker=-7.888%2C110.33"
+                className="w-full h-72 border-0 block"
+                loading="lazy"
+              />
+              <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-zinc-800 shadow-sm backdrop-blur-sm">
+                <MapPin className="size-3.5 text-emerald-800" />
+                <span>Kab. Bantul, D.I. Yogyakarta</span>
               </div>
+              <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-rose-100/95 px-2.5 py-1 text-xs font-bold text-red-800 shadow-sm backdrop-blur-sm">
+                <span className="size-2 rounded-full bg-red-600 animate-pulse" />
+                <span>Area Pemantauan Stunting</span>
+              </div>
+              <a
+                href="https://www.openstreetmap.org/?mlat=-7.888&mlon=110.33#map=12/-7.888/110.33"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute bottom-3 right-3 z-10 flex items-center gap-1 rounded-lg bg-white/90 px-2 py-1 text-[11px] font-medium text-slate-700 shadow-sm backdrop-blur-sm hover:bg-white hover:text-emerald-800"
+              >
+                <span>Buka Peta</span>
+                <ExternalLink className="size-3" />
+              </a>
             </div>
 
             <div className="flex gap-3">

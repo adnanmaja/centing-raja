@@ -114,12 +114,12 @@ export function ProfileKader({
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-[#63747a]">Nama Posyandu</dt>
-                <dd className="text-right font-semibold">
+                {/* <dd className="text-right font-semibold">
                   Mawar Merah 1<br />
                   <span className="font-normal text-xs text-[#63747a]">
                     Kec. Andir
                   </span>
-                </dd>
+                </dd> */}
               </div>
             </dl>
           </section>

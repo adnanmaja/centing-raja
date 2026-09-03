@@ -125,10 +125,10 @@ export function EditProfileKader({ onBack }: { onBack: () => void }) {
             </label>
             <div>
               <p className="font-['Manrope:Regular',sans-serif] text-sm text-[#3e4941]">Nama Posyandu</p>
-              <div className="relative mt-2 flex min-h-14 items-center rounded-xl bg-[#dde0e0] px-4 pl-11 text-base text-[#536478]">
+              {/* <div className="relative mt-2 flex min-h-14 items-center rounded-xl bg-[#dde0e0] px-4 pl-11 text-base text-[#536478]">
                 <SvgIcon path={lockedPosyanduPaths.p7ab5f00} viewBox="0 0 22 18" className="absolute left-4 h-4 w-5 text-[#536478]" />
                 Mawar Merah 1
-              </div>
+              </div> */}
               <p className="mt-2 flex gap-1 font-['Manrope:Regular',sans-serif] text-sm leading-5 text-[#63747a]">
                 <span>ⓘ</span>Perubahan nama instansi Posyandu harus divalidasi oleh Tenaga Kesehatan.
               </p>
