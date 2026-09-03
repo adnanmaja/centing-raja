@@ -21,7 +21,6 @@ const statusGiziList: StatusGizi[] = [
     sdRange: "<-3 SD",
     description: "Risiko stunting berat, memerlukan intervensi gizi segera.",
     count: 0,
-    countUnknown: true,
     iconBg: "bg-rose-200",
     iconColor: "text-red-800",
     labelColor: "text-red-700",
@@ -32,7 +31,7 @@ const statusGiziList: StatusGizi[] = [
     label: "Pendek",
     sdRange: "-3 SD s/d < -2 SD",
     description: "Terindikasi stunting, perlu pemantauan gizi rutin.",
-    count: 156,
+    count: 0,
     iconBg: "bg-orange-300",
     iconColor: "text-yellow-900",
     labelColor: "text-yellow-800",
@@ -43,7 +42,7 @@ const statusGiziList: StatusGizi[] = [
     label: "Normal",
     sdRange: "-2 SD s/d +3 SD",
     description: "Pertumbuhan sesuai dengan kurva standar nasional.",
-    count: 1023,
+    count: 0,
     iconBg: "bg-transparent",
     iconColor: "text-emerald-800",
     labelColor: "text-emerald-800",
@@ -55,7 +54,6 @@ const statusGiziList: StatusGizi[] = [
     sdRange: ">+3 SD",
     description: "Pertumbuhan di atas rata-rata tinggi anak seusianya.",
     count: 0,
-    countUnknown: true,
     iconBg: "bg-blue-100",
     iconColor: "text-slate-600",
     labelColor: "text-slate-600",
@@ -69,15 +67,17 @@ const trajectoryImage = "https://placehold.co/318x318"
 export function AnalisisSebaranStuntingScreen() {
   const navigate = useNavigate()
   const [statusList, setStatusList] = useState<StatusGizi[]>(statusGiziList)
-  const [totalMeasured, setTotalMeasured] = useState(1245)
-  const [coverageRate, setCoverageRate] = useState(87)
+  const [totalMeasured, setTotalMeasured] = useState(0)
+  const [coverageRate, setCoverageRate] = useState(0)
   const [kecamatanName, setKecamatanName] = useState("Bantul")
-
+  const [isLoading, setIsLoading] = useState(true)
   useEffect(() => {
     let active = true
+    setIsLoading(true)
+
     Promise.all([
-      getNakesChildren(100, 0).catch(() => [] as Child[]),
-      getNakesMeasurements(200, 0).catch(() => [] as Measurement[]),
+      getNakesChildren(200, 0).catch(() => [] as Child[]),
+      getNakesMeasurements(500, 0).catch(() => [] as Measurement[]),
     ])
       .then(([children, measurements]) => {
         if (!active) return
@@ -95,50 +95,70 @@ export function AnalisisSebaranStuntingScreen() {
           }
         }
 
-        if (Array.isArray(measurements) && measurements.length > 0) {
-          let severelyCount = 0
-          let stuntedCount = 0
-          let normalCount = 0
-          let tallCount = 0
+        const validMeasurements = Array.isArray(measurements) ? measurements : []
+        const validChildren = Array.isArray(children) ? children : []
 
-          for (const m of measurements) {
-            if (m.stunting_status === "severely_stunted") severelyCount++
-            else if (m.stunting_status === "stunted") stuntedCount++
-            else if (m.stunting_status === "tall") tallCount++
-            else normalCount++
+        // Group latest measurement per child for accurate cross-sectional analysis
+        const latestMeasurementsByChild = new Map<string, Measurement>()
+        const sortedMeasurements = [...validMeasurements].sort(
+          (a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()
+        )
+        for (const m of sortedMeasurements) {
+          const childKey = m.children_id || m.id
+          if (!latestMeasurementsByChild.has(childKey)) {
+            latestMeasurementsByChild.set(childKey, m)
           }
-
-          const measuredChildIds = new Set(measurements.map((m) => m.children_id))
-          const measuredCount = measuredChildIds.size || measurements.length
-          const totalCount = Math.max(children.length, measuredCount)
-          const cov = totalCount > 0 ? Math.round((measuredCount / totalCount) * 100) : 87
-
-          setTotalMeasured(measurements.length)
-          setCoverageRate(cov)
-          setStatusList([
-            {
-              ...statusGiziList[0],
-              count: severelyCount,
-              countUnknown: severelyCount === 0,
-            },
-            {
-              ...statusGiziList[1],
-              count: stuntedCount,
-            },
-            {
-              ...statusGiziList[2],
-              count: normalCount,
-            },
-            {
-              ...statusGiziList[3],
-              count: tallCount,
-              countUnknown: tallCount === 0,
-            },
-          ])
         }
+
+        const targetMeasurements =
+          latestMeasurementsByChild.size > 0
+            ? Array.from(latestMeasurementsByChild.values())
+            : validMeasurements
+
+        let severelyCount = 0
+        let stuntedCount = 0
+        let normalCount = 0
+        let tallCount = 0
+
+        for (const m of targetMeasurements) {
+          if (m.stunting_status === "severely_stunted") severelyCount++
+          else if (m.stunting_status === "stunted") stuntedCount++
+          else if (m.stunting_status === "tall") tallCount++
+          else normalCount++
+        }
+
+        const measuredCount = targetMeasurements.length
+        const totalChildrenCount = Math.max(validChildren.length, measuredCount)
+        const cov = totalChildrenCount > 0 ? Math.round((measuredCount / totalChildrenCount) * 100) : 0
+
+        setTotalMeasured(measuredCount)
+        setCoverageRate(cov)
+        setStatusList([
+          {
+            ...statusGiziList[0],
+            count: severelyCount,
+          },
+          {
+            ...statusGiziList[1],
+            count: stuntedCount,
+          },
+          {
+            ...statusGiziList[2],
+            count: normalCount,
+          },
+          {
+            ...statusGiziList[3],
+            count: tallCount,
+          },
+        ])
       })
-      .catch(() => {
-        // keep fallback values
+      .catch((err) => {
+        console.warn("[Centing] Failed to fetch data for analisis sebaran stunting:", err)
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false)
+        }
       })
 
     return () => {
@@ -220,7 +240,7 @@ export function AnalisisSebaranStuntingScreen() {
                   Total Anak Diukur
                 </span>
                 <span className="text-emerald-800 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-8">
-                  {totalMeasured.toLocaleString("id-ID")}
+                  {isLoading ? "..." : totalMeasured.toLocaleString("id-ID")}
                 </span>
               </div>
               <div className="flex-1 p-3 bg-gray-50 rounded-lg flex flex-col gap-1">
@@ -228,7 +248,7 @@ export function AnalisisSebaranStuntingScreen() {
                   Cakupan Pengukuran
                 </span>
                 <span className="text-emerald-800 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-8">
-                  {coverageRate}%
+                  {isLoading ? "..." : `${coverageRate}%`}
                 </span>
               </div>
             </div>
@@ -294,7 +314,7 @@ export function AnalisisSebaranStuntingScreen() {
 
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                     <span className="text-zinc-900 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-8">
-                      {status.countUnknown ? "—" : status.count.toLocaleString("id-ID")}
+                      {isLoading ? "..." : (status.countUnknown ? "—" : status.count.toLocaleString("id-ID"))}
                     </span>
                     <span className="text-slate-600 text-[10px] font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] leading-4">
                       anak
