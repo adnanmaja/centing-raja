@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { X } from "lucide-react"
+import { CheckCircle2, ExternalLink, Video, X } from "lucide-react"
 
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
@@ -43,33 +43,22 @@ function VideoModuleModal({
   onClose: () => void
   onFinished: () => void
 }) {
-  const [secondsWatched, setSecondsWatched] = useState(0)
-  const totalSeconds = module.durationSeconds
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setSecondsWatched((value) => {
-        const next = Math.min(totalSeconds, value + 5)
-        if (next >= totalSeconds) {
-          window.clearInterval(timer)
-          onFinished()
-        }
-        return next
-      })
-    }, 1000)
-    return () => window.clearInterval(timer)
-  }, [totalSeconds, onFinished])
-
-  const percent = Math.round((secondsWatched / totalSeconds) * 100)
+  const isCompleted = module.status === "Selesai"
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-2xl sm:p-7">
+      <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <span className="font-['Manrope:SemiBold',sans-serif] text-xs font-semibold tracking-[0.06em] text-[#63747a]">
-              {module.module}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-['Manrope:SemiBold',sans-serif] text-xs font-semibold tracking-[0.06em] text-[#63747a]">
+                {module.module}
+              </span>
+              <span className="text-xs text-[#63747a]">•</span>
+              <span className="font-['Manrope:Regular',sans-serif] text-xs text-[#63747a]">
+                {module.duration}
+              </span>
+            </div>
             <h2 className="mt-1 font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xl font-semibold">
               {module.title}
             </h2>
@@ -84,49 +73,80 @@ function VideoModuleModal({
           </button>
         </div>
 
-        <div className="mt-4 aspect-video w-full overflow-hidden rounded-xl bg-black/90 relative flex items-center justify-center">
-          {module.video_url ? (
-            module.video_url.includes("youtube.com") || module.video_url.includes("youtu.be") ? (
-              <iframe
-                src={
-                  module.video_url.includes("watch?v=")
-                    ? module.video_url.replace("watch?v=", "embed/")
-                    : module.video_url
-                }
-                title={module.title}
-                className="size-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <video
-                src={module.video_url}
-                controls
-                className="size-full object-cover"
-                onEnded={onFinished}
-              />
-            )
-          ) : (
-            <div className="flex h-full items-center justify-center font-['Manrope:Regular',sans-serif] text-sm text-white/70">
-              ▶ Memutar video materi edukasi...
-            </div>
-          )}
-        </div>
-
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e1e3e4]">
-          <div className="h-full rounded-full bg-[#006d42] transition-[width] duration-300" style={{ width: `${percent}%` }} />
-        </div>
-        <p className="mt-1 font-['Manrope:Regular',sans-serif] text-xs text-[#63747a]">
-          {Math.floor(secondsWatched / 60)}:{String(secondsWatched % 60).padStart(2, "0")} / {module.duration}
-        </p>
-
         <p className="mt-4 font-['Manrope:Regular',sans-serif] text-sm leading-6 text-[#3e4941]">
           {module.description}
         </p>
 
-        {percent >= 100 && (
-          <div className="mt-4 rounded-xl bg-[#e9f7ef] p-3 text-center font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-[#006d42]">
-            🎉 Modul selesai! Progres Anda telah tercatat.
+        <div className="mt-5">
+          <label className="block font-['Manrope:SemiBold',sans-serif] text-xs font-semibold uppercase tracking-wider text-[#63747a]">
+            Tautan Video Materi
+          </label>
+          {module.video_url ? (
+            <div className="mt-2 rounded-xl border border-[#e1e3e4] bg-[#f8f9fa] p-3.5 sm:p-4">
+              <div className="flex items-start gap-3">
+                <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#e9f7ef] text-[#006d42]">
+                  <Video className="size-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-['Manrope:SemiBold',sans-serif] text-xs text-[#3e4941]">
+                    {module.video_url.includes("youtube.com") || module.video_url.includes("youtu.be")
+                      ? "YouTube Video"
+                      : "Media Tautan"}
+                  </p>
+                  <a
+                    href={module.video_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-0.5 block break-all font-['Manrope:Regular',sans-serif] text-xs text-[#006d42] hover:underline"
+                  >
+                    {module.video_url}
+                  </a>
+                </div>
+              </div>
+
+              <div className="mt-3.5 flex flex-wrap gap-2">
+                <a
+                  href={module.video_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#006d42] px-4 font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-white transition hover:bg-[#005c38]"
+                >
+                  <ExternalLink className="size-3.5" />
+                  Buka Tautan Video
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-2 rounded-xl border border-dashed border-[#e1e3e4] bg-[#f8f9fa] p-4 text-center font-['Manrope:Regular',sans-serif] text-xs text-[#63747a]">
+              Tautan video belum tersedia untuk modul ini.
+            </div>
+          )}
+        </div>
+
+        {isCompleted ? (
+          <div className="mt-5 flex items-center gap-2 rounded-xl bg-[#e9f7ef] p-3 font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#006d42]">
+            <CheckCircle2 className="size-4 shrink-0" />
+            <span>Modul telah selesai dipelajari.</span>
+          </div>
+        ) : (
+          <div className="mt-6 flex items-center justify-end gap-3 border-t border-[#f0f2f3] pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-10 rounded-xl bg-[#f3f4f5] px-4 font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#3e4941] transition hover:bg-[#e7e9e8]"
+            >
+              Tutup
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onFinished()
+                onClose()
+              }}
+              className="min-h-10 rounded-xl bg-[#006d42] px-5 font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-white transition hover:bg-[#005c38]"
+            >
+              Tandai Selesai
+            </button>
           </div>
         )}
       </div>

@@ -21,9 +21,9 @@ export function EditProfileParentScreen() {
     nama: user?.name || "Ibu Nisa",
     nik: user?.nik || "3201987654321001",
     whatsapp: user?.phone_number || "08123456789",
-    alamat: "Jl. Mawar Merah No. 12",
-    rtRw: "03/05",
-    kecamatan: "Cibiru",
+    alamat: "Note: ntar dulu yak",
+    rtRw: "",
+    kecamatan: "",
   })
 
   const handleChange =
