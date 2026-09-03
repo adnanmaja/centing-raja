@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { AlertTriangle, CheckCircle2, ChevronRight, ClipboardList, Map } from "lucide-react"
+import { AlertTriangle, CheckCircle2, ChevronRight, ClipboardList, Map as MapIcon } from "lucide-react"
 
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
@@ -278,7 +278,7 @@ export function BerandaNakesScreen() {
               onClick={() => navigate("/nakes/sebaran-stunting")}
               className="flex-1 px-4 py-6 bg-emerald-800 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center gap-1"
             >
-              <Map className="size-4 text-white" />
+              <MapIcon className="size-4 text-white" />
               <span className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xs font-semibold text-white text-center leading-4">
                 Cek Sebaran
                 <br />
