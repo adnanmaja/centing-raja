@@ -3,22 +3,22 @@
 -- name: CreateUser :one
 INSERT INTO users (name, phone_number, role, nik)
 VALUES ($1, $2, $3, $4)
-RETURNING id, name, phone_number, role, nik, created_at;
+RETURNING id, name, phone_number, role, nik, avatar_url, created_at;
 
 -- name: GetUserByID :one
-SELECT id, name, phone_number, role, reset_token, reset_token_expiry, created_at
+SELECT id, name, phone_number, role, nik, avatar_url, reset_token, reset_token_expiry, created_at, is_notification_enabled
 FROM users
 WHERE id = $1
 LIMIT 1;
 
 -- name: GetUserByPhoneNumber :one
-SELECT id, name, phone_number, role, reset_token, reset_token_expiry, created_at
+SELECT id, name, phone_number, role, nik, avatar_url, reset_token, reset_token_expiry, created_at, is_notification_enabled
 FROM users
 WHERE phone_number = $1
 LIMIT 1;
 
 -- name: ListUsers :many
-SELECT id, name, phone_number, role, created_at
+SELECT id, name, phone_number, role, nik, avatar_url, created_at
 FROM users
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
@@ -44,6 +44,12 @@ SET name = $2,
     nik = $3,
     phone_number = $4,
     is_notification_enabled = $5
+WHERE id = $1
+RETURNING *;
+
+-- name: UpdateUserAvatar :one
+UPDATE users
+SET avatar_url = $2
 WHERE id = $1
 RETURNING *;
 

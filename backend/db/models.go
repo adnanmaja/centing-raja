@@ -220,6 +220,7 @@ type User struct {
 	Nik                   *string
 	PhoneNumber           *string
 	Role                  UserRole
+	AvatarUrl             *string
 	ResetToken            *string
 	ResetTokenExpiry      pgtype.Timestamptz
 	CreatedAt             pgtype.Timestamptz

@@ -67,13 +67,13 @@ export function ProfileKader({
         <section className="flex flex-col items-center text-center">
           <div className="relative">
             <img
-              src={kaderProfilePhoto}
-              alt="Foto Kader Nur"
+              src={user?.avatar_url || kaderProfilePhoto}
+              alt={user?.name || "Foto Kader"}
               className="size-24 rounded-full object-cover shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
             />
             <button
               type="button"
-              onClick={() => action("Ubah foto profil")}
+              onClick={onEdit}
               className="absolute bottom-0 right-0 grid size-8 place-items-center rounded-full bg-[#006d42] text-sm text-white shadow-[0_3px_8px_rgba(0,0,0,0.16)]"
               aria-label="Ubah foto"
             >

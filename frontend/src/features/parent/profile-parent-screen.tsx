@@ -37,13 +37,15 @@ export function ProfileParentScreen() {
           <div className="size-24 bg-zinc-100 rounded-full shadow-sm overflow-hidden">
             <img
               className="w-full h-full object-cover"
-              src="https://placehold.co/96x96"
-              alt="avatar"
+              src={user?.avatar_url || "https://placehold.co/96x96"}
+              alt={user?.name || "avatar"}
             />
           </div>
           <button
             type="button"
-            className="absolute bottom-0 right-0 size-8 bg-emerald-800 rounded-full outline outline-2 outline-offset-[-2px] outline-white flex justify-center items-center"
+            onClick={() => navigate("/orang-tua/profil/edit")}
+            className="absolute bottom-0 right-0 size-8 bg-emerald-800 rounded-full outline outline-2 outline-offset-[-2px] outline-white flex justify-center items-center cursor-pointer"
+            aria-label="Edit profil"
           >
             <Pencil className="size-3 text-white" />
           </button>

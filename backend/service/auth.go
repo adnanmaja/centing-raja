@@ -171,3 +171,10 @@ func (s *AuthService) ListUsers(ctx context.Context, limit, offset int32) ([]db.
 		Offset: offset,
 	})
 }
+
+func (s *AuthService) UpdateAvatar(ctx context.Context, id uuid.UUID, avatarURL string) (db.User, error) {
+	return s.db.UpdateUserAvatar(ctx, db.UpdateUserAvatarParams{
+		ID:        pgtype.UUID{Bytes: id, Valid: true},
+		AvatarUrl: &avatarURL,
+	})
+}

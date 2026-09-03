@@ -291,7 +291,7 @@ const createUser = `-- name: CreateUser :one
 
 INSERT INTO users (name, phone_number, role, nik)
 VALUES ($1, $2, $3, $4)
-RETURNING id, name, phone_number, role, nik, created_at
+RETURNING id, name, phone_number, role, nik, avatar_url, created_at
 `
 
 type CreateUserParams struct {
@@ -307,6 +307,7 @@ type CreateUserRow struct {
 	PhoneNumber *string
 	Role        UserRole
 	Nik         *string
+	AvatarUrl   *string
 	CreatedAt   pgtype.Timestamptz
 }
 
@@ -325,6 +326,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.PhoneNumber,
 		&i.Role,
 		&i.Nik,
+		&i.AvatarUrl,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -600,20 +602,23 @@ func (q *Queries) GetQuizSubmissionByID(ctx context.Context, id pgtype.UUID) (Qu
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, name, phone_number, role, reset_token, reset_token_expiry, created_at
+SELECT id, name, phone_number, role, nik, avatar_url, reset_token, reset_token_expiry, created_at, is_notification_enabled
 FROM users
 WHERE id = $1
 LIMIT 1
 `
 
 type GetUserByIDRow struct {
-	ID               pgtype.UUID
-	Name             string
-	PhoneNumber      *string
-	Role             UserRole
-	ResetToken       *string
-	ResetTokenExpiry pgtype.Timestamptz
-	CreatedAt        pgtype.Timestamptz
+	ID                    pgtype.UUID
+	Name                  string
+	PhoneNumber           *string
+	Role                  UserRole
+	Nik                   *string
+	AvatarUrl             *string
+	ResetToken            *string
+	ResetTokenExpiry      pgtype.Timestamptz
+	CreatedAt             pgtype.Timestamptz
+	IsNotificationEnabled *bool
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDRow, error) {
@@ -624,28 +629,34 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDR
 		&i.Name,
 		&i.PhoneNumber,
 		&i.Role,
+		&i.Nik,
+		&i.AvatarUrl,
 		&i.ResetToken,
 		&i.ResetTokenExpiry,
 		&i.CreatedAt,
+		&i.IsNotificationEnabled,
 	)
 	return i, err
 }
 
 const getUserByPhoneNumber = `-- name: GetUserByPhoneNumber :one
-SELECT id, name, phone_number, role, reset_token, reset_token_expiry, created_at
+SELECT id, name, phone_number, role, nik, avatar_url, reset_token, reset_token_expiry, created_at, is_notification_enabled
 FROM users
 WHERE phone_number = $1
 LIMIT 1
 `
 
 type GetUserByPhoneNumberRow struct {
-	ID               pgtype.UUID
-	Name             string
-	PhoneNumber      *string
-	Role             UserRole
-	ResetToken       *string
-	ResetTokenExpiry pgtype.Timestamptz
-	CreatedAt        pgtype.Timestamptz
+	ID                    pgtype.UUID
+	Name                  string
+	PhoneNumber           *string
+	Role                  UserRole
+	Nik                   *string
+	AvatarUrl             *string
+	ResetToken            *string
+	ResetTokenExpiry      pgtype.Timestamptz
+	CreatedAt             pgtype.Timestamptz
+	IsNotificationEnabled *bool
 }
 
 func (q *Queries) GetUserByPhoneNumber(ctx context.Context, phoneNumber *string) (GetUserByPhoneNumberRow, error) {
@@ -656,9 +667,12 @@ func (q *Queries) GetUserByPhoneNumber(ctx context.Context, phoneNumber *string)
 		&i.Name,
 		&i.PhoneNumber,
 		&i.Role,
+		&i.Nik,
+		&i.AvatarUrl,
 		&i.ResetToken,
 		&i.ResetTokenExpiry,
 		&i.CreatedAt,
+		&i.IsNotificationEnabled,
 	)
 	return i, err
 }
@@ -1032,7 +1046,7 @@ func (q *Queries) ListQuizzes(ctx context.Context, arg ListQuizzesParams) ([]Qui
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, name, phone_number, role, created_at
+SELECT id, name, phone_number, role, nik, avatar_url, created_at
 FROM users
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
@@ -1048,6 +1062,8 @@ type ListUsersRow struct {
 	Name        string
 	PhoneNumber *string
 	Role        UserRole
+	Nik         *string
+	AvatarUrl   *string
 	CreatedAt   pgtype.Timestamptz
 }
 
@@ -1065,6 +1081,8 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUse
 			&i.Name,
 			&i.PhoneNumber,
 			&i.Role,
+			&i.Nik,
+			&i.AvatarUrl,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -1287,6 +1305,37 @@ func (q *Queries) UpdateQuizQuestion(ctx context.Context, arg UpdateQuizQuestion
 	return i, err
 }
 
+const updateUserAvatar = `-- name: UpdateUserAvatar :one
+UPDATE users
+SET avatar_url = $2
+WHERE id = $1
+RETURNING id, name, nik, phone_number, role, avatar_url, reset_token, reset_token_expiry, created_at, last_logged_in, is_notification_enabled
+`
+
+type UpdateUserAvatarParams struct {
+	ID        pgtype.UUID
+	AvatarUrl *string
+}
+
+func (q *Queries) UpdateUserAvatar(ctx context.Context, arg UpdateUserAvatarParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserAvatar, arg.ID, arg.AvatarUrl)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Nik,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.AvatarUrl,
+		&i.ResetToken,
+		&i.ResetTokenExpiry,
+		&i.CreatedAt,
+		&i.LastLoggedIn,
+		&i.IsNotificationEnabled,
+	)
+	return i, err
+}
+
 const updateUserOTP = `-- name: UpdateUserOTP :exec
 UPDATE users
 SET reset_token = $2, reset_token_expiry = $3
@@ -1311,7 +1360,7 @@ SET name = $2,
     phone_number = $4,
     is_notification_enabled = $5
 WHERE id = $1
-RETURNING id, name, nik, phone_number, role, reset_token, reset_token_expiry, created_at, last_logged_in, is_notification_enabled
+RETURNING id, name, nik, phone_number, role, avatar_url, reset_token, reset_token_expiry, created_at, last_logged_in, is_notification_enabled
 `
 
 type UpdateUserProfileParams struct {
@@ -1337,6 +1386,7 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 		&i.Nik,
 		&i.PhoneNumber,
 		&i.Role,
+		&i.AvatarUrl,
 		&i.ResetToken,
 		&i.ResetTokenExpiry,
 		&i.CreatedAt,

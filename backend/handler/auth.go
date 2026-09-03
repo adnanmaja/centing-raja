@@ -36,6 +36,7 @@ type User struct {
 	Role                  string  `json:"role"`
 	Name                  string  `json:"name"`
 	Nik                   *string `json:"nik,omitempty"`
+	AvatarURL             *string `json:"avatar_url,omitempty"`
 	IsNotificationEnabled *bool   `json:"is_notification_enabled,omitempty"`
 }
 
@@ -52,12 +53,14 @@ type ListUsersRequest struct {
 }
 
 type AuthHandler struct {
-	authService *service.AuthService
+	authService    *service.AuthService
+	storageService *service.StorageService
 }
 
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
+func NewAuthHandler(authService *service.AuthService, storageService *service.StorageService) *AuthHandler {
 	return &AuthHandler{
-		authService: authService,
+		authService:    authService,
+		storageService: storageService,
 	}
 }
 
@@ -92,6 +95,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		Role:        string(user.Role),
 		Name:        user.Name,
 		Nik:         user.Nik,
+		AvatarURL:   user.AvatarUrl,
 	})
 }
 
@@ -139,10 +143,13 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	c.JSON(http.StatusOK, AuthResponse{
 		Token: token,
 		User: User{
-			ID:          user.ID.String(),
-			PhoneNumber: phone,
-			Role:        string(user.Role),
-			Name:        user.Name,
+			ID:                    user.ID.String(),
+			PhoneNumber:           phone,
+			Role:                  string(user.Role),
+			Name:                  user.Name,
+			Nik:                   user.Nik,
+			AvatarURL:             user.AvatarUrl,
+			IsNotificationEnabled: user.IsNotificationEnabled,
 		},
 	})
 }
@@ -172,10 +179,13 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, User{
-		ID:          uuid.UUID(user.ID.Bytes).String(),
-		PhoneNumber: phone,
-		Role:        string(user.Role),
-		Name:        user.Name,
+		ID:                    uuid.UUID(user.ID.Bytes).String(),
+		PhoneNumber:           phone,
+		Role:                  string(user.Role),
+		Name:                  user.Name,
+		Nik:                   user.Nik,
+		AvatarURL:             user.AvatarUrl,
+		IsNotificationEnabled: user.IsNotificationEnabled,
 	})
 }
 
@@ -215,6 +225,7 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 		Role:                  string(updatedUser.Role),
 		Name:                  updatedUser.Name,
 		Nik:                   updatedUser.Nik,
+		AvatarURL:             updatedUser.AvatarUrl,
 		IsNotificationEnabled: updatedUser.IsNotificationEnabled,
 	})
 }
@@ -250,8 +261,71 @@ func (h *AuthHandler) ListUsers(c *gin.Context) {
 			PhoneNumber: phone,
 			Role:        string(u.Role),
 			Name:        u.Name,
+			Nik:         u.Nik,
+			AvatarURL:   u.AvatarUrl,
 		}
 	}
 
 	c.JSON(http.StatusOK, usersResponse)
+}
+
+func (h *AuthHandler) UploadAvatar(c *gin.Context) {
+	userIdStr := c.GetString("user_id")
+	if userIdStr == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	userUUID, err := uuid.Parse(userIdStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	if h.storageService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "storage service unavailable"})
+		return
+	}
+
+	fileHeader, err := c.FormFile("avatar")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "avatar file is required in field 'avatar'"})
+		return
+	}
+
+	if fileHeader.Size > 5*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file size exceeds 5MB limit"})
+		return
+	}
+
+	avatarURL, err := h.storageService.UploadAvatar(c.Request.Context(), userUUID.String(), fileHeader)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	updatedUser, err := h.authService.UpdateAvatar(c.Request.Context(), userUUID, avatarURL)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update user avatar"})
+		return
+	}
+
+	phone := ""
+	if updatedUser.PhoneNumber != nil {
+		phone = *updatedUser.PhoneNumber
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "Avatar uploaded successfully",
+		"avatar_url": avatarURL,
+		"user": User{
+			ID:                    uuid.UUID(updatedUser.ID.Bytes).String(),
+			PhoneNumber:           phone,
+			Role:                  string(updatedUser.Role),
+			Name:                  updatedUser.Name,
+			Nik:                   updatedUser.Nik,
+			AvatarURL:             updatedUser.AvatarUrl,
+			IsNotificationEnabled: updatedUser.IsNotificationEnabled,
+		},
+	})
 }

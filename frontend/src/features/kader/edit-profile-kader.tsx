@@ -3,14 +3,13 @@ import { useRef, useState } from "react"
 import { SvgIcon } from "../../components/ui/svg-icon"
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { useAuth } from "../../context/auth-context"
-import { updateUserProfile } from "../../lib/api"
+import { updateUserProfile, uploadAvatar } from "../../lib/api"
 import editProfilePaths from "../../assets/icon-edit-profile"
 import lockedPosyanduPaths from "../../assets/icon-posyandu-locked"
 import phoneFieldPaths from "../../assets/icon-phone-field"
 import inputMeasurementPaths from "../../assets/icon-input-measurement"
 
 const defaultPhoto = "/images/foto-kader-2.png"
-const PHOTO_STORAGE_KEY = "kaderProfilePhoto"
 
 export function EditProfileKader({ onBack }: { onBack: () => void }) {
   const { user, setUser } = useAuth()
@@ -18,8 +17,9 @@ export function EditProfileKader({ onBack }: { onBack: () => void }) {
   const [phone, setPhone] = useState(user?.phone_number || "0812-3456-7890")
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [photo, setPhoto] = useState<string>(() => localStorage.getItem(PHOTO_STORAGE_KEY) || defaultPhoto)
+  const [photo, setPhoto] = useState<string>(() => user?.avatar_url || defaultPhoto)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const save = async () => {
@@ -41,17 +41,27 @@ export function EditProfileKader({ onBack }: { onBack: () => void }) {
       setSaving(false)
     }
   }
-  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      const base64 = reader.result as string
-      setPhoto(base64)
-      localStorage.setItem(PHOTO_STORAGE_KEY, base64)
+    // Immediate local preview
+    const previewUrl = URL.createObjectURL(file)
+    setPhoto(previewUrl)
+
+    setUploadingPhoto(true)
+    setErrorMsg(null)
+    try {
+      const res = await uploadAvatar(file)
+      setPhoto(res.avatar_url)
+      if (setUser) setUser(res.user)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal mengunggah foto profil"
+      setErrorMsg(msg)
+      setPhoto(user?.avatar_url || defaultPhoto)
+    } finally {
+      setUploadingPhoto(false)
     }
-    reader.readAsDataURL(file)
   }
 
   return (
@@ -74,10 +84,11 @@ export function EditProfileKader({ onBack }: { onBack: () => void }) {
           </div>
           <button
             type="button"
+            disabled={uploadingPhoto}
             onClick={() => fileInputRef.current?.click()}
-            className="mt-3 font-['Manrope:Regular',sans-serif] text-sm tracking-[0.05em] text-[#006d42]"
+            className="mt-3 font-['Manrope:Regular',sans-serif] text-sm tracking-[0.05em] text-[#006d42] disabled:opacity-50"
           >
-            UBAH FOTO
+            {uploadingPhoto ? "MENGUNGGAH..." : "UBAH FOTO"}
           </button>
         </section>
 
