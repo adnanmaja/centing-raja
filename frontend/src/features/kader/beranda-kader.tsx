@@ -8,6 +8,7 @@ import {
   getEducationMaterials,
   getKaderChildren,
   getKaderMeasurements,
+  type Child,
   type EducationMaterial,
 } from "../../lib/api"
 import { useAuth } from "../../context/auth-context"
@@ -26,6 +27,14 @@ interface KaderNewsItem {
   title: string
   time: string
   video_url?: string
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase()
 }
 
 
@@ -54,6 +63,9 @@ export function BerandaKader({
 }) {
   const { user } = useAuth()
   const [unmeasuredCount, setUnmeasuredCount] = useState<number | null>(null)
+  const [totalChildrenCount, setTotalChildrenCount] = useState<number | null>(null)
+  const [nextChild, setNextChild] = useState<Child | null>(null)
+  const [isLoadingTask, setIsLoadingTask] = useState(true)
   const [newsList, setNewsList] = useState<KaderNewsItem[]>([])
 
   useEffect(() => {
@@ -61,7 +73,7 @@ export function BerandaKader({
     async function loadStats() {
       try {
         const [children, measurements, educationData] = await Promise.all([
-          getKaderChildren(100, 0),
+          getKaderChildren(100, 0).catch(() => [] as Child[]),
           getKaderMeasurements().catch(() => []),
           getEducationMaterials(10, 0).catch(() => [] as EducationMaterial[]),
         ])
@@ -76,8 +88,11 @@ export function BerandaKader({
             })
             .map((m) => m.children_id)
         )
-        const pending = children.filter((c) => !measuredIds.has(c.id)).length
-        setUnmeasuredCount(pending)
+        const pending = children.filter((c) => !measuredIds.has(c.id))
+        setTotalChildrenCount(children.length)
+        setUnmeasuredCount(pending.length)
+        setNextChild(pending.length > 0 ? pending[0] : null)
+        setIsLoadingTask(false)
 
         if (Array.isArray(educationData) && educationData.length > 0) {
           const fallbackImages = [
@@ -155,26 +170,82 @@ export function BerandaKader({
               <p className="font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-[#3e4941]">
                 Tugas Hari Ini
               </p>
-              <span className="rounded-full bg-[#ba1a1a]/10 px-2 py-1 font-['Manrope:Regular',sans-serif] text-[10px] text-[#ba1a1a]">
-                {unmeasuredCount !== null
-                  ? `${unmeasuredCount} Belum Selesai`
-                  : "Memuat tugas..."}
-              </span>
+              {isLoadingTask ? (
+                <span className="rounded-full bg-gray-100 px-2 py-1 font-['Manrope:Regular',sans-serif] text-[10px] text-gray-500">
+                  Memuat tugas...
+                </span>
+              ) : (unmeasuredCount ?? 0) > 0 ? (
+                <span className="rounded-full bg-[#ba1a1a]/10 px-2 py-1 font-['Manrope:Regular',sans-serif] text-[10px] text-[#ba1a1a]">
+                  {unmeasuredCount} Belum Selesai
+                </span>
+              ) : (totalChildrenCount ?? 0) > 0 ? (
+                <span className="rounded-full bg-[#e9f7ef] px-2 py-1 font-['Manrope:Regular',sans-serif] text-[10px] text-[#006d42]">
+                  Semua Selesai
+                </span>
+              ) : (
+                <span className="rounded-full bg-gray-100 px-2 py-1 font-['Manrope:Regular',sans-serif] text-[10px] text-gray-500">
+                  0 Tugas
+                </span>
+              )}
             </div>
             <div className="flex min-w-0 items-center gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#cfe1f8] text-[#536478]">
-                <SvgIcon path={kaderTaskPaths.p411f900} viewBox="0 0 8 20" className="h-5 w-2" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-['Manrope:SemiBold',sans-serif] text-sm font-semibold">
-                  Kunjungan Ibu Hamil (Bumil)
-                </p>
-                <p className="mt-1 text-xs text-[#3e4941]">Posyandu Melati 1</p>
-              </div>
+              {isLoadingTask ? (
+                <>
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#cfe1f8] text-[#536478] animate-pulse">
+                    <SvgIcon path={kaderTaskPaths.p411f900} viewBox="0 0 8 20" className="h-5 w-2" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-[#536478]">
+                      Memuat tugas...
+                    </p>
+                    <p className="mt-1 text-xs text-[#3e4941]">Mengambil data dari server</p>
+                  </div>
+                </>
+              ) : nextChild ? (
+                <>
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#cfe1f8] font-['Plus_Jakarta_Sans:Bold',sans-serif] text-sm font-bold text-[#536478]">
+                    {getInitials(nextChild.full_name)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-['Manrope:SemiBold',sans-serif] text-sm font-semibold">
+                      Pengukuran {nextChild.full_name}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-[#3e4941]">
+                      {nextChild.home_address || "Posyandu Balita"}
+                    </p>
+                  </div>
+                </>
+              ) : (totalChildrenCount ?? 0) > 0 ? (
+                <>
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#e9f7ef] font-['Plus_Jakarta_Sans:Bold',sans-serif] text-sm font-bold text-[#006d42]">
+                    ✓
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-['Manrope:SemiBold',sans-serif] text-sm font-semibold text-[#006d42]">
+                      Semua tugas selesai
+                    </p>
+                    <p className="mt-1 text-xs text-[#3e4941]">
+                      Semua balita sudah diukur bulan ini
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-gray-100 text-gray-500">
+                    <SvgIcon path={kaderTaskPaths.p411f900} viewBox="0 0 8 20" className="h-5 w-2" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-['Manrope:SemiBold',sans-serif] text-sm font-semibold">
+                      Belum ada tugas
+                    </p>
+                    <p className="mt-1 text-xs text-[#3e4941]">Data balita belum tersedia</p>
+                  </div>
+                </>
+              )}
               <button
                 type="button"
                 onClick={onTasks}
-                className="grid size-8 shrink-0 place-items-center rounded-full bg-[#006d42] text-white transition hover:bg-[#005c38] active:scale-95"
+                className="grid size-8 shrink-0 place-items-center rounded-full bg-[#006d42] text-white transition hover:bg-[#005c38] active:scale-95 cursor-pointer"
                 aria-label="Buka tugas"
               >
                 <SvgIcon path={kaderTaskPaths.p4874b00} viewBox="0 0 5.55 9" className="h-2.5 w-1.5" />

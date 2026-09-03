@@ -93,13 +93,6 @@ export function ProfileParentScreen() {
               label="Edit Profil"
               onClick={() => navigate("/orang-tua/profil/edit")}
             />
-            <Divider />
-            <MenuItem
-              icon={<Lock className="size-4 text-slate-600" />}
-              iconBg="bg-blue-100"
-              label="Ubah Kata Sandi"
-              onClick={() => navigate("/orang-tua/profil/kata-sandi")}
-            />
           </div>
         </section>
 

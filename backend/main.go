@@ -32,8 +32,33 @@ func main() {
 
 	queries := db.New(conn)
 
+	waEnabled := os.Getenv("WA_ENABLED")
+	if waEnabled == "" {
+		waEnabled = "true"
+	}
+
+	var waService *service.WhatsAppService
+	if waEnabled == "true" {
+		waDBPath := os.Getenv("WA_DB_PATH")
+		if waDBPath == "" {
+			waDBPath = "whatsapp.db"
+		}
+
+		var err error
+		waService, err = service.NewWhatsAppService(waDBPath)
+		if err != nil {
+			log.Printf("[WhatsApp] Failed to initialize service: %v", err)
+		} else {
+			go func() {
+				if err := waService.Start(ctx); err != nil {
+					log.Printf("[WhatsApp] Service start error: %v", err)
+				}
+			}()
+		}
+	}
+
 	jwtSecret := os.Getenv("JWT_SECRET")
-	svcs := service.NewService(queries, []byte(jwtSecret))
+	svcs := service.NewService(queries, []byte(jwtSecret), waService)
 	server := handler.NewServer(svcs)
 
 	port := os.Getenv("PORT")

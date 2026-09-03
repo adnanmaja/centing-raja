@@ -37,8 +37,6 @@ CREATE TABLE users (
     is_notification_enabled BOOLEAN DEFAULT TRUE
 );
 
-ALTER TABLE users ADD COLUMN avatar_url TEXT;
-
 CREATE TABLE children (
     id UUID PRIMARY KEY DEFAULT uuidv7(),
     parent_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
