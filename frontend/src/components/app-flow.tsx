@@ -73,17 +73,33 @@ import { KuisBaruScreen } from "../features/nakes/kuis-baru-screen"
 
 function SplashGate() {
   const navigate = useNavigate()
+  const { isAuthenticated, user } = useAuth()
 
   useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate(getRoleDashboardPath(user.role), { replace: true })
+      return
+    }
+
     const timer = window.setTimeout(
       () => navigate("/welcome-pages", { replace: true }),
       5000,
     )
 
     return () => window.clearTimeout(timer)
-  }, [navigate])
+  }, [navigate, isAuthenticated, user])
 
   return <Loading />
+}
+
+function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth()
+
+  if (isAuthenticated && user) {
+    return <Navigate to={getRoleDashboardPath(user.role)} replace />
+  }
+
+  return <>{children}</>
 }
 
 function AppReveal() {
@@ -148,11 +164,7 @@ function OtpRoute() {
       phone={state.phone ?? ""}
       onBack={() => navigate(state.isRegistration ? "/auth/register" : "/auth/login")}
       onVerified={(user: UserProfile) => {
-        if (state.isRegistration) {
-          navigate("/auth/sukses")
-        } else {
-          navigate(getRoleDashboardPath(user.role))
-        }
+        navigate(getRoleDashboardPath(user.role), { replace: true })
       }}
     />
   )
@@ -261,86 +273,116 @@ function Flow() {
       <Route
         path="/welcome-pages"
         element={
-          <Welcome
-            onComplete={() => navigate("/welcome-pages/tentang")}
-            onSkip={() => navigate("/auth")}
-          />
+          <PublicOnlyRoute>
+            <Welcome
+              onComplete={() => navigate("/welcome-pages/tentang")}
+              onSkip={() => navigate("/auth")}
+            />
+          </PublicOnlyRoute>
         }
       />
       <Route
         path="/welcome-pages/tentang"
         element={
-          <TentangCentingRaja onComplete={() => navigate("/welcome-pages/panduan")} />
+          <PublicOnlyRoute>
+            <TentangCentingRaja onComplete={() => navigate("/welcome-pages/panduan")} />
+          </PublicOnlyRoute>
         }
       />
       <Route
         path="/welcome-pages/panduan"
         element={
-          <Panduan
-            guideIndex={0}
-            onNext={() => navigate("/welcome-pages/panduan/nakes")}
-            onSkip={() => navigate("/auth")}
-          onBack={() => navigate("/welcome-pages/tentang")}
-          />
+          <PublicOnlyRoute>
+            <Panduan
+              guideIndex={0}
+              onNext={() => navigate("/welcome-pages/panduan/nakes")}
+              onSkip={() => navigate("/auth")}
+              onBack={() => navigate("/welcome-pages/tentang")}
+            />
+          </PublicOnlyRoute>
         }
       />
       <Route
         path="/welcome-pages/panduan/nakes"
         element={
-          <Panduan
-            nakes
-            guideIndex={1}
-            onNext={() => navigate("/welcome-pages/panduan/kader")}
-             onSkip={() => navigate("/auth")}
-        onBack={() => navigate("/welcome-pages/panduan")}
-          />
+          <PublicOnlyRoute>
+            <Panduan
+              nakes
+              guideIndex={1}
+              onNext={() => navigate("/welcome-pages/panduan/kader")}
+              onSkip={() => navigate("/auth")}
+              onBack={() => navigate("/welcome-pages/panduan")}
+            />
+          </PublicOnlyRoute>
         }
       />
       <Route
         path="/welcome-pages/panduan/kader"
         element={
-          <Panduan
-            kader
-            guideIndex={2}
-            onNext={() => navigate("/auth")}
-             onSkip={() => navigate("/auth")}
-          onBack={() => navigate("/welcome-pages/panduan/nakes")}
-          />
+          <PublicOnlyRoute>
+            <Panduan
+              kader
+              guideIndex={2}
+              onNext={() => navigate("/auth")}
+              onSkip={() => navigate("/auth")}
+              onBack={() => navigate("/welcome-pages/panduan/nakes")}
+            />
+          </PublicOnlyRoute>
         }
       />
       <Route
         path="/auth"
         element={
-          <CentingRajaAuth
-            onLogin={() => navigate("/auth/login")}
-            onRegister={() => navigate("/auth/register")}
-            onTutorial={() => navigate("/welcome-pages/panduan")}
-          />
+          <PublicOnlyRoute>
+            <CentingRajaAuth
+              onLogin={() => navigate("/auth/login")}
+              onRegister={() => navigate("/auth/register")}
+              onTutorial={() => navigate("/welcome-pages/panduan")}
+            />
+          </PublicOnlyRoute>
         }
       />
       <Route
         path="/auth/login"
         element={
-          <MasukCentingRaja
-            onBack={() => navigate("/auth")}
-            onLogin={(phone) => navigate("/auth/otp", { state: { phone, isRegistration: false } })}
-          />
+          <PublicOnlyRoute>
+            <MasukCentingRaja
+              onBack={() => navigate("/auth")}
+              onLogin={(phone) => navigate("/auth/otp", { state: { phone, isRegistration: false } })}
+            />
+          </PublicOnlyRoute>
         }
       />
       <Route
         path="/auth/register"
         element={
-          <DaftarCentingRaja
-            onBack={() => navigate("/auth/login")}
-            onReturn={() => navigate("/auth")}
-            onVerify={(phone) => navigate("/auth/otp", { state: { phone, isRegistration: true } })}
-          />
+          <PublicOnlyRoute>
+            <DaftarCentingRaja
+              onBack={() => navigate("/auth/login")}
+              onReturn={() => navigate("/auth")}
+              onVerify={(phone) => navigate("/auth/otp", { state: { phone, isRegistration: true } })}
+            />
+          </PublicOnlyRoute>
         }
       />
       <Route path="/auth/otp" element={<OtpRoute />} />
       <Route
         path="/auth/sukses"
-        element={<DaftarBerhasil onContinue={() => navigate("/auth/login")} />}
+        element={
+          <DaftarBerhasil
+            onContinue={() => {
+              const savedUser = localStorage.getItem("centing_user")
+              if (savedUser) {
+                try {
+                  const u = JSON.parse(savedUser)
+                  navigate(getRoleDashboardPath(u.role), { replace: true })
+                  return
+                } catch {}
+              }
+              navigate("/auth/login")
+            }}
+          />
+        }
       />
       {/* Orang Tua Routes */}
       <Route

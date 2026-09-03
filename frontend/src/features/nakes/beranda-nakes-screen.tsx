@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { AlertTriangle, CheckCircle2, ChevronRight, ClipboardList, Map } from "lucide-react"
+import { AlertTriangle, CheckCircle2, ChevronRight, ClipboardList, Map as MapIcon } from "lucide-react"
 
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
@@ -17,13 +17,12 @@ import {
 const infoKaderImage = "/images/foto-kader.png"
 const giziAnakImage = "/images/piring-mpasi-seimbang.png"
 
-const defaultTrendData = [
-  { day: "1", value: 4.0 },
-  { day: "8", value: 3.7 },
-  { day: "15", value: 3.4 },
-  { day: "22", value: 3.1 },
-  { day: "29", value: 2.8 },
-]
+interface TrendResult {
+  trend: { day: string; value: number }[]
+  comparisonLabel: string
+  summary: string
+  trendDirection?: "down" | "up" | "stable"
+}
 
 interface ArticleItem {
   id?: string
@@ -48,12 +47,13 @@ function formatRelativeTime(dateStr?: string): string {
   return `${Math.floor(diffDays / 30)} Bulan yang lalu`
 }
 
-function computeTrendData(measurements: Measurement[]) {
+function computeTrendData(measurements: Measurement[]): TrendResult {
   if (!measurements || measurements.length === 0) {
     return {
-      trend: defaultTrendData,
-      comparisonLabel: "-1.2% vs 30 hari lalu",
-      summary: "Tren prevalensi stunting menurun sebesar 1.2% dalam 30 hari terakhir (4.0% ke 2.8%).",
+      trend: [],
+      comparisonLabel: "Belum ada data",
+      summary: "Belum ada data pengukuran balita tercatat dalam sistem.",
+      trendDirection: "stable",
     }
   }
 
@@ -61,49 +61,88 @@ function computeTrendData(measurements: Measurement[]) {
   const msPerDay = 24 * 60 * 60 * 1000
   const days = [1, 8, 15, 22, 29]
 
-  // Group measurements by 5 time windows spanning the last 30 days
-  const windowStats = days.map((day, idx) => {
-    const windowEnd = now - (29 - day) * msPerDay
-    const windowStart = windowEnd - 7 * msPerDay
-    const inWindow = measurements.filter((m) => {
-      const t = new Date(m.measured_at).getTime()
-      return t <= windowEnd && t >= windowStart
-    })
+  // Sort measurements chronologically
+  const sorted = [...measurements].sort(
+    (a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime()
+  )
 
-    if (inWindow.length === 0) {
-      // fallback interpolated baseline
-      const baseStuntingRate = 3.5 - idx * 0.15
-      return { day: String(day), value: Math.max(1.0, Number(baseStuntingRate.toFixed(1))) }
+  const points: { day: string; value: number }[] = []
+
+  for (const day of days) {
+    const cutoff = now - (29 - day) * msPerDay
+    const measurementsUpToCutoff = sorted.filter(
+      (m) => new Date(m.measured_at).getTime() <= cutoff
+    )
+
+    if (measurementsUpToCutoff.length === 0) {
+      continue
     }
 
-    const stuntedCount = inWindow.filter(
+    const latestPerChild = new Map<string, Measurement>()
+    for (const m of measurementsUpToCutoff) {
+      latestPerChild.set(m.children_id, m)
+    }
+
+    const uniqueMeasurements = Array.from(latestPerChild.values())
+    const stuntedCount = uniqueMeasurements.filter(
       (m) =>
         m.stunting_status === "severely_stunted" ||
         m.stunting_status === "stunted" ||
         (m.z_score !== undefined && Number(m.z_score) <= -2)
     ).length
 
-    const rate = Number(((stuntedCount / inWindow.length) * 100).toFixed(1))
-    return { day: String(day), value: rate }
-  })
+    const rate = Number(
+      ((stuntedCount / uniqueMeasurements.length) * 100).toFixed(1)
+    )
+    points.push({ day: `H-${29 - day}`, value: rate })
+  }
 
-  const first = windowStats[0].value
-  const last = windowStats[windowStats.length - 1].value
+  if (points.length === 0) {
+    const latestPerChild = new Map<string, Measurement>()
+    for (const m of sorted) {
+      latestPerChild.set(m.children_id, m)
+    }
+    const unique = Array.from(latestPerChild.values())
+    const stuntedCount = unique.filter(
+      (m) =>
+        m.stunting_status === "severely_stunted" ||
+        m.stunting_status === "stunted" ||
+        (m.z_score !== undefined && Number(m.z_score) <= -2)
+    ).length
+    const currentRate = Number(((stuntedCount / (unique.length || 1)) * 100).toFixed(1))
+    return {
+      trend: [{ day: "Hari ini", value: currentRate }],
+      comparisonLabel: `${currentRate.toFixed(1)}% Prevalensi`,
+      summary: `Prevalensi stunting saat ini berada di angka ${currentRate.toFixed(1)}% (${stuntedCount} dari ${unique.length} balita terukur).`,
+      trendDirection: "stable",
+    }
+  }
+
+  const first = points[0].value
+  const last = points[points.length - 1].value
   const diff = Number((last - first).toFixed(1))
-  const compLabel =
-    diff <= 0
-      ? `-${Math.abs(diff).toFixed(1)}% vs 30 hari lalu`
-      : `+${diff.toFixed(1)}% vs 30 hari lalu`
 
-  const summary =
-    diff <= 0
-      ? `Tren prevalensi stunting menurun sebesar ${Math.abs(diff).toFixed(1)}% dalam 30 hari terakhir (${first.toFixed(1)}% ke ${last.toFixed(1)}%).`
-      : `Tren prevalensi stunting terpantau meningkat ${diff.toFixed(1)}% dalam 30 hari terakhir (${first.toFixed(1)}% ke ${last.toFixed(1)}%).`
+  let compLabel = "0.0% vs 30 hari lalu"
+  let summary = `Tren prevalensi stunting stabil di angka ${first.toFixed(1)}%.`
+  let trendDirection: "down" | "up" | "stable" = "stable"
+
+  if (diff < 0) {
+    compLabel = `-${Math.abs(diff).toFixed(1)}% vs 30 hari lalu`
+    summary = `Tren prevalensi stunting menurun sebesar ${Math.abs(diff).toFixed(1)}% dalam 30 hari terakhir (${first.toFixed(1)}% ke ${last.toFixed(1)}%).`
+    trendDirection = "down"
+  } else if (diff > 0) {
+    compLabel = `+${diff.toFixed(1)}% vs 30 hari lalu`
+    summary = `Tren prevalensi stunting terpantau meningkat ${diff.toFixed(1)}% dalam 30 hari terakhir (${first.toFixed(1)}% ke ${last.toFixed(1)}%).`
+    trendDirection = "up"
+  } else {
+    summary = `Tren prevalensi stunting stabil di angka ${first.toFixed(1)}% (${points.length} titik pantau).`
+  }
 
   return {
-    trend: windowStats,
+    trend: points,
     comparisonLabel: compLabel,
     summary,
+    trendDirection,
   }
 }
 export function BerandaNakesScreen() {
@@ -143,9 +182,7 @@ export function BerandaNakesScreen() {
         setMonitoringCoverage(coverage)
         setActiveTasks(total - measuredCount)
 
-        if (measurements.length > 0) {
-          setTrendState(computeTrendData(measurements))
-        }
+        setTrendState(computeTrendData(measurements))
 
         if (Array.isArray(educationData) && educationData.length > 0) {
           const mappedArticles: ArticleItem[] = educationData.map((item, idx) => {
@@ -241,7 +278,7 @@ export function BerandaNakesScreen() {
               onClick={() => navigate("/nakes/sebaran-stunting")}
               className="flex-1 px-4 py-6 bg-emerald-800 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex flex-col items-center justify-center gap-1"
             >
-              <Map className="size-4 text-white" />
+              <MapIcon className="size-4 text-white" />
               <span className="font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-xs font-semibold text-white text-center leading-4">
                 Cek Sebaran
                 <br />
@@ -261,6 +298,7 @@ export function BerandaNakesScreen() {
             data={trendState.trend}
             comparisonLabel={trendState.comparisonLabel}
             summary={trendState.summary}
+            trendDirection={trendState.trendDirection}
           />
         </section>
 

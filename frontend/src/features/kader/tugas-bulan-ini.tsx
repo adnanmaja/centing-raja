@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { MoreVertical, Pin, Tag, Trash2 } from "lucide-react"
+import { MoreVertical, Pin, RotateCcw, Trash2 } from "lucide-react"
 
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
@@ -148,10 +148,6 @@ export function TugasBulanIni({
     setOpenMenuFor(null)
   }
 
-  const markDone = (name: string) => {
-    setChildren((prev) => prev.map((c) => (c.name === name ? { ...c, done: true, status: "Selesai" } : c)))
-    setOpenMenuFor(null)
-  }
   return (
     <main className="min-h-svh bg-[#f8f9fa] pb-28 pt-16 text-[#191c1d]" aria-label="Tugas Bulan Ini">
       <ProfileHeader title="Tugas" />
@@ -237,11 +233,14 @@ export function TugasBulanIni({
                     </button>
                     <button
                       type="button"
-                      onClick={() => markDone(child.name)}
+                      onClick={() => {
+                        onInput(child)
+                        setOpenMenuFor(null)
+                      }}
                       className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left font-['Manrope:Regular',sans-serif] text-sm text-[#191c1d] transition hover:bg-[#f3f4f5]"
                     >
-                      <Tag className="size-3.5" />
-                      Tandai Selesai
+                      <RotateCcw className="size-3.5" />
+                      {child.done ? "Ukur Ulang" : "Input Pengukuran"}
                     </button>
                     <button
                       type="button"
