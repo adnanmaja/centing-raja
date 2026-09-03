@@ -42,31 +42,22 @@ export function ParentGrowthChart({
     return { x, y, val, ageMonths }
   })
 
-  const defaultLine = isHeight
-    ? "M8 132 L48 106 L86 82 L124 56 L164 40 L204 43 L244 27"
-    : "M8 134 L48 110 L86 86 L124 66 L164 50 L204 52 L244 42"
-
   const line = points.length > 1
     ? points.reduce((acc, pt, idx) => `${acc} ${idx === 0 ? "M" : "L"}${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`, "")
-    : points.length === 1
-    ? `M8 140 L${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`
-    : defaultLine
+    : ""
 
   const latest = points.length > 0 ? points[points.length - 1] : null
-  const displayVal = latest ? `${latest.val}` : (isHeight ? "92" : "14.2")
-  const displayAge = latest ? `Bulan ${latest.ageMonths}` : "Bulan 30"
-  const tooltipX = latest ? Math.min(202, Math.max(0, latest.x - 29)) : 191
-  const tooltipY = latest ? Math.max(4, latest.y - 32) : 18
-  const lastDotX = latest ? latest.x : 204
-  const lastDotY = latest ? latest.y : (isHeight ? 43 : 52)
-
+  const displayVal = latest ? `${latest.val}` : ""
+  const displayAge = latest ? `Bulan ${latest.ageMonths}` : ""
+  const tooltipX = latest ? Math.min(202, Math.max(0, latest.x - 29)) : 0
+  const tooltipY = latest ? Math.max(4, latest.y - 32) : 0
   return (
     <div className="mx-auto mt-5 w-full max-w-4xl overflow-visible">
       <svg
         viewBox="0 0 260 168"
         className="h-auto w-full overflow-visible"
         role="img"
-        aria-label={`Grafik ${metric} Leo`}
+        aria-label={`Grafik ${metric} ${child?.full_name || "Balita"}`}
       >
         <defs>
           <linearGradient id="parentChartFill" x1="0" x2="0" y1="0" y2="1">
@@ -75,20 +66,24 @@ export function ParentGrowthChart({
           </linearGradient>
         </defs>
         <path d="M0 58H260M0 102H260" stroke="#e8efeb" strokeDasharray="3 4" />
-        <path
-          d={`${line} L244 154 L8 154 Z`}
-          fill="url(#parentChartFill)"
-          className="parent-chart-area"
-        />
-        <path
-          d={line}
-          fill="none"
-          stroke="#007c4a"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="3"
-          className="parent-chart-line"
-        />
+        {points.length > 1 && (
+          <>
+            <path
+              d={`${line} L${points[points.length - 1].x.toFixed(1)} 154 L${points[0].x.toFixed(1)} 154 Z`}
+              fill="url(#parentChartFill)"
+              className="parent-chart-area"
+            />
+            <path
+              d={line}
+              fill="none"
+              stroke="#007c4a"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="3"
+              className="parent-chart-line"
+            />
+          </>
+        )}
         {latest && <path d={`M${latest.x.toFixed(1)} 12V154`} stroke="#87c6a1" strokeDasharray="2 2" />}
         <g
           className="parent-chart-dots"
@@ -96,53 +91,68 @@ export function ParentGrowthChart({
           stroke="#007c4a"
           strokeWidth="2"
         >
-          {points.length > 0
-            ? points.map((pt, idx) => (
-                <circle key={idx} cx={pt.x} cy={pt.y} r="3.5" />
-              ))
-            : [
-                [8, 132],
-                [48, 106],
-                [86, 82],
-                [124, 56],
-                [164, 40],
-                [204, 43],
-              ].map(([x, y]) => (
-                <circle key={`${x}-${y}`} cx={x} cy={y} r="3.5" />
-              ))}
+          {points.map((pt, idx) => (
+            <circle key={idx} cx={pt.x} cy={pt.y} r="3.5" />
+          ))}
         </g>
-        <circle
-          cx={lastDotX}
-          cy={lastDotY}
-          r="3.5"
-          fill="white"
-          stroke="#007c4a"
-          strokeWidth="2"
-        />
-        <g transform={`translate(${tooltipX.toFixed(1)},${tooltipY.toFixed(1)})`}>
-          <rect width="58" height="27" rx="4" fill="white" className="shadow-sm" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))" />
-          <text
-            x="29"
-            y="12"
-            textAnchor="middle"
-            fill="#007c4a"
-            fontFamily="Manrope, sans-serif"
-            fontSize="8"
-            fontWeight="700"
-          >
-            {displayVal} {unit}
-          </text>
-          <text
-            x="29"
-            y="21"
-            textAnchor="middle"
-            fill="#6b7a72"
-            fontFamily="Manrope, sans-serif"
-            fontSize="6"
-          >
-            {displayAge}
-          </text>
-        </g>
+        {latest && (
+          <>
+            <circle
+              cx={latest.x}
+              cy={latest.y}
+              r="3.5"
+              fill="white"
+              stroke="#007c4a"
+              strokeWidth="2"
+            />
+            <g transform={`translate(${tooltipX.toFixed(1)},${tooltipY.toFixed(1)})`}>
+              <rect width="58" height="27" rx="4" fill="white" className="shadow-sm" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))" />
+              <text
+                x="29"
+                y="12"
+                textAnchor="middle"
+                fill="#007c4a"
+                fontFamily="Manrope, sans-serif"
+                fontSize="8"
+                fontWeight="700"
+              >
+                {displayVal} {unit}
+              </text>
+              <text
+                x="29"
+                y="21"
+                textAnchor="middle"
+                fill="#6b7a72"
+                fontFamily="Manrope, sans-serif"
+                fontSize="6"
+              >
+                {displayAge}
+              </text>
+            </g>
+          </>
+        )}
+        {points.length === 0 && (
+          <g transform="translate(130, 80)">
+            <text
+              textAnchor="middle"
+              fill="#52615a"
+              fontFamily="Manrope, sans-serif"
+              fontSize="8.5"
+              fontWeight="600"
+            >
+              Belum ada riwayat pengukuran {metric.toLowerCase()}
+            </text>
+            <text
+              y="14"
+              textAnchor="middle"
+              fill="#879b90"
+              fontFamily="Manrope, sans-serif"
+              fontSize="7"
+            >
+              Data grafik akan otomatis tampil setelah pengukuran dicatat
+            </text>
+          </g>
+        )}
         <g fill="#52615a" fontFamily="Manrope, sans-serif" fontSize="7">
           <text x="6" y="166">
             0
