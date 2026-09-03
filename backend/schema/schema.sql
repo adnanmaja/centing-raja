@@ -29,12 +29,15 @@ CREATE TABLE users (
     nik VARCHAR(20) UNIQUE,
     phone_number VARCHAR(20),
     role user_role NOT NULL,
+    avatar_url VARCHAR(500),
     reset_token VARCHAR(100),
     reset_token_expiry TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_logged_in TIMESTAMP,
     is_notification_enabled BOOLEAN DEFAULT TRUE
 );
+
+ALTER TABLE users ADD COLUMN avatar_url TEXT;
 
 CREATE TABLE children (
     id UUID PRIMARY KEY DEFAULT uuidv7(),

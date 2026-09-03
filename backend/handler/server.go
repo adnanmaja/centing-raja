@@ -25,7 +25,7 @@ func NewServer(svcs *service.Services) *Server {
 		router:   router,
 	}
 
-	authHandler := NewAuthHandler(svcs.Auth)
+	authHandler := NewAuthHandler(svcs.Auth, svcs.Storage)
 	childrenHandler := NewChildrenHandler(svcs.Children)
 	educationHandler := NewEducationMaterialHandler(svcs.EducationMaterial)
 	measurementHandler := NewMeasurementHandler(svcs.Measurement)
@@ -50,7 +50,7 @@ func NewServer(svcs *service.Services) *Server {
 	protected.Use(authHandler.AuthMiddleware())
 	protected.GET("/users/profile", authHandler.GetProfile)
 	protected.PUT("/users/profile", authHandler.UpdateProfile)
-
+	protected.POST("/users/profile/avatar", authHandler.UploadAvatar)
 	protected.GET("/education-materials", educationHandler.ListEducationMaterials)
 	protected.GET("/education-materials/:id", educationHandler.GetEducationMaterialByID)
 	protected.GET("/quizzes", quizHandler.ListQuizzes)

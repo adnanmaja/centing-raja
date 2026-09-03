@@ -1,6 +1,10 @@
 package service
 
-import "github.com/adnanmaja/centing-raja/db"
+import (
+	"context"
+
+	"github.com/adnanmaja/centing-raja/db"
+)
 
 type Services struct {
 	Auth              *AuthService
@@ -9,6 +13,7 @@ type Services struct {
 	Measurement       *MeasurementService
 	Notification      *NotificationService
 	Quiz              *QuizService
+	Storage           *StorageService
 }
 
 func NewService(queries *db.Queries, jwtSecret []byte) *Services {
@@ -19,5 +24,6 @@ func NewService(queries *db.Queries, jwtSecret []byte) *Services {
 		Measurement:       NewMeasurementService(queries),
 		Notification:      NewNotificationService(queries),
 		Quiz:              NewQuizService(queries),
+		Storage:           NewStorageService(context.Background()),
 	}
 }

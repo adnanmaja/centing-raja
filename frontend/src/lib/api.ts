@@ -5,6 +5,7 @@ export interface UserProfile {
   role: "tenaga_kesehatan" | "kader" | "orang_tua";
   nik?: string;
   is_notification_enabled?: boolean;
+  avatar_url?: string;
 }
 
 export interface RegisterPayload {
@@ -426,6 +427,30 @@ export async function updateUserProfile(payload: {
     method: "PUT",
     body: JSON.stringify(payload),
   });
+}
+
+export async function uploadAvatar(file: File): Promise<{
+  message: string;
+  avatar_url: string;
+  user: UserProfile;
+}> {
+  const token = localStorage.getItem("centing_token");
+  const formData = new FormData();
+  formData.append("avatar", file);
+
+  const response = await fetch(`${API_BASE_URL}/users/profile/avatar`, {
+    method: "POST",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || data.message || "Failed to upload avatar");
+  }
+  return data;
 }
 
 export async function getNakesUsers(limit = 100, offset = 0): Promise<UserProfile[]> {

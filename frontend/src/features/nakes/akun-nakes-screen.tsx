@@ -21,6 +21,7 @@ import {
   deleteQuiz,
   getEducationMaterials,
   getNakesUsers,
+  getQuizQuestions,
   getQuizzes,
   type UserProfile,
 } from "../../lib/api"
@@ -88,14 +89,6 @@ type KuisHistoryItem = {
   jumlahSoal: number
 }
 
-const initialMateriHistory: MateriHistoryItem[] = [
-  { id: "1", judul: "Pentingnya MPASI 6 Bulan", kategori: "Nutrisi", tanggal: "12 Agu 2026" },
-  { id: "2", judul: "Deteksi Dini Stunting", kategori: "Kesehatan", tanggal: "5 Agu 2026" },
-]
-
-const initialKuisHistory: KuisHistoryItem[] = [
-  { id: "1", judul: "Deteksi Dini Stunting Balita", durasi: "15 Menit", jumlahSoal: 5 },
-]
 
 export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
   const navigate = useNavigate()
@@ -105,8 +98,10 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const [materiHistory, setMateriHistory] = useState<MateriHistoryItem[]>(initialMateriHistory)
-  const [kuisHistory, setKuisHistory] = useState<KuisHistoryItem[]>(initialKuisHistory)
+  const [materiHistory, setMateriHistory] = useState<MateriHistoryItem[]>([])
+  const [kuisHistory, setKuisHistory] = useState<KuisHistoryItem[]>([])
+  const [isLoadingMateri, setIsLoadingMateri] = useState(true)
+  const [isLoadingKuis, setIsLoadingKuis] = useState(true)
   const [materiToDelete, setMateriToDelete] = useState<MateriHistoryItem | null>(null)
   const [quizToDelete, setQuizToDelete] = useState<KuisHistoryItem | null>(null)
   useEffect(() => {
@@ -139,7 +134,8 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
 
     getEducationMaterials(50, 0)
       .then((data) => {
-        if (active && Array.isArray(data) && data.length > 0) {
+        if (!active) return
+        if (Array.isArray(data)) {
           const apiItems: MateriHistoryItem[] = data.map((item) => {
             const dateStr = item.created_at
               ? new Date(item.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
@@ -166,23 +162,50 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
       .catch((err) => {
         console.warn("[Centing] Failed to fetch education materials for nakes:", err)
       })
-
-    getQuizzes(50, 0)
-      .then((data) => {
-        if (active && Array.isArray(data) && data.length > 0) {
-          const apiQuizzes: KuisHistoryItem[] = data.map((quiz) => ({
-            id: quiz.id,
-            judul: quiz.title,
-            durasi: quiz.description?.includes("Durasi:") ? quiz.description.replace("Durasi:", "").trim() : "15 Menit",
-            jumlahSoal: 5,
-          }))
-          setKuisHistory(apiQuizzes)
+      .finally(() => {
+        if (active) {
+          setIsLoadingMateri(false)
         }
       })
-      .catch(() => {
-        // keep fallback
-      })
 
+    getQuizzes(50, 0)
+      .then(async (data) => {
+        if (!active) return
+        if (Array.isArray(data)) {
+          const apiQuizzes: KuisHistoryItem[] = await Promise.all(
+            data.map(async (quiz) => {
+              let count = 0
+              try {
+                const questions = await getQuizQuestions(quiz.id)
+                if (Array.isArray(questions)) {
+                  count = questions.length
+                }
+              } catch {
+                count = 0
+              }
+              return {
+                id: quiz.id,
+                judul: quiz.title,
+                durasi: quiz.description?.includes("Durasi:")
+                  ? quiz.description.replace("Durasi:", "").trim()
+                  : "15 Menit",
+                jumlahSoal: count,
+              }
+            })
+          )
+          if (active) {
+            setKuisHistory(apiQuizzes)
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("[Centing] Failed to fetch quizzes for nakes:", err)
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoadingKuis(false)
+        }
+      })
     return () => {
       active = false
     }
@@ -480,7 +503,13 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
             Riwayat Materi Dipublikasikan
           </h2>
 
-          {materiHistory.length === 0 ? (
+          {isLoadingMateri ? (
+            <div className="bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] p-6 text-center">
+              <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                Memuat riwayat materi...
+              </span>
+            </div>
+          ) : materiHistory.length === 0 ? (
             <div className="bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] p-6 text-center">
               <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
                 Belum ada materi yang dipublikasikan.
@@ -520,7 +549,13 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
             Kuis yang Sudah Dibuat
           </h2>
 
-          {kuisHistory.length === 0 ? (
+          {isLoadingKuis ? (
+            <div className="bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] p-6 text-center">
+              <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                Memuat daftar kuis...
+              </span>
+            </div>
+          ) : kuisHistory.length === 0 ? (
             <div className="bg-white rounded-xl shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] p-6 text-center">
               <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
                 Belum ada kuis yang dibuat.
@@ -567,7 +602,7 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
           onConfirm={async () => {
             if (!materiToDelete) return
             try {
-              if (materiToDelete.id.length > 5) {
+              if (materiToDelete.id) {
                 await deleteEducationMaterial(materiToDelete.id)
               }
             } catch (err) {
@@ -587,7 +622,7 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
           onConfirm={async () => {
             if (!quizToDelete) return
             try {
-              if (quizToDelete.id.length > 5) {
+              if (quizToDelete.id) {
                 await deleteQuiz(quizToDelete.id)
               }
             } catch (err) {

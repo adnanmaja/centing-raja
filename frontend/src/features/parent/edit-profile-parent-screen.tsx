@@ -1,10 +1,10 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Check, Pencil, User, CreditCard, Phone, MapPin } from "lucide-react"
 
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
 import { useAuth } from "../../context/auth-context"
-import { updateUserProfile } from "../../lib/api"
+import { updateUserProfile, uploadAvatar } from "../../lib/api"
 
 const logo = "/logo/logo-centing-raja.png"
 
@@ -12,7 +12,10 @@ export function EditProfileParentScreen() {
   const navigate = useNavigate()
   const { user, setUser } = useAuth()
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [saving, setSaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string>(user?.avatar_url || "")
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [form, setForm] = useState({
     nama: user?.name || "Ibu Nisa",
@@ -49,6 +52,28 @@ export function EditProfileParentScreen() {
     }
   }
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const preview = URL.createObjectURL(file)
+    setAvatarUrl(preview)
+
+    setUploadingAvatar(true)
+    setErrorMsg(null)
+    try {
+      const res = await uploadAvatar(file)
+      setAvatarUrl(res.avatar_url)
+      if (setUser) setUser(res.user)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal mengunggah foto profil"
+      setErrorMsg(msg)
+      setAvatarUrl(user?.avatar_url || "")
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   return (
     <div className="w-full min-h-screen bg-gray-50 flex flex-col">
       <ParentInputHeader
@@ -63,18 +88,27 @@ export function EditProfileParentScreen() {
           <div className="size-24 bg-emerald-300 rounded-full shadow-md outline outline-4 outline-offset-[-4px] outline-gray-50 flex justify-center items-center overflow-hidden">
             <img
               className="size-24 object-cover"
-              src="https://placehold.co/96x96"
+              src={avatarUrl || "https://placehold.co/96x96"}
               alt="avatar"
             />
           </div>
           <button
             type="button"
-            className="absolute bottom-0 right-0 size-8 bg-gray-50 rounded-full shadow-sm flex justify-center items-center"
+            disabled={uploadingAvatar}
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute bottom-0 right-0 size-8 bg-gray-50 rounded-full shadow-sm flex justify-center items-center disabled:opacity-50 cursor-pointer"
+            aria-label="Ubah foto"
           >
             <Pencil className="size-3.5 text-emerald-800" />
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="hidden"
+          />
         </div>
-
         <h1 className="text-white text-2xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif]">
           Edit Profil
         </h1>
