@@ -69,10 +69,10 @@ export function MasukCentingRaja({
         </div>
       </section>
       <section className="relative z-10 mt-7 w-full max-w-[400px] rounded-2xl bg-white p-4 shadow-[0_10px_24px_rgba(0,0,0,0.06)] sm:p-5 lg:mt-0">
-        <label className="font-['Manrope:Regular',sans-serif] text-base leading-6 text-[#3e4941]">
+        {/* <label className="font-['Manrope:Regular',sans-serif] text-base leading-6 text-[#3e4941]">
           Masuk Sebagai
-        </label>
-        <div className="mt-2 grid grid-cols-3 rounded-xl bg-[#edeeef] p-2">
+        </label> */}
+        {/* <div className="mt-2 grid grid-cols-3 rounded-xl bg-[#edeeef] p-2">
           {roles.map((item) => (
             <button
               key={item}
@@ -87,7 +87,7 @@ export function MasukCentingRaja({
               {item}
             </button>
           ))}
-        </div>
+        </div> */}
         <form
           onSubmit={async (e) => {
             e.preventDefault()
@@ -111,7 +111,7 @@ export function MasukCentingRaja({
             }
           }}
         >
-          <div className="mt-6">
+          <div className="mt-0">
             <label
               htmlFor="phone-number"
               className="font-['Manrope:Regular',sans-serif] text-base leading-6 text-[#3e4941]"
