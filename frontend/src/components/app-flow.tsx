@@ -83,7 +83,7 @@ function SplashGate() {
 
     const timer = window.setTimeout(
       () => navigate("/welcome-pages", { replace: true }),
-      5000,
+      1000,
     )
 
     return () => window.clearTimeout(timer)

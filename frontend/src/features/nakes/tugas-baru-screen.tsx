@@ -4,7 +4,15 @@ import { AlertTriangle, Calendar, CheckCircle2, MapPin, Search, Trash2 } from "l
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 import { ConfirmDeleteModal } from "../../components/ui/confirm-delete-modal"
-import { createNotification, getNakesChildren, getNakesUsers, type Child, type UserProfile } from "../../lib/api"
+import {
+  createNotification,
+  getNakesChildren,
+  getNakesMeasurements,
+  getNakesUsers,
+  type Child,
+  type Measurement,
+  type UserProfile,
+} from "../../lib/api"
 
 export type StatusTugas = "belum-diukur" | "selesai"
 
@@ -18,57 +26,71 @@ type AnakTugas = {
   batasWaktu: string
 }
 
-const initialAnakList: AnakTugas[] = [
-  { id: "1", nama: "Budi Santoso", rt: "02", rw: "05", status: "belum-diukur", kader: "", batasWaktu: "" },
-  { id: "2", nama: "Aisyah Putri", rt: "04", rw: "01", status: "selesai", kader: "Ibu Rahmawati", batasWaktu: "28 Okt 2023" },
-]
-
-const defaultKaderOptions = ["Ibu Rahmawati", "Ibu Siti", "Ibu Ayu", "Ibu Dewi"]
 type FilterTab = "Semua" | "Selesai" | "Belum Diukur"
 
 export function TugasBaruScreen() {
   const navigate = useNavigate()
-  const [anakList, setAnakList] = useState<AnakTugas[]>(initialAnakList)
-  const [kaderOptions, setKaderOptions] = useState<string[]>(defaultKaderOptions)
+  const [anakList, setAnakList] = useState<AnakTugas[]>([])
+  const [kaderOptions, setKaderOptions] = useState<string[]>([])
   const [kaderUsers, setKaderUsers] = useState<UserProfile[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [filterTab, setFilterTab] = useState<FilterTab>("Semua")
   const [anakToDelete, setAnakToDelete] = useState<AnakTugas | null>(null)
   useEffect(() => {
     let active = true
+    setIsLoading(true)
     Promise.all([
-      getNakesChildren(100, 0),
+      getNakesChildren(100, 0).catch(() => [] as Child[]),
       getNakesUsers(100, 0).catch(() => [] as UserProfile[]),
+      getNakesMeasurements(200, 0).catch(() => [] as Measurement[]),
     ])
-      .then(([childrenData, usersData]) => {
+      .then(([childrenData, usersData, measurementsData]) => {
         if (!active) return
-        if (Array.isArray(childrenData) && childrenData.length > 0) {
-          const mapped: AnakTugas[] = childrenData.map((c: Child) => {
-            const rtMatch = c.home_address?.match(/RT\s*(\d+)/i)
-            const rwMatch = c.home_address?.match(/RW\s*(\d+)/i)
-            return {
-              id: c.id,
-              nama: c.full_name,
-              rt: rtMatch ? rtMatch[1] : "01",
-              rw: rwMatch ? rwMatch[1] : "03",
-              status: "belum-diukur",
-              kader: "",
-              batasWaktu: "",
-            }
-          })
-          setAnakList(mapped)
-        }
-        if (Array.isArray(usersData) && usersData.length > 0) {
-          const kaders = usersData.filter((u) => u.role === "kader")
-          setKaderUsers(kaders)
-          const names = kaders.map((u) => u.name)
-          if (names.length > 0) {
-            setKaderOptions(names)
+
+        const validChildren = Array.isArray(childrenData) ? childrenData : []
+        const validUsers = Array.isArray(usersData) ? usersData : []
+        const validMeasurements = Array.isArray(measurementsData) ? measurementsData : []
+
+        const currentYear = new Date().getFullYear()
+        const currentMonth = new Date().getMonth()
+        const measuredChildIds = new Set(
+          validMeasurements
+            .filter((m) => {
+              const d = new Date(m.measured_at)
+              return d.getFullYear() === currentYear && d.getMonth() === currentMonth
+            })
+            .map((m) => m.children_id)
+        )
+
+        const mapped: AnakTugas[] = validChildren.map((c: Child) => {
+          const rtMatch = c.home_address?.match(/RT\s*(\d+)/i)
+          const rwMatch = c.home_address?.match(/RW\s*(\d+)/i)
+          const isMeasured = measuredChildIds.has(c.id)
+          return {
+            id: c.id,
+            nama: c.full_name,
+            rt: rtMatch ? rtMatch[1] : "01",
+            rw: rwMatch ? rwMatch[1] : "03",
+            status: isMeasured ? "selesai" : "belum-diukur",
+            kader: "",
+            batasWaktu: "",
           }
-        }
+        })
+        setAnakList(mapped)
+
+        const kaders = validUsers.filter((u) => u.role === "kader")
+        setKaderUsers(kaders)
+        const names = kaders.map((u) => u.name).filter(Boolean)
+        setKaderOptions(names)
       })
       .catch((err) => {
         console.warn("[Centing] Failed to fetch task assignment data:", err)
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoading(false)
+        }
       })
     return () => {
       active = false
@@ -176,14 +198,22 @@ export function TugasBaruScreen() {
           </div>
         </div>
 
-        {filteredList.length === 0 && (
+        {isLoading ? (
+          <div className="py-10 flex flex-col items-center gap-2 text-center">
+            <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+              Memuat data penugasan balita...
+            </span>
+          </div>
+        ) : filteredList.length === 0 ? (
           <div className="py-10 flex flex-col items-center gap-2 text-center">
             <AlertTriangle className="size-6 text-neutral-400" />
             <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
-              Tidak ada data yang cocok.
+              {anakList.length === 0
+                ? "Belum ada data balita terdaftar di database."
+                : "Tidak ada data yang cocok dengan filter atau pencarian."}
             </span>
           </div>
-        )}
+        ) : null}
 
         {filteredList.length > 0 && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -263,7 +293,9 @@ export function TugasBaruScreen() {
                       onChange={(e) => handleKaderChange(anak.id, e.target.value)}
                       className="flex-1 min-w-0 px-2 py-2 bg-zinc-100 rounded-lg text-zinc-900 text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] leading-5 cursor-pointer focus:outline focus:outline-2 focus:outline-emerald-800"
                     >
-                      <option value="">Pilih Kader...</option>
+                      <option value="">
+                        {kaderOptions.length === 0 ? "Pilih Kader (Belum ada kader terdaftar)" : "Pilih Kader..."}
+                      </option>
                       {kaderOptions.map((kader) => (
                         <option key={kader} value={kader}>
                           {kader}

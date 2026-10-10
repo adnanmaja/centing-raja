@@ -20,6 +20,7 @@ type Server struct {
 
 func NewServer(svcs *service.Services) *Server {
 	router := gin.Default()
+	_ = router.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 	server := &Server{
 		services: svcs,
 		router:   router,
