@@ -170,7 +170,7 @@ export function AnalisisSebaranStuntingScreen() {
     <div className="min-h-svh bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-gray-50/80 shadow-[0px_1px_8px_0px_rgba(0,0,0,0.04)] backdrop-blur-md">
-        <div className="h-16 px-5 flex items-center gap-4">
+        <div className="mx-auto w-full max-w-6xl h-16 px-5 sm:px-8 flex items-center gap-4">
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -185,9 +185,9 @@ export function AnalisisSebaranStuntingScreen() {
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col mx-auto w-full max-w-6xl">
         {/* Title */}
-        <div className="px-5 py-6 flex flex-col gap-3">
+        <div className="px-5 sm:px-8 py-6 flex flex-col gap-3">
           <h2 className="text-zinc-900 text-2xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-8">
             Z-Score Engine
           </h2>
@@ -197,7 +197,7 @@ export function AnalisisSebaranStuntingScreen() {
         </div>
 
         {/* Ringkasan Kecamatan */}
-        <div className="px-5 pb-6">
+        <div className="px-5 sm:px-8 pb-6">
           <div className="p-4 bg-zinc-100 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h3 className="pr-20 text-zinc-900 text-xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-7">
@@ -257,7 +257,7 @@ export function AnalisisSebaranStuntingScreen() {
 
         {/* Klasifikasi Status Gizi */}
         <div className="pb-6">
-          <div className="px-5 flex flex-col gap-4">
+          <div className="px-5 sm:px-8 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h3 className="pr-20 text-zinc-900 text-xl font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-7">
                 Klasifikasi Status Gizi
@@ -327,7 +327,7 @@ export function AnalisisSebaranStuntingScreen() {
         </div>
 
         {/* Referensi Trajektori Pertumbuhan */}
-        <div className="px-5 pb-8">
+        <div className="px-5 sm:px-8 pb-8">
           <div className="p-4 bg-zinc-100 rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex flex-col gap-4">
             <h3 className="text-zinc-900 text-base font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-7">
               Referensi Trajektori Pertumbuhan

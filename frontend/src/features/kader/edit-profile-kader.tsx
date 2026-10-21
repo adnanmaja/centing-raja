@@ -4,12 +4,13 @@ import { SvgIcon } from "../../components/ui/svg-icon"
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { useAuth } from "../../context/auth-context"
 import { updateUserProfile, uploadAvatar } from "../../lib/api"
+import { avatarPlaceholder } from "../../lib/avatar-placeholder"
 import editProfilePaths from "../../assets/icon-edit-profile"
 import lockedPosyanduPaths from "../../assets/icon-posyandu-locked"
 import phoneFieldPaths from "../../assets/icon-phone-field"
 import inputMeasurementPaths from "../../assets/icon-input-measurement"
 
-const defaultPhoto = "/images/foto-kader-2.png"
+const defaultPhoto = avatarPlaceholder
 
 export function EditProfileKader({ onBack }: { onBack: () => void }) {
   const { user, setUser } = useAuth()

@@ -267,37 +267,39 @@ export function RekapitulasiDataBalitaScreen() {
   }
   return (
     <div className="min-h-svh bg-gray-50 flex flex-col">
-      <div className="px-5 py-6 bg-gray-50 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="shrink-0 size-10 rounded-full bg-white shadow-sm flex items-center justify-center text-zinc-900 transition-all hover:bg-zinc-100 hover:-translate-x-0.5 active:scale-95 cursor-pointer"
-          aria-label="Kembali"
-        >
-          <ArrowLeft className="size-5" />
-        </button>
+      <div className="bg-gray-50 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
+        <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 py-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="shrink-0 size-10 rounded-full bg-white shadow-sm flex items-center justify-center text-zinc-900 transition-all hover:bg-zinc-100 hover:-translate-x-0.5 active:scale-95 cursor-pointer"
+            aria-label="Kembali"
+          >
+            <ArrowLeft className="size-5" />
+          </button>
 
-       <h1 className="flex-1 text-zinc-900 text-xl sm:text-2xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] leading-7 sm:leading-8">
-        Rekapitulasi Data
-        <br />
-        Balita
-        </h1>
+         <h1 className="flex-1 text-zinc-900 text-xl sm:text-2xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] leading-7 sm:leading-8">
+          Rekapitulasi Data
+          <br />
+          Balita
+          </h1>
 
-        <button
-          type="button"
-          onClick={handleExport}
-          className="shrink-0 pl-4 pr-6 py-2 bg-emerald-800 rounded-lg shadow-[0px_2px_4px_-2px_rgba(0,0,0,0.10)] flex items-center gap-3.5 transition-transform hover:scale-[1.03] hover:shadow-lg active:scale-95 cursor-pointer"
-        >
-          <Download className="size-3.5 text-white" />
-          <span className="text-center text-white text-xs font-semibold font-['Manrope:SemiBold',sans-serif] leading-4">
-            Ekspor ke
-            <br />
-            Excel
-          </span>
-        </button>
+          <button
+            type="button"
+            onClick={handleExport}
+            className="shrink-0 pl-4 pr-6 py-2 bg-emerald-800 rounded-lg shadow-[0px_2px_4px_-2px_rgba(0,0,0,0.10)] flex items-center gap-3.5 transition-transform hover:scale-[1.03] hover:shadow-lg active:scale-95 cursor-pointer"
+          >
+            <Download className="size-3.5 text-white" />
+            <span className="text-center text-white text-xs font-semibold font-['Manrope:SemiBold',sans-serif] leading-4">
+              Ekspor ke
+              <br />
+              Excel
+            </span>
+          </button>
+        </div>
       </div>
 
-      <div className="px-5 pb-24 flex-1 overflow-x-auto">
+      <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 pb-24 flex-1 overflow-x-auto">
         <div className="min-w-[900px] bg-white rounded-xl shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] overflow-hidden animate-[fadeSlideIn_420ms_cubic-bezier(0.22,1,0.36,1)_both]">
           <table className="w-full border-collapse">
             <thead>

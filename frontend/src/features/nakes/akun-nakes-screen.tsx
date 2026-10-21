@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Filter,
   HelpCircle,
+  LogOut,
   Plus,
   Search,
   Trash2,
@@ -15,6 +16,7 @@ import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 import { ConfirmDeleteModal } from "../../components/ui/confirm-delete-modal"
 import { AkunBaruModal, type AkunBaruData, type Role } from "./akun-baru-modal"
+import { useAuth } from "../../context/auth-context"
 import {
   createNakesUser,
   deleteEducationMaterial,
@@ -47,6 +49,8 @@ const avatarPalette = [
   { bg: "bg-blue-100", text: "text-slate-600" },
 ]
 
+const AKUN_PREVIEW_LIMIT = 10
+
 type RoleFilter = "Semua" | Role
 
 type MateriHistoryItem = {
@@ -66,6 +70,7 @@ type KuisHistoryItem = {
 
 export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
   const navigate = useNavigate()
+  const { logout } = useAuth()
   const [akunList, setAkunList] = useState<Akun[]>([])
   const [isLoadingAkun, setIsLoadingAkun] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -198,6 +203,14 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
       return matchesSearch && matchesRole
     })
   }, [akunList, searchQuery, roleFilter])
+
+  // Di halaman utama hanya tampil 10 akun pertama; "Lihat Semua Akun" membuka semuanya
+  const displayedAkun = viewAll ? filteredAkun : filteredAkun.slice(0, AKUN_PREVIEW_LIMIT)
+
+  const handleLogout = () => {
+    logout()
+    navigate("/auth")
+  }
 
   const handleDelete = (akun: Akun) => {
     const confirmed = window.confirm(
@@ -339,14 +352,14 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
               </div>
             ) : null}
 
-            {filteredAkun.length > 0 && (
+            {displayedAkun.length > 0 && (
               <>
                 <div className="sm:hidden">
-                  {filteredAkun.map((akun, i) => (
+                  {displayedAkun.map((akun, i) => (
                     <div
                       key={akun.nik}
                       className={`p-4 flex items-center justify-between gap-3 ${
-                        i < filteredAkun.length - 1 ? "border-b border-zinc-200" : ""
+                        i < displayedAkun.length - 1 ? "border-b border-zinc-200" : ""
                       }`}
                     >
                       <div className="flex items-center gap-4 min-w-0">
@@ -391,7 +404,7 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAkun.map((akun, i) => (
+                    {displayedAkun.map((akun, i) => (
                       <tr key={akun.nik} className={`border-t border-zinc-200 transition-colors hover:bg-emerald-50 ${i % 2 === 1 ? "bg-gray-50" : ""}`}>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
@@ -573,6 +586,15 @@ export function AkunNakesScreen({ viewAll }: { viewAll?: boolean }) {
             </div>
           )}
         </section>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#ffd9d5] font-['Manrope:SemiBold',sans-serif] text-base font-semibold text-[#c2342d] transition hover:bg-[#ffc9c4] active:scale-[0.99]"
+        >
+          <LogOut className="size-5" />
+          Keluar
+        </button>
           </>
         )}
       </div>

@@ -8,6 +8,7 @@ import logoutPaths from "../../assets/icon-logout"
 import { ProfileHeader } from "../../components/kader/profile-header"
 import { ProfileBottomNav } from "../../components/kader/profile-bottom-nav"
 import { useAuth } from "../../context/auth-context"
+import { avatarPlaceholder } from "../../lib/avatar-placeholder"
 
 export function ProfileKader({
   onHome,
@@ -64,7 +65,7 @@ export function ProfileKader({
         <section className="flex flex-col items-center text-center">
           <div className="relative">
             <img
-              src={user?.avatar_url}
+              src={user?.avatar_url || avatarPlaceholder}
               alt={user?.name || "Foto Kader"}
               className="size-24 rounded-full object-cover shadow-[0_1px_2px_rgba(0,0,0,0.05)]"
             />
