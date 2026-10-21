@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { AlertTriangle, ArrowLeft, ChevronRight, ExternalLink, MapPin, Ruler, Users } from "lucide-react"
+import { AlertTriangle, ArrowLeft, ExternalLink, MapPin, Ruler, Users } from "lucide-react"
 import { getNakesChildren, getNakesMeasurements, type Child, type Measurement } from "../../lib/api"
 type StatusGizi = {
   label: string
@@ -62,7 +62,110 @@ const statusGiziList: StatusGizi[] = [
   },
 ]
 
-const trajectoryImage = "https://placehold.co/318x318"
+// Standar TB/PB menurut umur (cm), laki-laki, 0-24 bulan.
+// Sumber: Standar Antropometri Anak (Permenkes No. 2 Tahun 2020 / WHO Child Growth Standards)
+const MEDIAN_TBU = [
+  49.9, 54.7, 58.4, 61.4, 63.9, 65.9, 67.6, 69.2, 70.6, 72.0, 73.3, 74.5, 75.7,
+  76.9, 78.0, 79.1, 80.2, 81.2, 82.3, 83.2, 84.2, 85.1, 86.0, 86.9, 87.8,
+]
+const MIN2SD_TBU = [
+  46.1, 50.8, 54.4, 57.3, 59.7, 61.7, 63.3, 64.8, 66.2, 67.5, 68.7, 69.9, 71.0,
+  72.1, 73.1, 74.1, 75.0, 76.0, 76.9, 77.7, 78.6, 79.4, 80.2, 81.0, 81.7,
+]
+const MIN3SD_TBU = [
+  44.2, 48.9, 52.4, 55.3, 57.6, 59.6, 61.2, 62.7, 64.0, 65.2, 66.4, 67.6, 68.6,
+  69.6, 70.6, 71.6, 72.5, 73.3, 74.2, 75.0, 75.8, 76.5, 77.2, 78.0, 78.7,
+]
+
+function TrajectoryChart() {
+  const W = 600
+  const H = 320
+  const left = 44
+  const right = 20
+  const top = 16
+  const bottom = 44
+  const yMin = 40
+  const yMax = 95
+  const maxMonth = 24
+
+  const x = (m: number) => left + (m / maxMonth) * (W - left - right)
+  const y = (v: number) => H - bottom - ((v - yMin) / (yMax - yMin)) * (H - top - bottom)
+
+  const toPath = (data: number[]) =>
+    data.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")
+
+  const yTicks = [40, 50, 60, 70, 80, 90]
+  const xTicks = [0, 3, 6, 9, 12, 15, 18, 21, 24]
+
+  return (
+    <div className="flex flex-col gap-3">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full h-80"
+        role="img"
+        aria-label="Grafik trajektori pertumbuhan tinggi badan menurut umur"
+      >
+        <rect x="0" y="0" width={W} height={H} fill="#ffffff" rx="8" />
+
+        {yTicks.map((t) => (
+          <g key={`y-${t}`}>
+            <line x1={left} x2={W - right} y1={y(t)} y2={y(t)} stroke="#e4e4e7" strokeWidth="1" />
+            <text x={left - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="#475569">
+              {t}
+            </text>
+          </g>
+        ))}
+
+        {xTicks.map((t) => (
+          <g key={`x-${t}`}>
+            <line x1={x(t)} x2={x(t)} y1={top} y2={H - bottom} stroke="#f4f4f5" strokeWidth="1" />
+            <text x={x(t)} y={H - bottom + 16} textAnchor="middle" fontSize="11" fill="#475569">
+              {t}
+            </text>
+          </g>
+        ))}
+
+        <text x={(left + W - right) / 2} y={H - 8} textAnchor="middle" fontSize="11" fill="#475569">
+          Umur (bulan)
+        </text>
+        <text
+          x={12}
+          y={(top + H - bottom) / 2}
+          textAnchor="middle"
+          fontSize="11"
+          fill="#475569"
+          transform={`rotate(-90 12 ${(top + H - bottom) / 2})`}
+        >
+          Tinggi badan (cm)
+        </text>
+
+        {/* Area normal: -2 SD sampai median ke atas dibatasi oleh garis */}
+        <path d={toPath(MIN3SD_TBU)} fill="none" stroke="#b91c1c" strokeWidth="2" strokeDasharray="5 4" />
+        <path d={toPath(MIN2SD_TBU)} fill="none" stroke="#a16207" strokeWidth="2" strokeDasharray="5 4" />
+        <path d={toPath(MEDIAN_TBU)} fill="none" stroke="#065f46" strokeWidth="2.5" />
+      </svg>
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-5 h-0.5 bg-emerald-800" />
+          Median
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-5 border-t-2 border-dashed border-yellow-700" />
+          -2 SD (batas stunting)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-5 border-t-2 border-dashed border-red-700" />
+          -3 SD (sangat pendek)
+        </span>
+      </div>
+
+      <p className="text-slate-600 text-[11px] leading-4 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+        Kurva TB/U laki-laki usia 0-24 bulan. Sumber: Standar Antropometri Anak, Permenkes RI No. 2 Tahun 2020.
+      </p>
+    </div>
+  )
+}
 
 export function AnalisisSebaranStuntingScreen() {
   const navigate = useNavigate()
@@ -264,17 +367,6 @@ export function AnalisisSebaranStuntingScreen() {
                 <br />
                 (Kemenkes RI)
               </h3>
-              <button
-                type="button"
-                className="pl-2.5 flex items-center gap-1 shrink-0 cursor-pointer text-slate-600 transition-colors hover:text-emerald-800"
-              >
-                <span className="text-center text-sm font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] leading-5">
-                  Lihat
-                  <br />
-                  Detail
-                </span>
-                <ChevronRight className="size-4 shrink-0" />
-              </button>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -333,7 +425,7 @@ export function AnalisisSebaranStuntingScreen() {
               Referensi Trajektori Pertumbuhan
             </h3>
             <div className="rounded-lg overflow-hidden">
-              <img src={trajectoryImage} alt="Grafik trajektori pertumbuhan" className="w-full h-80 object-cover" />
+              <TrajectoryChart />
             </div>
           </div>
         </div>
