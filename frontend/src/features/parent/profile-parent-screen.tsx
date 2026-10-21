@@ -5,7 +5,10 @@ import { ParentInputHeader } from "../../components/parent/parent-input-header"
 import { ParentBottomNav } from "../../components/parent/parent-bottom-nav"
 import { useAuth } from "../../context/auth-context"
 import { getParentChildren } from "../../lib/api"
+
+
 const logo = "/logo/logo-centing-raja.png"
+
 export function ProfileParentScreen() {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
@@ -37,7 +40,7 @@ export function ProfileParentScreen() {
           <div className="size-24 bg-zinc-100 rounded-full shadow-sm overflow-hidden">
             <img
               className="w-full h-full object-cover"
-              src={user?.avatar_url || "https://placehold.co/96x96"}
+              src={user?.avatar_url || logo}
               alt={user?.name || "avatar"}
             />
           </div>

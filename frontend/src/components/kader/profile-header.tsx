@@ -1,13 +1,12 @@
 import { useState } from "react"
 
 import { SvgIcon } from "../ui/svg-icon"
-import taskProfilePaths from "../../assets/icon-profile-badge"
 import parentNotificationPaths from "../../assets/icon-parent-notification"
 import { KaderNotification } from "./kader-notification"
 import { useAuth } from "../../context/auth-context"
+import { avatarPlaceholder } from "../../lib/avatar-placeholder"
 
 const kaderProfileLogo = "/logo/logo-centing-raja.png"
-const defaultKaderPhoto = "/images/foto-kader.png"
 
 export function ProfileHeader({
   logo = kaderProfileLogo,
@@ -21,7 +20,7 @@ export function ProfileHeader({
   const [isNotifOpen, setIsNotifOpen] = useState(false)
   const [imgError, setImgError] = useState(false)
   const { user } = useAuth()
-  const profilePic = !imgError ? (user?.avatar_url || defaultKaderPhoto) : null
+  const profilePic = !imgError && user?.avatar_url ? user.avatar_url : avatarPlaceholder
 
   return (
     <>
@@ -54,18 +53,12 @@ export function ProfileHeader({
               <SvgIcon path={parentNotificationPaths.p164b49c0} viewBox="0 0 16 20" className="size-5" />
               <span className="absolute right-0 top-0 size-2 rounded-full bg-[#e24c4b]" />
             </button>
-            {profilePic ? (
-              <img
-                src={profilePic}
-                alt={user?.name || "Profil"}
-                className="size-8 rounded-full object-cover"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <span className="grid size-8 place-items-center rounded-full bg-[#007c4a] text-white">
-                <SvgIcon path={taskProfilePaths.p3189a600} viewBox="0 0 12 12" className="size-4" />
-              </span>
-            )}
+            <img
+              src={profilePic}
+              alt={user?.name || "Profil"}
+              className="size-8 rounded-full object-cover"
+              onError={() => setImgError(true)}
+            />
           </div>
         </div>
       </header>
