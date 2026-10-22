@@ -291,3 +291,26 @@ WHERE id = $1;
 -- name: DeleteNotification :exec
 DELETE FROM notifications
 WHERE id = $1;
+
+-- Wilayah --
+
+-- name: UpsertWilayah :one
+INSERT INTO wilayah (user_id, kecamatan, posyandu, jumlah_rw, jumlah_rt, updated_at)
+VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO UPDATE
+SET kecamatan = EXCLUDED.kecamatan,
+    posyandu = EXCLUDED.posyandu,
+    jumlah_rw = EXCLUDED.jumlah_rw,
+    jumlah_rt = EXCLUDED.jumlah_rt,
+    updated_at = CURRENT_TIMESTAMP
+RETURNING *;
+
+-- name: GetWilayahByUserID :one
+SELECT * FROM wilayah
+WHERE user_id = $1
+LIMIT 1;
+
+-- name: GetLatestWilayah :one
+SELECT * FROM wilayah
+ORDER BY updated_at DESC
+LIMIT 1;

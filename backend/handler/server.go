@@ -32,6 +32,7 @@ func NewServer(svcs *service.Services) *Server {
 	measurementHandler := NewMeasurementHandler(svcs.Measurement)
 	notificationHandler := NewNotificationHandler(svcs.Notification)
 	quizHandler := NewQuizHandler(svcs.Quiz)
+	wilayahHandler := NewWilayahHandler(svcs.Wilayah)
 	router.Use(cors.New(cors.Config{
 		AllowAllOrigins:  true,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
@@ -67,7 +68,7 @@ func NewServer(svcs *service.Services) *Server {
 	nakes.Use(RequireRole(db.UserRoleTenagaKesehatan))
 
 	nakes.GET("/users", authHandler.ListUsers)
-	nakes.POST("/users", authHandler.Register)
+	nakes.POST("/users", authHandler.CreateUser)
 	nakes.GET("/children", childrenHandler.ListChildren)
 	nakes.POST("/children", childrenHandler.CreateChildren)
 	nakes.GET("/children/:id", childrenHandler.GetChildByID)
@@ -100,23 +101,33 @@ func NewServer(svcs *service.Services) *Server {
 	nakes.POST("/notifications", notificationHandler.CreateNotification)
 	nakes.DELETE("/notifications/:id", notificationHandler.DeleteNotification)
 
+
+	nakes.GET("/wilayah", wilayahHandler.GetWilayah)
+	nakes.POST("/wilayah", wilayahHandler.SaveWilayah)
 	kader := protected.Group("/kader")
 	kader.Use(RequireRole(db.UserRoleKader))
-	kader.GET("/children", childrenHandler.ListChildren)
+	kader.GET("/children", childrenHandler.ListChildrenByKader)
 	kader.GET("/submissions", quizHandler.ListQuizSubmissionsByKader)
-	kader.POST("/measurements", measurementHandler.CreateMeasurement)
-	kader.GET("/children/:id/measurements", measurementHandler.ListMeasurementsByChildID)
-	kader.GET("/measurements", measurementHandler.GetMeasurements)
+	kader.POST("/measurements", measurementHandler.CreateMeasurementByKader)
+	kader.GET("/children/:id/measurements", measurementHandler.ListMeasurementsByChildIDByKader)
+	kader.GET("/measurements", measurementHandler.GetMeasurementsByKader)
 
 	ortu := protected.Group("/ortu")
 	ortu.Use(RequireRole(db.UserRoleOrangTua))
 	ortu.GET("/child", childrenHandler.ChildrenByParent)
-	ortu.POST("/child", childrenHandler.CreateChildren)
-	ortu.POST("/measurements", measurementHandler.CreateMeasurement)
-	ortu.GET("/children/:id/measurements", measurementHandler.ListMeasurementsByChildID)
+	ortu.POST("/child", childrenHandler.CreateChildByParent)
+	ortu.POST("/measurements", measurementHandler.CreateMeasurementByParent)
+	ortu.GET("/children/:id/measurements", measurementHandler.ListMeasurementsByChildIDByParent)
 	return server
 }
 
+// healthCheck godoc
+// @Summary Health check
+// @Description Check server operational status
+// @Tags Health
+// @Produce json
+// @Success 200 {object} StatusResponse
+// @Router / [get]
 func healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "aman"})
 }

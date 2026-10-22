@@ -41,7 +41,6 @@ export function EditProfileParentScreen() {
         nik: form.nik,
         phone_number: form.whatsapp,
       })
-      localStorage.setItem("centing_user", JSON.stringify(updated))
       if (setUser) setUser(updated)
       navigate("/orang-tua/profil")
     } catch (err: unknown) {

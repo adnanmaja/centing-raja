@@ -44,7 +44,7 @@ type QuizQuestionResponse struct {
 	QuizID       string          `json:"quiz_id"`
 	QuestionText string          `json:"question_text"`
 	QuestionType string          `json:"question_type"`
-	Options      json.RawMessage `json:"options"`
+	Options      json.RawMessage `json:"options" swaggertype:"object"`
 	CorrectAns   *string         `json:"correct_ans"`
 }
 
@@ -72,7 +72,7 @@ type QuizSubmissionResponse struct {
 	KaderID     string          `json:"kader_id"`
 	QuizID      string          `json:"quiz_id"`
 	Score       float64         `json:"score"`
-	Answers     json.RawMessage `json:"answers"`
+	Answers     json.RawMessage `json:"answers" swaggertype:"object"`
 	SubmittedAt time.Time       `json:"submitted_at"`
 }
 
@@ -113,20 +113,20 @@ type ListQuizzesRequest struct {
 type CreateQuizQuestionRequest struct {
 	QuestionText string          `json:"question_text" binding:"required"`
 	QuestionType db.QuestionType `json:"question_type" binding:"required"`
-	Options      json.RawMessage `json:"options" binding:"required"`
+	Options      json.RawMessage `json:"options" binding:"required" swaggertype:"object"`
 	CorrectAns   *string         `json:"correct_ans"`
 }
 
 type UpdateQuizQuestionRequest struct {
 	QuestionText string          `json:"question_text" binding:"required"`
 	QuestionType db.QuestionType `json:"question_type" binding:"required"`
-	Options      json.RawMessage `json:"options" binding:"required"`
+	Options      json.RawMessage `json:"options" binding:"required" swaggertype:"object"`
 	CorrectAns   *string         `json:"correct_ans"`
 }
 
 type CreateQuizSubmissionRequest struct {
 	Score   float64         `json:"score"`
-	Answers json.RawMessage `json:"answers" binding:"required"`
+	Answers json.RawMessage `json:"answers" binding:"required" swaggertype:"object"`
 }
 
 type QuizHandler struct {
@@ -139,6 +139,20 @@ func NewQuizHandler(quizService *service.QuizService) *QuizHandler {
 	}
 }
 
+// CreateQuiz godoc
+// @Summary Create quiz (Nakes only)
+// @Description Create a new educational quiz with title and description
+// @Tags Quizzes
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body CreateQuizRequest true "Create Quiz Payload"
+// @Success 201 {object} QuizResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/quizzes [post]
 func (h *QuizHandler) CreateQuiz(c *gin.Context) {
 	var req CreateQuizRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -161,6 +175,18 @@ func (h *QuizHandler) CreateQuiz(c *gin.Context) {
 	c.JSON(http.StatusCreated, toQuizResponse(quiz))
 }
 
+// GetQuizByID godoc
+// @Summary Get quiz by ID
+// @Description Retrieve single quiz details by ID
+// @Tags Quizzes
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Success 200 {object} QuizResponse
+// @Failure 400 {object} ErrorResponse "Invalid quiz ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /quizzes/{id} [get]
 func (h *QuizHandler) GetQuizByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -177,6 +203,19 @@ func (h *QuizHandler) GetQuizByID(c *gin.Context) {
 	c.JSON(http.StatusOK, toQuizResponse(quiz))
 }
 
+// ListQuizzes godoc
+// @Summary List quizzes
+// @Description Retrieve paginated list of quizzes
+// @Tags Quizzes
+// @Security BearerAuth
+// @Produce json
+// @Param limit query int false "Limit (default 10)"
+// @Param offset query int false "Offset (default 0)"
+// @Success 200 {array} QuizResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /quizzes [get]
 func (h *QuizHandler) ListQuizzes(c *gin.Context) {
 	var req ListQuizzesRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -200,6 +239,21 @@ func (h *QuizHandler) ListQuizzes(c *gin.Context) {
 	c.JSON(http.StatusOK, toQuizzesResponse(quizzes))
 }
 
+// UpdateQuiz godoc
+// @Summary Update quiz (Nakes only)
+// @Description Update details of an existing quiz record
+// @Tags Quizzes
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Param request body UpdateQuizRequest true "Update Quiz Payload"
+// @Success 200 {object} QuizResponse
+// @Failure 400 {object} ErrorResponse "Validation error or invalid ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/quizzes/{id} [put]
 func (h *QuizHandler) UpdateQuiz(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -222,6 +276,19 @@ func (h *QuizHandler) UpdateQuiz(c *gin.Context) {
 	c.JSON(http.StatusOK, toQuizResponse(quiz))
 }
 
+// DeleteQuiz godoc
+// @Summary Delete quiz (Nakes only)
+// @Description Delete a quiz record by ID
+// @Tags Quizzes
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Success 200 {object} MessageResponse
+// @Failure 400 {object} ErrorResponse "Invalid quiz ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/quizzes/{id} [delete]
 func (h *QuizHandler) DeleteQuiz(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -237,6 +304,21 @@ func (h *QuizHandler) DeleteQuiz(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "quiz deleted successfully"})
 }
 
+// CreateQuizQuestion godoc
+// @Summary Create quiz question (Nakes only)
+// @Description Create a new question for a specific quiz
+// @Tags Quizzes
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Param request body CreateQuizQuestionRequest true "Create Quiz Question Payload"
+// @Success 201 {object} QuizQuestionResponse
+// @Failure 400 {object} ErrorResponse "Validation error or invalid quiz ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/quizzes/{id}/questions [post]
 func (h *QuizHandler) CreateQuizQuestion(c *gin.Context) {
 	quizID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -259,6 +341,20 @@ func (h *QuizHandler) CreateQuizQuestion(c *gin.Context) {
 	c.JSON(http.StatusCreated, toQuizQuestionResponse(question))
 }
 
+// GetQuizQuestionByID godoc
+// @Summary Get quiz question by ID (Nakes only)
+// @Description Retrieve single question details by ID
+// @Tags Quizzes
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Param question_id path string true "Question ID (UUID)"
+// @Success 200 {object} QuizQuestionResponse
+// @Failure 400 {object} ErrorResponse "Invalid question ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/quizzes/{id}/questions/{question_id} [get]
 func (h *QuizHandler) GetQuizQuestionByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("question_id"))
 	if err != nil {
@@ -275,6 +371,18 @@ func (h *QuizHandler) GetQuizQuestionByID(c *gin.Context) {
 	c.JSON(http.StatusOK, toQuizQuestionResponse(question))
 }
 
+// ListQuizQuestionsByQuizID godoc
+// @Summary List quiz questions
+// @Description Retrieve all questions for a specific quiz
+// @Tags Quizzes
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Success 200 {array} QuizQuestionResponse
+// @Failure 400 {object} ErrorResponse "Invalid quiz ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /quizzes/{id}/questions [get]
 func (h *QuizHandler) ListQuizQuestionsByQuizID(c *gin.Context) {
 	quizID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -291,6 +399,22 @@ func (h *QuizHandler) ListQuizQuestionsByQuizID(c *gin.Context) {
 	c.JSON(http.StatusOK, toQuizQuestionsResponse(questions))
 }
 
+// UpdateQuizQuestion godoc
+// @Summary Update quiz question (Nakes only)
+// @Description Update details of an existing question
+// @Tags Quizzes
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Param question_id path string true "Question ID (UUID)"
+// @Param request body UpdateQuizQuestionRequest true "Update Quiz Question Payload"
+// @Success 200 {object} QuizQuestionResponse
+// @Failure 400 {object} ErrorResponse "Validation error or invalid ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/quizzes/{id}/questions/{question_id} [put]
 func (h *QuizHandler) UpdateQuizQuestion(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("question_id"))
 	if err != nil {
@@ -313,6 +437,20 @@ func (h *QuizHandler) UpdateQuizQuestion(c *gin.Context) {
 	c.JSON(http.StatusOK, toQuizQuestionResponse(question))
 }
 
+// DeleteQuizQuestion godoc
+// @Summary Delete quiz question (Nakes only)
+// @Description Delete a question by ID
+// @Tags Quizzes
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Param question_id path string true "Question ID (UUID)"
+// @Success 200 {object} MessageResponse
+// @Failure 400 {object} ErrorResponse "Invalid question ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/quizzes/{id}/questions/{question_id} [delete]
 func (h *QuizHandler) DeleteQuizQuestion(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("question_id"))
 	if err != nil {
@@ -328,6 +466,20 @@ func (h *QuizHandler) DeleteQuizQuestion(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "quiz question deleted successfully"})
 }
 
+// CreateQuizSubmission godoc
+// @Summary Submit quiz answers
+// @Description Submit answers and score for a quiz
+// @Tags Quizzes
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Param request body CreateQuizSubmissionRequest true "Quiz Submission Payload"
+// @Success 201 {object} QuizSubmissionResponse
+// @Failure 400 {object} ErrorResponse "Validation error or invalid quiz ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /quizzes/{id}/submissions [post]
 func (h *QuizHandler) CreateQuizSubmission(c *gin.Context) {
 	quizID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -356,6 +508,20 @@ func (h *QuizHandler) CreateQuizSubmission(c *gin.Context) {
 	c.JSON(http.StatusCreated, toQuizSubmissionResponse(submission))
 }
 
+// GetQuizSubmissionByID godoc
+// @Summary Get quiz submission by ID (Nakes only)
+// @Description Retrieve single submission details by ID
+// @Tags Quizzes
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Param submission_id path string true "Submission ID (UUID)"
+// @Success 200 {object} QuizSubmissionResponse
+// @Failure 400 {object} ErrorResponse "Invalid submission ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/quizzes/{id}/submissions/{submission_id} [get]
 func (h *QuizHandler) GetQuizSubmissionByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("submission_id"))
 	if err != nil {
@@ -372,6 +538,19 @@ func (h *QuizHandler) GetQuizSubmissionByID(c *gin.Context) {
 	c.JSON(http.StatusOK, toQuizSubmissionResponse(submission))
 }
 
+// ListQuizSubmissionsByQuizID godoc
+// @Summary List quiz submissions by quiz ID (Nakes only)
+// @Description Retrieve all submissions for a quiz
+// @Tags Quizzes
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Success 200 {array} QuizSubmissionResponse
+// @Failure 400 {object} ErrorResponse "Invalid quiz ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/quizzes/{id}/submissions [get]
 func (h *QuizHandler) ListQuizSubmissionsByQuizID(c *gin.Context) {
 	quizID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -388,6 +567,17 @@ func (h *QuizHandler) ListQuizSubmissionsByQuizID(c *gin.Context) {
 	c.JSON(http.StatusOK, toQuizSubmissionsResponse(submissions))
 }
 
+// ListQuizSubmissionsByKader godoc
+// @Summary List quiz submissions by kader (Kader only)
+// @Description Retrieve submissions submitted by the authenticated Posyandu cadre
+// @Tags Quizzes
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} QuizSubmissionResponse
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /kader/submissions [get]
 func (h *QuizHandler) ListQuizSubmissionsByKader(c *gin.Context) {
 	userID, err := uuid.Parse(c.GetString("user_id"))
 	if err != nil {
@@ -404,6 +594,20 @@ func (h *QuizHandler) ListQuizSubmissionsByKader(c *gin.Context) {
 	c.JSON(http.StatusOK, toQuizSubmissionsResponse(submissions))
 }
 
+// DeleteQuizSubmission godoc
+// @Summary Delete quiz submission (Nakes only)
+// @Description Delete a quiz submission record by ID
+// @Tags Quizzes
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Quiz ID (UUID)"
+// @Param submission_id path string true "Submission ID (UUID)"
+// @Success 200 {object} MessageResponse
+// @Failure 400 {object} ErrorResponse "Invalid submission ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/quizzes/{id}/submissions/{submission_id} [delete]
 func (h *QuizHandler) DeleteQuizSubmission(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("submission_id"))
 	if err != nil {

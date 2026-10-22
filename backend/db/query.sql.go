@@ -456,6 +456,28 @@ func (q *Queries) GetEducationMaterialByID(ctx context.Context, id pgtype.UUID) 
 	return i, err
 }
 
+const getLatestWilayah = `-- name: GetLatestWilayah :one
+SELECT id, user_id, kecamatan, posyandu, jumlah_rw, jumlah_rt, created_at, updated_at FROM wilayah
+ORDER BY updated_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetLatestWilayah(ctx context.Context) (Wilayah, error) {
+	row := q.db.QueryRow(ctx, getLatestWilayah)
+	var i Wilayah
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Kecamatan,
+		&i.Posyandu,
+		&i.JumlahRw,
+		&i.JumlahRt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getMeasurementByID = `-- name: GetMeasurementByID :one
 SELECT id, measurer_id, measurer_role, children_id, age, measured_at, weight, height, stunting_status, z_score, head_circumference, upper_arm_circumference FROM measurement
 WHERE id = $1
@@ -673,6 +695,28 @@ func (q *Queries) GetUserByPhoneNumber(ctx context.Context, phoneNumber *string)
 		&i.ResetTokenExpiry,
 		&i.CreatedAt,
 		&i.IsNotificationEnabled,
+	)
+	return i, err
+}
+
+const getWilayahByUserID = `-- name: GetWilayahByUserID :one
+SELECT id, user_id, kecamatan, posyandu, jumlah_rw, jumlah_rt, created_at, updated_at FROM wilayah
+WHERE user_id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetWilayahByUserID(ctx context.Context, userID pgtype.UUID) (Wilayah, error) {
+	row := q.db.QueryRow(ctx, getWilayahByUserID, userID)
+	var i Wilayah
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Kecamatan,
+		&i.Posyandu,
+		&i.JumlahRw,
+		&i.JumlahRt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -1410,4 +1454,48 @@ type UpdateUserRoleParams struct {
 func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error {
 	_, err := q.db.Exec(ctx, updateUserRole, arg.PhoneNumber, arg.Role)
 	return err
+}
+
+const upsertWilayah = `-- name: UpsertWilayah :one
+
+INSERT INTO wilayah (user_id, kecamatan, posyandu, jumlah_rw, jumlah_rt, updated_at)
+VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+ON CONFLICT (user_id) DO UPDATE
+SET kecamatan = EXCLUDED.kecamatan,
+    posyandu = EXCLUDED.posyandu,
+    jumlah_rw = EXCLUDED.jumlah_rw,
+    jumlah_rt = EXCLUDED.jumlah_rt,
+    updated_at = CURRENT_TIMESTAMP
+RETURNING id, user_id, kecamatan, posyandu, jumlah_rw, jumlah_rt, created_at, updated_at
+`
+
+type UpsertWilayahParams struct {
+	UserID    pgtype.UUID
+	Kecamatan string
+	Posyandu  string
+	JumlahRw  int32
+	JumlahRt  int32
+}
+
+// Wilayah --
+func (q *Queries) UpsertWilayah(ctx context.Context, arg UpsertWilayahParams) (Wilayah, error) {
+	row := q.db.QueryRow(ctx, upsertWilayah,
+		arg.UserID,
+		arg.Kecamatan,
+		arg.Posyandu,
+		arg.JumlahRw,
+		arg.JumlahRt,
+	)
+	var i Wilayah
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Kecamatan,
+		&i.Posyandu,
+		&i.JumlahRw,
+		&i.JumlahRt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

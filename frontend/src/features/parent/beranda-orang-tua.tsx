@@ -188,7 +188,7 @@ export function BerandaOrangTua({
 
           {selectedChild ? (
             <div className="relative">
-              <button
+              {/* <button
                 type="button"
                 onClick={() => setIsChildPickerOpen((prev) => !prev)}
                 className="flex items-center gap-2 rounded-full bg-[#edeeef] px-3 py-2 font-['Manrope:SemiBold',sans-serif] text-xs text-[#191c1d] shadow-[0_1px_1px_rgba(0,0,0,0.05)]"
@@ -202,7 +202,7 @@ export function BerandaOrangTua({
                   viewBox="0 0 9 5.55"
                   className="h-1.5 w-2.5 text-[#3e4941]"
                 />
-              </button>
+              </button> */}
 
               {isChildPickerOpen && (
                 <div className="absolute right-0 z-40 mt-2 w-56 rounded-xl bg-white p-2 shadow-lg ring-1 ring-black/5">

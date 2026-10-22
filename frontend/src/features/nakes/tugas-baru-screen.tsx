@@ -25,6 +25,7 @@ import {
   type Measurement,
   type UserProfile,
 } from "../../lib/api"
+import { getUserIdFromToken } from "../../lib/auth-utils"
 
 export type StatusTugas = "belum-diukur" | "selesai"
 
@@ -514,15 +515,8 @@ export function TugasBaruScreen() {
       let targetUserId = targetKader?.id
 
       if (!targetUserId) {
-        const userJson = localStorage.getItem("centing_user")
-        if (userJson) {
-          try {
-            const user = JSON.parse(userJson)
-            targetUserId = user.id
-          } catch {
-            // fallback
-          }
-        }
+        const token = localStorage.getItem("centing_token")
+        targetUserId = getUserIdFromToken(token) ?? undefined
       }
 
       if (targetUserId) {

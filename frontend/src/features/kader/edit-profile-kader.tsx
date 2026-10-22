@@ -31,7 +31,6 @@ export function EditProfileKader({ onBack }: { onBack: () => void }) {
         name,
         phone_number: phone,
       })
-      localStorage.setItem("centing_user", JSON.stringify(updatedUser))
       if (setUser) setUser(updatedUser)
       setSaved(true)
       window.setTimeout(onBack, 650)

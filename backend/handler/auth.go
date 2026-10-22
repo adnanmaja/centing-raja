@@ -64,6 +64,18 @@ func NewAuthHandler(authService *service.AuthService, storageService *service.St
 	}
 }
 
+// Register godoc
+// @Summary Register a new user
+// @Description Register a new user with phone number, role, name, and optional NIK
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Register Payload"
+// @Success 201 {object} User
+// @Failure 400 {object} ErrorResponse "Validation error or invalid role"
+// @Failure 409 {object} ErrorResponse "User already exists"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -99,6 +111,37 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	})
 }
 
+// CreateUser godoc
+// @Summary Create a new user (Nakes only)
+// @Description Create a new user with phone number, role, name, and optional NIK
+// @Tags Users
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Create User Payload"
+// @Success 201 {object} User
+// @Failure 400 {object} ErrorResponse "Validation error or invalid role"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 409 {object} ErrorResponse "User already exists"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/users [post]
+func (h *AuthHandler) CreateUser(c *gin.Context) {
+	h.Register(c)
+}
+
+// RequestOTP godoc
+// @Summary Request OTP for login
+// @Description Request an OTP code sent to the registered phone number
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body RequestOTPRequest true "Request OTP Payload"
+// @Success 200 {object} MessageResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 404 {object} ErrorResponse "User not found"
+// @Failure 500 {object} ErrorResponse "Failed to send OTP"
+// @Router /login/request-otp [post]
 func (h *AuthHandler) RequestOTP(c *gin.Context) {
 	var req RequestOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -119,6 +162,18 @@ func (h *AuthHandler) RequestOTP(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("OTP Sent. %s", otpCode)})
 }
 
+// VerifyOTP godoc
+// @Summary Verify OTP and login
+// @Description Verify the OTP code sent to phone number and receive JWT authentication token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body VerifyOTPRequest true "Verify OTP Payload"
+// @Success 200 {object} AuthResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Invalid or expired OTP"
+// @Failure 500 {object} ErrorResponse "Failed to verify OTP"
+// @Router /login/verify-otp [post]
 func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	var req VerifyOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -154,6 +209,17 @@ func (h *AuthHandler) VerifyOTP(c *gin.Context) {
 	})
 }
 
+// GetProfile godoc
+// @Summary Get user profile
+// @Description Retrieve profile of authenticated user
+// @Tags Users
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} User
+// @Failure 400 {object} ErrorResponse "Invalid user ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 404 {object} ErrorResponse "User not found"
+// @Router /users/profile [get]
 func (h *AuthHandler) GetProfile(c *gin.Context) {
 	userIdStr := c.GetString("user_id")
 	if userIdStr == "" {
@@ -189,6 +255,19 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	})
 }
 
+// UpdateProfile godoc
+// @Summary Update user profile
+// @Description Update name, NIK, phone number, and notification preference of authenticated user
+// @Tags Users
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body UpdateProfileRequest true "Update Profile Payload"
+// @Success 200 {object} User
+// @Failure 400 {object} ErrorResponse "Validation error or invalid user ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Failed to update profile"
+// @Router /users/profile [put]
 func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	userIdStr := c.GetString("user_id")
 	if userIdStr == "" {
@@ -230,6 +309,20 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	})
 }
 
+// ListUsers godoc
+// @Summary List users (Nakes only)
+// @Description Retrieve paginated list of registered users
+// @Tags Users
+// @Security BearerAuth
+// @Produce json
+// @Param limit query int false "Limit (default 100)"
+// @Param offset query int false "Offset (default 0)"
+// @Success 200 {array} User
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Failed to list users"
+// @Router /nakes/users [get]
 func (h *AuthHandler) ListUsers(c *gin.Context) {
 	var req ListUsersRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -269,6 +362,19 @@ func (h *AuthHandler) ListUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, usersResponse)
 }
 
+// UploadAvatar godoc
+// @Summary Upload user avatar
+// @Description Upload an avatar image file (max 5MB) for the authenticated user
+// @Tags Users
+// @Security BearerAuth
+// @Accept multipart/form-data
+// @Produce json
+// @Param avatar formData file true "Avatar image file (JPEG/PNG, max 5MB)"
+// @Success 200 {object} UploadAvatarResponse
+// @Failure 400 {object} ErrorResponse "Invalid user ID, file missing, or file size exceeds limit"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 500 {object} ErrorResponse "Storage service unavailable or failed to upload"
+// @Router /users/profile/avatar [post]
 func (h *AuthHandler) UploadAvatar(c *gin.Context) {
 	userIdStr := c.GetString("user_id")
 	if userIdStr == "" {

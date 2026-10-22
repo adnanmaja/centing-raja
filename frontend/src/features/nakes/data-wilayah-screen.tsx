@@ -1,6 +1,7 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { AlertCircle, Building2, Check, MapPin } from "lucide-react"
+import { AlertCircle, Building2, Check, Loader2, MapPin } from "lucide-react"
+import { getNakesWilayah, saveNakesWilayah } from "../../lib/api"
 
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
@@ -14,23 +15,65 @@ export function DataWilayahScreen() {
     jumlahRw: "",
     jumlahRt: "",
   })
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    getNakesWilayah()
+      .then((data) => {
+        if (active && data) {
+          setForm({
+            kecamatan: data.kecamatan || "",
+            posyandu: data.posyandu || "",
+            jumlahRw: data.jumlah_rw ? String(data.jumlah_rw) : "",
+            jumlahRt: data.jumlah_rt ? String(data.jumlah_rt) : "",
+          })
+        }
+      })
+      .catch(() => {
+        // Wilayah might not be configured yet, ignore 404
+      })
+      .finally(() => {
+        if (active) setIsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   const handleChange =
     (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }))
+      setErrorMessage(null)
     }
 
-  const handleSave = () => {
-    // TODO: kirim ke POST /api/wilayah dulu, baru navigate setelah sukses
-    navigate("/nakes/data/rt", {
-      state: {
-        kecamatan: form.kecamatan,
-        rw: form.jumlahRw,
-        rt: form.jumlahRt,
-      },
-    })
+  const handleSave = async () => {
+    if (!isValid || isSaving) return
+    setIsSaving(true)
+    setErrorMessage(null)
+    try {
+      await saveNakesWilayah({
+        kecamatan: form.kecamatan.trim(),
+        posyandu: form.posyandu.trim(),
+        jumlah_rw: Math.max(1, parseInt(form.jumlahRw, 10) || 1),
+        jumlah_rt: Math.max(1, parseInt(form.jumlahRt, 10) || 1),
+      })
+      navigate("/nakes/data/rt", {
+        state: {
+          kecamatan: form.kecamatan.trim(),
+          rw: form.jumlahRw.trim(),
+          rt: form.jumlahRt.trim(),
+        },
+      })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal menyimpan data wilayah"
+      setErrorMessage(msg)
+    } finally {
+      setIsSaving(false)
+    }
   }
-
   const isValid =
     form.kecamatan.trim().length > 0 &&
     form.posyandu.trim().length > 0 &&
@@ -101,18 +144,30 @@ export function DataWilayahScreen() {
             </div>
           </div>
 
+          {errorMessage && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-red-700 text-sm">
+              {errorMessage}
+            </div>
+          )}
+
           <div className="pt-4 flex flex-col gap-3">
             <button
               type="button"
-              disabled={!isValid}
+              disabled={!isValid || isSaving || isLoading}
               onClick={handleSave}
               className={`h-12 py-3 rounded-full shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex justify-center items-center gap-2 transition-opacity cursor-pointer ${
-                isValid ? "bg-emerald-800 opacity-100" : "bg-emerald-800 opacity-50 cursor-not-allowed"
+                isValid && !isSaving && !isLoading
+                  ? "bg-emerald-800 opacity-100"
+                  : "bg-emerald-800 opacity-50 cursor-not-allowed"
               }`}
             >
-              <Check className="size-3.5 text-white" />
+              {isSaving ? (
+                <Loader2 className="size-4 text-white animate-spin" />
+              ) : (
+                <Check className="size-3.5 text-white" />
+              )}
               <span className="text-white text-base font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif] leading-6">
-                Simpan Data Wilayah
+                {isSaving ? "Menyimpan..." : "Simpan Data Wilayah"}
               </span>
             </button>
             <button

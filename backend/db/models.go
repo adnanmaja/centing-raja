@@ -227,3 +227,14 @@ type User struct {
 	LastLoggedIn          pgtype.Timestamp
 	IsNotificationEnabled *bool
 }
+
+type Wilayah struct {
+	ID        pgtype.UUID
+	UserID    pgtype.UUID
+	Kecamatan string
+	Posyandu  string
+	JumlahRw  int32
+	JumlahRt  int32
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}

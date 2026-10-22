@@ -75,6 +75,20 @@ func NewChildrenHandler(childrenService *service.ChildrenService) *ChildrenHandl
 	}
 }
 
+// CreateChildren godoc
+// @Summary Create child profile (Nakes only)
+// @Description Create a new child profile by healthcare worker
+// @Tags Children
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body CreateChildrenRequest true "Create Child Payload"
+// @Success 201 {object} ChildResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/children [post]
 func (h *ChildrenHandler) CreateChildren(c *gin.Context) {
 	var req CreateChildrenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -111,6 +125,35 @@ func (h *ChildrenHandler) CreateChildren(c *gin.Context) {
 	c.JSON(http.StatusCreated, toChildResponse(children))
 }
 
+// CreateChildByParent godoc
+// @Summary Create child profile (Parent only)
+// @Description Register a new child profile by parent/guardian
+// @Tags Children
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body CreateChildrenRequest true "Create Child Payload"
+// @Success 201 {object} ChildResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /ortu/child [post]
+func (h *ChildrenHandler) CreateChildByParent(c *gin.Context) {
+	h.CreateChildren(c)
+}
+
+// ChildrenByParent godoc
+// @Summary Get children by parent (Parent only)
+// @Description Retrieve children associated with authenticated parent
+// @Tags Children
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {array} ChildResponse
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /ortu/child [get]
 func (h *ChildrenHandler) ChildrenByParent(c *gin.Context) {
 	userIdStr := c.GetString("user_id")
 	if userIdStr == "" {
@@ -133,6 +176,19 @@ func (h *ChildrenHandler) ChildrenByParent(c *gin.Context) {
 	c.JSON(http.StatusOK, toChildrenResponse(child))
 }
 
+// GetChildByID godoc
+// @Summary Get child by ID (Nakes only)
+// @Description Retrieve single child details by ID
+// @Tags Children
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Child ID (UUID)"
+// @Success 200 {object} ChildResponse
+// @Failure 400 {object} ErrorResponse "Invalid child ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/children/{id} [get]
 func (h *ChildrenHandler) GetChildByID(c *gin.Context) {
 	idStr := c.Param("id")
 	childID, err := uuid.Parse(idStr)
@@ -150,6 +206,20 @@ func (h *ChildrenHandler) GetChildByID(c *gin.Context) {
 	c.JSON(http.StatusOK, toChildResponse(child))
 }
 
+// ListChildren godoc
+// @Summary List all children (Nakes only)
+// @Description Retrieve paginated list of all children across the system
+// @Tags Children
+// @Security BearerAuth
+// @Produce json
+// @Param limit query int false "Limit (default 10)"
+// @Param offset query int false "Offset (default 0)"
+// @Success 200 {array} ChildResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/children [get]
 func (h *ChildrenHandler) ListChildren(c *gin.Context) {
 	var req ListChildrenRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -173,6 +243,39 @@ func (h *ChildrenHandler) ListChildren(c *gin.Context) {
 	c.JSON(http.StatusOK, toChildrenResponse(children))
 }
 
+// ListChildrenByKader godoc
+// @Summary List children (Kader only)
+// @Description Retrieve paginated list of children for Posyandu cadres
+// @Tags Children
+// @Security BearerAuth
+// @Produce json
+// @Param limit query int false "Limit (default 10)"
+// @Param offset query int false "Offset (default 0)"
+// @Success 200 {array} ChildResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /kader/children [get]
+func (h *ChildrenHandler) ListChildrenByKader(c *gin.Context) {
+	h.ListChildren(c)
+}
+
+// UpdateChild godoc
+// @Summary Update child profile (Nakes only)
+// @Description Update details of an existing child record
+// @Tags Children
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Child ID (UUID)"
+// @Param request body UpdateChildRequest true "Update Child Payload"
+// @Success 200 {object} ChildResponse
+// @Failure 400 {object} ErrorResponse "Validation error or invalid ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/children/{id} [put]
 func (h *ChildrenHandler) UpdateChild(c *gin.Context) {
 	idStr := c.Param("id")
 	childID, err := uuid.Parse(idStr)
@@ -204,6 +307,19 @@ func (h *ChildrenHandler) UpdateChild(c *gin.Context) {
 	c.JSON(http.StatusOK, toChildResponse(child))
 }
 
+// DeleteChild godoc
+// @Summary Delete child profile (Nakes only)
+// @Description Delete a child record by ID
+// @Tags Children
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Child ID (UUID)"
+// @Success 200 {object} MessageResponse
+// @Failure 400 {object} ErrorResponse "Invalid child ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/children/{id} [delete]
 func (h *ChildrenHandler) DeleteChild(c *gin.Context) {
 	idStr := c.Param("id")
 	childID, err := uuid.Parse(idStr)
