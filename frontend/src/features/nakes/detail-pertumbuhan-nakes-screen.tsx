@@ -253,7 +253,11 @@ export function DetailPertumbuhanNakesScreen() {
         <div className="flex flex-col gap-3 pt-2 sm:max-w-md">
           <button
             type="button"
-            onClick={() => navigate("/nakes/grafik-pertumbuhan")}
+            onClick={() =>
+              navigate("/nakes/grafik-pertumbuhan", {
+                state: { child },
+              })
+            }
             className="py-3 bg-emerald-800 rounded-full shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)] flex justify-center items-center gap-2 cursor-pointer transition-transform hover:scale-[1.01] active:scale-95"
           >
             <LineChart className="size-4 text-white" />

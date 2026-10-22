@@ -78,6 +78,22 @@ function todayString(): string {
   const dd = String(now.getDate()).padStart(2, "0")
   return `${now.getFullYear()}-${mm}-${dd}`
 }
+function isInCurrentWeek(dateValue: string, reference = new Date()): boolean {
+  const date = new Date(dateValue)
+  if (Number.isNaN(date.getTime())) return false
+
+  const startOfWeek = new Date(reference)
+  const day = startOfWeek.getDay()
+  const daysSinceMonday = day === 0 ? 6 : day - 1
+  startOfWeek.setHours(0, 0, 0, 0)
+  startOfWeek.setDate(startOfWeek.getDate() - daysSinceMonday)
+
+  const endOfWeek = new Date(startOfWeek)
+  endOfWeek.setDate(endOfWeek.getDate() + 7)
+
+  return date >= startOfWeek && date < endOfWeek
+}
+
 
 function parseRtRw(address?: string | null) {
   const rtMatch = address?.match(/RT\s*(\d+)/i)
@@ -438,46 +454,54 @@ export function TugasBaruScreen() {
   useEffect(() => {
     let active = true
     setIsLoading(true)
+
     Promise.all([
       getNakesChildren(100, 0).catch(() => [] as Child[]),
+      getNakesMeasurements(500, 0).catch(() => [] as Measurement[]),
       getNakesUsers(100, 0).catch(() => [] as UserProfile[]),
     ])
-      .then(([childrenData, usersData]) => {
+      .then(([childrenData, measurementsData, usersData]) => {
         if (!active) return
 
         const validChildren = Array.isArray(childrenData) ? childrenData : []
+        const validMeasurements = Array.isArray(measurementsData)
+          ? measurementsData
+          : []
         const validUsers = Array.isArray(usersData) ? usersData : []
+        const measuredThisWeek = new Set(
+          validMeasurements
+            .filter((measurement) => isInCurrentWeek(measurement.measured_at))
+            .map((measurement) => measurement.children_id),
+        )
 
-        // Status awal semua balita: Belum Diukur.
-        // Status baru dicek ulang saat tombol "Perbarui" ditekan.
-        const mapped: AnakTugas[] = validChildren.map((c: Child) => {
-          const { rt, rw } = parseRtRw(c.home_address)
-          return {
-            id: c.id,
-            nama: c.full_name,
-            rt,
-            rw,
-            status: "belum-diukur",
-            kader: "",
-            batasWaktu: "",
-            ditugaskan: false,
-          }
-        })
+        const mapped: AnakTugas[] = validChildren
+          .filter((child) => !measuredThisWeek.has(child.id))
+          .map((child: Child) => {
+            const { rt, rw } = parseRtRw(child.home_address)
+            return {
+              id: child.id,
+              nama: child.full_name,
+              rt,
+              rw,
+              status: "belum-diukur",
+              kader: "",
+              batasWaktu: "",
+              ditugaskan: false,
+            }
+          })
         setAnakList(mapped)
 
-        const kaders = validUsers.filter((u) => u.role === "kader")
+        const kaders = validUsers.filter((user) => user.role === "kader")
         setKaderUsers(kaders)
-        const names = kaders.map((u) => u.name).filter(Boolean)
-        setKaderOptions(names)
+        setKaderOptions(kaders.map((user) => user.name).filter(Boolean))
       })
       .catch((err) => {
         console.warn("[Centing] Failed to fetch task assignment data:", err)
       })
       .finally(() => {
-        if (active) {
-          setIsLoading(false)
-        }
+        if (active) setIsLoading(false)
       })
+
     return () => {
       active = false
     }
@@ -485,10 +509,11 @@ export function TugasBaruScreen() {
 
   const filteredList = useMemo(() => {
     return anakList.filter((anak) => {
-      const matchesSearch = anak.nama.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesSearch = anak.nama
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase())
       const matchesTab =
         filterTab === "Semua" ||
-        (filterTab === "Selesai Diukur" && anak.status === "selesai") ||
         (filterTab === "Belum Diukur" && anak.status === "belum-diukur")
       return matchesSearch && matchesTab
     })
@@ -593,14 +618,16 @@ export function TugasBaruScreen() {
     }
     await sendAssignmentNotification(info)
 
-    const existing = anakList.find((a) => normalizeName(a.nama) === normalizeName(values.nama))
+    const existing = anakList.find(
+      (anak) => normalizeName(anak.nama) === normalizeName(values.nama),
+    )
 
     if (existing) {
       setAnakList((prev) =>
-        prev.map((a) =>
-          a.id === existing.id
+        prev.map((anak) =>
+          anak.id === existing.id
             ? {
-                ...a,
+                ...anak,
                 rt: info.rt,
                 rw: info.rw,
                 kader: info.kader,
@@ -608,8 +635,8 @@ export function TugasBaruScreen() {
                 ditugaskan: true,
                 status: "belum-diukur",
               }
-            : a
-        )
+            : anak,
+        ),
       )
     } else {
       const baru: AnakTugas = {
@@ -630,50 +657,45 @@ export function TugasBaruScreen() {
     showAssignSuccess(info)
   }
 
-  // Tombol "Perbarui": cek apakah balita sudah diukur bulan ini
+  // Tombol "Perbarui": cek apakah balita sudah diukur minggu ini
   const handleRefreshStatus = async (anak: AnakTugas) => {
     setCheckingId(anak.id)
     try {
       const measurements = await getNakesMeasurements(500, 0)
       const list: Measurement[] = Array.isArray(measurements) ? measurements : []
-
-      const now = new Date()
-      const isMeasured = list.some((m) => {
-        if (m.children_id !== anak.id) return false
-        const d = new Date(m.measured_at)
-        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
-      })
-
-      setAnakList((prev) =>
-        prev.map((a) => (a.id === anak.id ? { ...a, status: isMeasured ? "selesai" : "belum-diukur" } : a))
+      const isMeasured = list.some(
+        (measurement) =>
+          measurement.children_id === anak.id &&
+          isInCurrentWeek(measurement.measured_at),
       )
 
       if (isMeasured) {
+        setAnakList((prev) => prev.filter((item) => item.id !== anak.id))
         setAlertState({
           type: "success",
           title: "Pengukuran Selesai",
-          message: `${anak.nama} sudah diukur oleh kader. Status diperbarui menjadi Selesai Diukur.`,
+          message: `${anak.nama} sudah diukur minggu ini dan dihapus dari daftar tugas.`,
         })
       } else {
         setAlertState({
           type: "info",
           title: "Belum Diukur",
-          message: `Data pengukuran ${anak.nama} bulan ini belum masuk. Status tetap Belum Diukur.`,
+          message: `Data pengukuran ${anak.nama} minggu ini belum masuk.`,
         })
       }
     } catch {
       setAlertState({
         type: "error",
         title: "Gagal Memperbarui Status",
-        message: "Terjadi masalah saat mengambil data pengukuran. Periksa koneksi lalu coba lagi.",
+        message:
+          "Terjadi masalah saat mengambil data pengukuran. Periksa koneksi lalu coba lagi.",
       })
     } finally {
       setCheckingId(null)
     }
   }
 
-  const filterTabs: FilterTab[] = ["Semua", "Selesai Diukur", "Belum Diukur"]
-
+  const filterTabs: FilterTab[] = ["Semua", "Belum Diukur"]
   return (
     <main className="min-h-svh bg-gray-50 pb-24 flex flex-col">
       <NakesHeader title="Akun" />

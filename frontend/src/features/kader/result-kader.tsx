@@ -1,81 +1,188 @@
 import { useEffect, useState } from "react"
+
 import { useLocation } from "react-router-dom"
+
 import { motion } from "framer-motion"
 
 import { ProfileHeader } from "../../components/kader/profile-header"
+
 import { SvgIcon } from "../../components/ui/svg-icon"
-import { getKaderQuizSubmissions, type QuizSubmission } from "../../lib/api"
+
+import {
+  getKaderQuizSubmissions,
+  getQuizQuestions,
+  type QuizQuestion,
+  type QuizSubmission,
+} from "../../lib/api"
+
 import type { QuizCompletionData, QuizResultSummaryItem } from "./kuis-kader"
 
 import resultPaths from "../../assets/icon-result"
 
 const resultMascot = "/images/ilustrasi-berhasil.png"
 
-const defaultSummary: QuizResultSummaryItem[] = [
-  {
-    question: "Apa definisi stunting yang paling tepat menurut WHO?",
-    answer: "Jawaban: Gangguan pertumbuhan dan perkembangan akibat kekurangan gizi kronis.",
-    correct: true,
-  },
-  {
-    question: "Kapan periode 1000 Hari Pertama Kehidupan dimulai?",
-    answer: "Jawaban: Sejak masa kehamilan hingga anak berusia dua tahun.",
-    correct: true,
-  },
-  {
-    question: "Salah satu langkah penting mencegah stunting adalah?",
-    answer: "Jawaban: Memberikan makanan bergizi seimbang dan memantau pertumbuhan.",
-    correct: true,
-  },
-  {
-    question: "Pengukuran panjang badan balita dilakukan dengan?",
-    answer: "Jawaban Anda: Timbangan dewasa",
-    detail: "Benar: Alat ukur panjang badan sesuai usia anak.",
-    correct: false,
-  },
-  {
-    question: "Peran kader dalam pencegahan stunting adalah?",
-    answer: "Jawaban: Mencatat, mengedukasi, dan merujuk bila ditemukan risiko.",
-    correct: true,
-  },
-]
+type SubmissionAnswer = {
+  question_id: string
+
+  selected_option: string
+
+  is_correct?: boolean
+}
+
+function parseOptions(options: QuizQuestion["options"]): string[] {
+  if (Array.isArray(options)) return options
+
+  try {
+    const parsed = JSON.parse(options)
+
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return typeof options === "string"
+      ? options.split("\n").filter(Boolean)
+      : []
+  }
+}
+
+function parseSubmissionAnswers(
+  submission: QuizSubmission,
+): SubmissionAnswer[] {
+  if (Array.isArray(submission.answers)) return submission.answers
+
+  try {
+    const parsed = JSON.parse(submission.answers)
+
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function buildSummary(
+  questions: QuizQuestion[],
+  answers: SubmissionAnswer[],
+): QuizResultSummaryItem[] {
+  return questions.map((question) => {
+    const answer = answers.find((item) => item.question_id === question.id)
+
+    const options = parseOptions(question.options)
+
+    const correctAnswer = question.correct_ans ?? ""
+
+    const correctIndex = Number.parseInt(correctAnswer, 10)
+
+    const correctText =
+      !Number.isNaN(correctIndex) &&
+      correctIndex >= 0 &&
+      correctIndex < options.length
+        ? options[correctIndex]
+        : correctAnswer
+
+    const selected = answer?.selected_option || "Tidak dijawab"
+
+    const correct =
+      typeof answer?.is_correct === "boolean"
+        ? answer.is_correct
+        : selected === correctText
+
+    return {
+      question: question.question_text,
+
+      answer: correct ? `Jawaban: ${selected}` : `Jawaban Anda: ${selected}`,
+
+      detail: correct || !correctText ? undefined : `Benar: ${correctText}`,
+
+      correct,
+    }
+  })
+}
 
 export function ResultKader({
   onHome,
+
   onBack,
 }: {
   onHome: () => void
+
   onBack: () => void
 }) {
   const location = useLocation()
+
   const stateData = location.state as QuizCompletionData | undefined
 
-  const [score, setScore] = useState<number>(stateData?.score ?? 80)
-  const [correctCount, setCorrectCount] = useState<number>(stateData?.correctCount ?? 4)
-  const [totalQuestions, setTotalQuestions] = useState<number>(stateData?.totalQuestions ?? 5)
-  const [answerSummary, setAnswerSummary] = useState<QuizResultSummaryItem[]>(
-    stateData?.summary || defaultSummary
+  const [score, setScore] = useState<number>(stateData?.score ?? 0)
+
+  const [correctCount, setCorrectCount] = useState<number>(
+    stateData?.correctCount ?? 0,
   )
+
+  const [totalQuestions, setTotalQuestions] = useState<number>(
+    stateData?.totalQuestions ?? 0,
+  )
+
+  const [answerSummary, setAnswerSummary] = useState<QuizResultSummaryItem[]>(
+    stateData?.summary ?? [],
+  )
+
+  const [loading, setLoading] = useState(!stateData)
+
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (stateData) return
+
     let active = true
+
     getKaderQuizSubmissions()
-      .then((submissions) => {
-        if (active && Array.isArray(submissions) && submissions.length > 0) {
-          const latest = submissions[0]
-          if (typeof latest.score === "number") {
-            setScore(Math.round(latest.score))
-          }
+
+      .then(async (submissions) => {
+        const latest = [...submissions].sort((a, b) => {
+          return (
+            new Date(b.submitted_at || 0).getTime() -
+            new Date(a.submitted_at || 0).getTime()
+          )
+        })[0]
+
+        if (!latest) {
+          throw new Error("Belum ada hasil kuis.")
         }
+
+        const questions = await getQuizQuestions(latest.quiz_id)
+
+        const answers = parseSubmissionAnswers(latest)
+
+        const summary = buildSummary(questions, answers)
+
+        const resolvedCorrectCount = summary.filter(
+          (item) => item.correct,
+        ).length
+
+        if (!active) return
+
+        setScore(Math.round(latest.score))
+
+        setCorrectCount(resolvedCorrectCount)
+
+        setTotalQuestions(questions.length || answers.length)
+
+        setAnswerSummary(summary)
       })
+
       .catch(() => {
-        // keep fallback
+        if (active)
+          setLoadError(
+            "Hasil kuis gagal dimuat. Silakan kembali dan coba lagi.",
+          )
       })
+
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
     return () => {
       active = false
     }
   }, [stateData])
+
   const headline =
     score >= 80
       ? "Luar Biasa, Kader Hebat!"
@@ -98,8 +205,24 @@ export function ResultKader({
         : "Silakan baca kembali materi edukasi dan ulangi kuis untuk memperkuat pemahaman Anda."
 
   return (
-    <main className="min-h-svh bg-[#f8f9fa] pb-28 pt-16 text-[#191c1d]" aria-label="Hasil kuis kader">
+    <main
+      className="min-h-svh bg-[#f8f9fa] pb-28 pt-16 text-[#191c1d]"
+      aria-label="Hasil kuis kader"
+    >
       <ProfileHeader title="Hasil Kuis" onBack={onBack} />
+      {loading && (
+        <p className="mx-auto max-w-6xl px-5 py-6 text-center text-sm text-[#536478]">
+          Memuat hasil kuis...
+        </p>
+      )}
+      {loadError && (
+        <p
+          role="alert"
+          className="mx-auto max-w-6xl px-5 py-6 text-center text-sm text-[#d84747]"
+        >
+          {loadError}
+        </p>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -108,13 +231,27 @@ export function ResultKader({
         className="mx-auto w-full max-w-6xl"
       >
         <section className="relative overflow-hidden rounded-b-[32px] bg-[#76d69f] px-5 pb-24 pt-6 text-center shadow-[0_1px_2px_rgba(0,0,0,0.05)] sm:px-10 sm:pb-28 xl:rounded-[0_0_44px_44px] xl:pb-32 xl:pt-9">
-          <span aria-hidden="true" className="absolute -right-12 -top-12 size-48 rounded-full bg-[#006d42]/10 blur-[20px]" />
-          <span aria-hidden="true" className="absolute -bottom-10 -left-12 size-36 rounded-full bg-[#d7f0dd]/45 blur-xl" />
+          <span
+            aria-hidden="true"
+            className="absolute -right-12 -top-12 size-48 rounded-full bg-[#006d42]/10 blur-[20px]"
+          />
+          <span
+            aria-hidden="true"
+            className="absolute -bottom-10 -left-12 size-36 rounded-full bg-[#d7f0dd]/45 blur-xl"
+          />
           <div className="relative mx-auto flex max-w-xl flex-col items-center">
             <div className="relative mb-1 w-32 sm:w-36">
-              <img src={resultMascot} alt="Maskot Centing Raja merayakan hasil kuis" className="w-full object-contain drop-shadow-[0_8px_0_rgba(0,92,56,0.09)]" />
-              <span className="absolute -right-1 top-0 text-xl text-[#e3bf66]">★</span>
-              <span className="absolute -left-2 bottom-4 text-xl text-[#e3bf66]">★</span>
+              <img
+                src={resultMascot}
+                alt="Maskot Centing Raja merayakan hasil kuis"
+                className="w-full object-contain drop-shadow-[0_8px_0_rgba(0,92,56,0.09)]"
+              />
+              <span className="absolute -right-1 top-0 text-xl text-[#e3bf66]">
+                ★
+              </span>
+              <span className="absolute -left-2 bottom-4 text-xl text-[#e3bf66]">
+                ★
+              </span>
             </div>
             <h1 className="font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] font-bold leading-8 text-[#005c38] sm:text-3xl">
               {headline}
@@ -138,12 +275,18 @@ export function ResultKader({
                   <strong className="block font-['Plus_Jakarta_Sans:Bold',sans-serif] text-[26px] font-bold leading-none text-[#006d42]">
                     {score}
                   </strong>
-                  <span className="mt-1 block font-['Manrope:SemiBold',sans-serif] text-xs text-[#536478]">/ 100</span>
+                  <span className="mt-1 block font-['Manrope:SemiBold',sans-serif] text-xs text-[#536478]">
+                    / 100
+                  </span>
                 </div>
               </div>
               <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#e9f7ef] px-3 py-1.5 font-['Manrope:SemiBold',sans-serif] text-xs font-semibold text-[#006d42]">
                 <span className="grid size-4 place-items-center rounded-full bg-white">
-                  <SvgIcon path={resultPaths.p127da640} viewBox="0 0 13.5833 10.0208" className="h-2.5 w-3 text-[#006d42]" />
+                  <SvgIcon
+                    path={resultPaths.p127da640}
+                    viewBox="0 0 13.5833 10.0208"
+                    className="h-2.5 w-3 text-[#006d42]"
+                  />
                 </span>
                 {correctCount} dari {totalQuestions} Jawaban Benar
               </span>
@@ -170,22 +313,46 @@ export function ResultKader({
             {answerSummary.map((item) => (
               <article
                 key={item.question}
-                className={`flex gap-3 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)] ${item.correct ? "bg-white" : "bg-[#fff4f3]"}`}
+                className={`flex gap-3 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)] ${
+                  item.correct ? "bg-white" : "bg-[#fff4f3]"
+                }`}
               >
-                <span className={`grid size-7 shrink-0 place-items-center rounded-full ${item.correct ? "bg-[#e9f7ef] text-[#006d42]" : "bg-[#ffe2df] text-[#d84747]"}`}>
+                <span
+                  className={`grid size-7 shrink-0 place-items-center rounded-full ${
+                    item.correct
+                      ? "bg-[#e9f7ef] text-[#006d42]"
+                      : "bg-[#ffe2df] text-[#d84747]"
+                  }`}
+                >
                   <SvgIcon
-                    path={item.correct ? resultPaths.p127da640 : resultPaths.p34536fc0}
-                    viewBox={item.correct ? "0 0 13.5833 10.0208" : "0 0 11.6667 11.6667"}
+                    path={
+                      item.correct
+                        ? resultPaths.p127da640
+                        : resultPaths.p34536fc0
+                    }
+                    viewBox={
+                      item.correct
+                        ? "0 0 13.5833 10.0208"
+                        : "0 0 11.6667 11.6667"
+                    }
                     className="size-3"
                   />
                 </span>
                 <div className="min-w-0">
-                  <p className="font-['Manrope:Regular',sans-serif] text-sm leading-5 text-[#3e4941]">{item.question}</p>
-                  <p className={`mt-1 font-['Manrope:SemiBold',sans-serif] text-xs leading-4 ${item.correct ? "text-[#006d42]" : "text-[#d84747]"}`}>
+                  <p className="font-['Manrope:Regular',sans-serif] text-sm leading-5 text-[#3e4941]">
+                    {item.question}
+                  </p>
+                  <p
+                    className={`mt-1 font-['Manrope:SemiBold',sans-serif] text-xs leading-4 ${
+                      item.correct ? "text-[#006d42]" : "text-[#d84747]"
+                    }`}
+                  >
                     {item.answer}
                   </p>
                   {item.detail && (
-                    <p className="mt-1 font-['Manrope:Regular',sans-serif] text-xs leading-4 text-[#63747a]">{item.detail}</p>
+                    <p className="mt-1 font-['Manrope:Regular',sans-serif] text-xs leading-4 text-[#63747a]">
+                      {item.detail}
+                    </p>
                   )}
                 </div>
               </article>

@@ -1,74 +1,92 @@
 import React, { useState } from "react"
+
 import { useLocation } from "react-router-dom"
 
 import { SvgIcon } from "../../components/ui/svg-icon"
+
 import { createMeasurement, type Measurement } from "../../lib/api"
+
 import type { KaderChildTask } from "./tugas-bulan-ini"
 
 import inputMeasurementPaths from "../../assets/icon-input-measurement"
 
 const inputMeasurementLogo = "/logo/logo-centing-raja-48.png"
 
-const defaultChild: KaderChildTask = {
-  id: "c1",
-  name: "Ahmad Raihan",
-  initials: "AR",
-  rt: "RT 01 / RW 03",
-  address: "Jl. Manggis No. 12",
-  age: "14 Bulan",
-  gender: "Laki-laki",
-  deadline: "Batas Waktu: Hari ini",
-  status: "Mendesak",
-  tone: "bg-[#dceafe] text-[#4f6073]",
-}
-
 export function InputDataPengukuran({
   onBack,
+
   onSaved,
 }: {
   onBack: () => void
+
   onSaved: (data?: { child: KaderChildTask; measurement?: Measurement }) => void
 }) {
   const location = useLocation()
-  const locationState = location.state as { child?: KaderChildTask } | KaderChildTask | undefined
-  const child: KaderChildTask =
-    (locationState && "name" in locationState ? locationState : locationState?.child) || defaultChild
 
-  const [weight, setWeight] = useState(9.2)
-  const [height, setHeight] = useState(75.5)
-  const [headCircumference, setHeadCircumference] = useState("46.0")
-  const [armCircumference, setArmCircumference] = useState("14.5")
+  const locationState = location.state as {
+    child?: KaderChildTask
+  } | KaderChildTask | undefined
+
+  const child: KaderChildTask | undefined =
+    locationState && "name" in locationState
+      ? locationState
+      : locationState?.child
+
+  const [weight, setWeight] = useState("")
+  const [height, setHeight] = useState("")
+  const [headCircumference, setHeadCircumference] = useState("")
+  const [armCircumference, setArmCircumference] = useState("")
   const [saving, setSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
   const [touched, setTouched] = useState({
-    weight: true,
-    height: true,
-    head: true,
-    arm: true,
+    weight: false,
+
+    height: false,
+
+    head: false,
+
+    arm: false,
   })
+
   const [position, setPosition] = useState<"Berdiri" | "Terlentang">("Berdiri")
 
   const [note, setNote] = useState("")
 
+  const weightValue = Number(weight)
+
+  const heightValue = Number(height)
+
+  const headValue = Number(headCircumference)
+
+  const armValue = Number(armCircumference)
+
   const isComplete =
-    weight > 0 &&
-    height > 0 &&
-    Number(headCircumference) > 0 &&
-    Number(armCircumference) > 0
+    Boolean(child?.id) &&
+    Number.isFinite(weightValue) &&
+    weightValue > 0 &&
+    Number.isFinite(heightValue) &&
+    heightValue > 0 &&
+    Number.isFinite(headValue) &&
+    headValue > 0 &&
+    Number.isFinite(armValue) &&
+    armValue > 0
 
   const adjust = (
-    setter: React.Dispatch<React.SetStateAction<number>>,
+    setter: (value: string) => void,
 
     delta: number,
 
     field: "weight" | "height",
   ) => {
-    setter((value) => Math.max(0, Math.round((value + delta) * 10) / 10))
+    const current = Number(field === "weight" ? weight : height)
 
-    setTouched((current) => ({ ...current, [field]: true }))
+    const next = Math.max(0, Math.round((current + delta) * 10) / 10)
+
+    setter(next.toFixed(1))
+
+    setTouched((value) => ({ ...value, [field]: true }))
   }
-
-  const format = (value: number) => value.toFixed(1)
 
   const numberInput = (
     value: string,
@@ -95,9 +113,9 @@ export function InputDataPengukuran({
   const control = (
     label: string,
 
-    value: number,
+    value: string,
 
-    setter: React.Dispatch<React.SetStateAction<number>>,
+    setter: (value: string) => void,
 
     previous: string,
 
@@ -125,7 +143,7 @@ export function InputDataPengukuran({
             touched[field] ? "text-[#191c1d]" : "text-[#becabf]"
           }`}
         >
-          {format(value)}
+          {value || "0.0"}
         </output>
         <button
           type="button"
@@ -141,6 +159,55 @@ export function InputDataPengukuran({
       </p>
     </article>
   )
+
+  if (!child?.id) {
+    return (
+      <main className="min-h-svh bg-[#f8f9fa] px-5 pt-20 text-[#191c1d]">
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-sm font-semibold text-[#006d42]"
+        >
+          Kembali
+        </button>
+        <p
+          role="alert"
+          className="mt-8 rounded-xl bg-white p-5 text-sm text-[#d84747]"
+        >
+          Data anak tidak tersedia. Buka halaman ini dari daftar tugas kader.
+        </p>
+      </main>
+    )
+  }
+  const selectedChild: KaderChildTask = child
+  const childId: string = child.id
+
+
+  const handleSave = async () => {
+    setErrorMessage(null)
+
+    if (!isComplete) return
+
+    setSaving(true)
+
+    try {
+      const createdMeasurement = await createMeasurement({
+        children_id: childId,
+        weight: weightValue,
+        height: heightValue,
+        head_circumference: headValue,
+        upper_arm_circumference: armValue,
+      })
+
+      onSaved({ child: selectedChild, measurement: createdMeasurement })
+    } catch (err: unknown) {
+      setErrorMessage(
+        err instanceof Error ? err.message : "Gagal menyimpan data pengukuran",
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <main
@@ -322,29 +389,7 @@ export function InputDataPengukuran({
         )}
         <button
           type="button"
-          onClick={async () => {
-            setErrorMessage(null)
-            if (!child.id) {
-              setErrorMessage("ID anak tidak valid")
-              return
-            }
-            setSaving(true)
-            try {
-              const createdMeasurement = await createMeasurement({
-                children_id: child.id,
-                weight,
-                height,
-                head_circumference: Number(headCircumference) || undefined,
-                upper_arm_circumference: Number(armCircumference) || undefined,
-              })
-              onSaved({ child, measurement: createdMeasurement })
-            } catch (err: unknown) {
-              const msg = err instanceof Error ? err.message : "Gagal menyimpan data pengukuran"
-              setErrorMessage(msg)
-            } finally {
-              setSaving(false)
-            }
-          }}
+          onClick={handleSave}
           disabled={!isComplete || saving}
           className="mt-8 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[#007c4a] font-['Plus_Jakarta_Sans:SemiBold',sans-serif] text-lg font-semibold text-white shadow-[0_6px_16px_rgba(0,109,66,0.2)] transition hover:bg-[#006d42] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#becabf] disabled:shadow-none"
         >
