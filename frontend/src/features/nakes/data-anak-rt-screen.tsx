@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { AlertTriangle, ChevronDown, Search } from "lucide-react"
-import { getNakesChildren, getNakesMeasurements, type Child, type Measurement } from "../../lib/api"
+import { AlertTriangle, ChevronDown, Loader2, MapPin, Plus, Search, Settings2 } from "lucide-react"
+import {
+  getNakesChildren,
+  getNakesMeasurements,
+  getNakesWilayah,
+  type Child,
+  type Measurement,
+  type Wilayah,
+} from "../../lib/api"
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
 
@@ -51,26 +58,8 @@ function getAgeMonths(birthDateStr: string): number {
   return Math.max(0, (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth()))
 }
 
-const defaultMockAnak: AnakData[] = [
-  { nama: "Budi Santoso", umurBulan: 24, jenisKelamin: "L", status: "stunting", zScore: -2.5 },
-  { nama: "Siti Aminah", umurBulan: 18, jenisKelamin: "P", status: "berisiko", zScore: -1.8 },
-  { nama: "Ahmad Fauzi", umurBulan: 36, jenisKelamin: "L", status: "aman", zScore: -0.5 },
-  { nama: "Rina Melati", umurBulan: 12, jenisKelamin: "P", status: "aman", zScore: 0.2 },
-]
 type RwSummary = { rw: string; totalAnak: number; stuntingRate: number }
-const defaultRwList: RwSummary[] = [
-  { rw: "01", totalAnak: 42, stuntingRate: 9.5 },
-  { rw: "02", totalAnak: 38, stuntingRate: 15.8 },
-  { rw: "03", totalAnak: 55, stuntingRate: 12.7 },
-  { rw: "04", totalAnak: 30, stuntingRate: 6.7 },
-]
-
 type RtSummary = { rt: string; totalAnak: number; stuntingRate: number }
-const defaultRtList: RtSummary[] = [
-  { rt: "01", totalAnak: 12, stuntingRate: 16.7 },
-  { rt: "02", totalAnak: 10, stuntingRate: 10.0 },
-  { rt: "03", totalAnak: 15, stuntingRate: 6.7 },
-]
 
 function parseAddressWilayah(address?: string): { rt: string; rw: string; kecamatan: string } {
   let rt = "01"
@@ -104,10 +93,12 @@ export function DataAnakRtScreen() {
 
   const [liveChildren, setLiveChildren] = useState<Child[]>([])
   const [liveMeasurements, setLiveMeasurements] = useState<Measurement[]>([])
+  const [wilayahConfig, setWilayahConfig] = useState<Wilayah | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   const inferredKecamatan = useMemo(() => {
     if (state.kecamatan) return state.kecamatan
+    if (wilayahConfig?.kecamatan) return wilayahConfig.kecamatan
     for (const c of liveChildren) {
       if (c.home_address) {
         const { kecamatan: k } = parseAddressWilayah(c.home_address)
@@ -115,11 +106,11 @@ export function DataAnakRtScreen() {
       }
     }
     return "Kebayoran Baru"
-  }, [state.kecamatan, liveChildren])
+  }, [state.kecamatan, wilayahConfig, liveChildren])
 
   const kecamatan = inferredKecamatan
   const [view, setView] = useState<ViewLevel>("rt")
-  const [selectedRw, setSelectedRw] = useState(state.rw ?? "03")
+  const [selectedRw, setSelectedRw] = useState(state.rw ?? "01")
   const [selectedRt, setSelectedRt] = useState(state.rt ?? "01")
 
   const [searchQuery, setSearchQuery] = useState("")
@@ -131,14 +122,18 @@ export function DataAnakRtScreen() {
     Promise.all([
       getNakesChildren(100, 0),
       getNakesMeasurements(100, 0).catch(() => [] as Measurement[]),
+      getNakesWilayah().catch(() => null),
     ])
-      .then(([childrenData, measurementsData]) => {
+      .then(([childrenData, measurementsData, wilayahData]) => {
         if (active) {
-          if (Array.isArray(childrenData) && childrenData.length > 0) {
+          if (Array.isArray(childrenData)) {
             setLiveChildren(childrenData)
           }
-          if (Array.isArray(measurementsData) && measurementsData.length > 0) {
+          if (Array.isArray(measurementsData)) {
             setLiveMeasurements(measurementsData)
+          }
+          if (wilayahData) {
+            setWilayahConfig(wilayahData)
           }
         }
       })
@@ -152,104 +147,125 @@ export function DataAnakRtScreen() {
       active = false
     }
   }, [])
-
   const { displayAnakList, rwList, rtList } = useMemo(() => {
-    if (liveChildren.length > 0) {
-      const latestMap = new Map<string, Measurement>()
-      for (const m of liveMeasurements) {
-        const existing = latestMap.get(m.children_id)
-        if (!existing || new Date(m.measured_at) > new Date(existing.measured_at)) {
-          latestMap.set(m.children_id, m)
+    const latestMap = new Map<string, Measurement>()
+    for (const m of liveMeasurements) {
+      const existing = latestMap.get(m.children_id)
+      if (!existing || new Date(m.measured_at) > new Date(existing.measured_at)) {
+        latestMap.set(m.children_id, m)
+      }
+    }
+
+    const childrenWithWilayah = liveChildren.map((c) => {
+      const m = latestMap.get(c.id)
+      let status: StatusAnak = "aman"
+      let zScore = 0.0
+      if (m) {
+        zScore = Number(m.z_score) || 0.0
+        if (m.stunting_status === "severely_stunted" || m.stunting_status === "stunted" || zScore <= -2) {
+          status = "stunting"
+        } else if (zScore < -1) {
+          status = "berisiko"
+        } else {
+          status = "aman"
         }
       }
-
-      const childrenWithWilayah = liveChildren.map((c) => {
-        const m = latestMap.get(c.id)
-        let status: StatusAnak = "aman"
-        let zScore = 0.0
-        if (m) {
-          zScore = Number(m.z_score) || 0.0
-          if (m.stunting_status === "severely_stunted" || m.stunting_status === "stunted" || zScore <= -2) {
-            status = "stunting"
-          } else if (zScore < -1) {
-            status = "berisiko"
-          } else {
-            status = "aman"
-          }
-        }
-        const { rt, rw } = parseAddressWilayah(c.home_address)
-        return {
-          id: c.id,
-          nama: c.full_name,
-          umurBulan: getAgeMonths(c.birth_date),
-          jenisKelamin: (c.gender === "P" || c.gender === "Perempuan" ? "P" : "L") as "L" | "P",
-          status,
-          zScore,
-          childObj: c,
-          rt,
-          rw,
-        }
-      })
-
-      // Compute RW summary
-      const rwMap = new Map<string, { total: number; stunting: number }>()
-      for (const c of childrenWithWilayah) {
-        const current = rwMap.get(c.rw) || { total: 0, stunting: 0 }
-        current.total += 1
-        if (c.status === "stunting") current.stunting += 1
-        rwMap.set(c.rw, current)
+      const { rt, rw } = parseAddressWilayah(c.home_address)
+      return {
+        id: c.id,
+        nama: c.full_name,
+        umurBulan: getAgeMonths(c.birth_date),
+        jenisKelamin: (c.gender === "P" || c.gender === "Perempuan" ? "P" : "L") as "L" | "P",
+        status,
+        zScore,
+        childObj: c,
+        rt,
+        rw,
       }
+    })
 
-      const dynamicRwList: RwSummary[] = Array.from(rwMap.entries()).map(([rw, val]) => ({
+    // Compute RW summary
+    const rwMap = new Map<string, { total: number; stunting: number }>()
+    const configuredRwCount = wilayahConfig?.jumlah_rw ?? (state.rw ? parseInt(state.rw, 10) : 4)
+    for (let i = 1; i <= Math.max(1, configuredRwCount); i++) {
+      rwMap.set(String(i).padStart(2, "0"), { total: 0, stunting: 0 })
+    }
+    for (const c of childrenWithWilayah) {
+      const current = rwMap.get(c.rw) || { total: 0, stunting: 0 }
+      current.total += 1
+      if (c.status === "stunting") current.stunting += 1
+      rwMap.set(c.rw, current)
+    }
+
+    const dynamicRwList: RwSummary[] = Array.from(rwMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([rw, val]) => ({
         rw,
         totalAnak: val.total,
-        stuntingRate: Number(((val.stunting / (val.total || 1)) * 100).toFixed(1)),
+        stuntingRate: val.total > 0 ? Number(((val.stunting / val.total) * 100).toFixed(1)) : 0,
       }))
 
-      // Compute RT summary for selectedRw
-      const rtMap = new Map<string, { total: number; stunting: number }>()
-      for (const c of childrenWithWilayah.filter((c) => c.rw === selectedRw)) {
-        const current = rtMap.get(c.rt) || { total: 0, stunting: 0 }
-        current.total += 1
-        if (c.status === "stunting") current.stunting += 1
-        rtMap.set(c.rt, current)
-      }
+    // Compute RT summary for selectedRw
+    const rtMap = new Map<string, { total: number; stunting: number }>()
+    const configuredRtCount = wilayahConfig?.jumlah_rt ?? (state.rt ? parseInt(state.rt, 10) : 3)
+    for (let i = 1; i <= Math.max(1, configuredRtCount); i++) {
+      rtMap.set(String(i).padStart(2, "0"), { total: 0, stunting: 0 })
+    }
+    for (const c of childrenWithWilayah.filter((c) => c.rw === selectedRw)) {
+      const current = rtMap.get(c.rt) || { total: 0, stunting: 0 }
+      current.total += 1
+      if (c.status === "stunting") current.stunting += 1
+      rtMap.set(c.rt, current)
+    }
 
-      const dynamicRtList: RtSummary[] = Array.from(rtMap.entries()).map(([rt, val]) => ({
+    const dynamicRtList: RtSummary[] = Array.from(rtMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([rt, val]) => ({
         rt,
         totalAnak: val.total,
-        stuntingRate: Number(((val.stunting / (val.total || 1)) * 100).toFixed(1)),
+        stuntingRate: val.total > 0 ? Number(((val.stunting / val.total) * 100).toFixed(1)) : 0,
       }))
 
-      return {
-        displayAnakList: childrenWithWilayah,
-        rwList: dynamicRwList.length > 0 ? dynamicRwList : defaultRwList,
-        rtList: dynamicRtList.length > 0 ? dynamicRtList : defaultRtList,
-      }
-    }
-
     return {
-      displayAnakList: defaultMockAnak,
-      rwList: defaultRwList,
-      rtList: defaultRtList,
+      displayAnakList: childrenWithWilayah,
+      rwList: dynamicRwList,
+      rtList: dynamicRtList,
     }
-  }, [liveChildren, liveMeasurements, selectedRw])
-  const counts = useMemo(
-    () => ({
-      stunting: displayAnakList.filter((a) => a.status === "stunting").length,
-      berisiko: displayAnakList.filter((a) => a.status === "berisiko").length,
-      aman: displayAnakList.filter((a) => a.status === "aman").length,
-    }),
-    [displayAnakList],
-  )
+  }, [liveChildren, liveMeasurements, wilayahConfig, selectedRw, state.rw, state.rt])
+
+  useEffect(() => {
+    if (rwList.length > 0 && !rwList.some((r) => r.rw === selectedRw)) {
+      setSelectedRw(rwList[0].rw)
+    }
+  }, [rwList, selectedRw])
+
+  useEffect(() => {
+    if (rtList.length > 0 && !rtList.some((r) => r.rt === selectedRt)) {
+      setSelectedRt(rtList[0].rt)
+    }
+  }, [rtList, selectedRt])
+
+  const counts = useMemo(() => {
+    const scopeChildren = displayAnakList.filter((anak) => {
+      return (!selectedRw || anak.rw === selectedRw) && (!selectedRt || anak.rt === selectedRt)
+    })
+    return {
+      stunting: scopeChildren.filter((a) => a.status === "stunting").length,
+      berisiko: scopeChildren.filter((a) => a.status === "berisiko").length,
+      aman: scopeChildren.filter((a) => a.status === "aman").length,
+    }
+  }, [displayAnakList, selectedRw, selectedRt])
 
   const filteredList = useMemo(() => {
     return displayAnakList.filter((anak) => {
+      const matchesRw = !selectedRw || anak.rw === selectedRw
+      const matchesRt = !selectedRt || anak.rt === selectedRt
       const matchesFilter = filter === "semua" || anak.status === filter
-      const matchesSearch = anak.nama.toLowerCase().includes(searchQuery.toLowerCase())
-      return matchesFilter && matchesSearch
+      const matchesSearch =
+        !searchQuery || anak.nama.toLowerCase().includes(searchQuery.toLowerCase())
+      return matchesRw && matchesRt && matchesFilter && matchesSearch
     })
-  }, [displayAnakList, filter, searchQuery])
+  }, [displayAnakList, selectedRw, selectedRt, filter, searchQuery])
 
   const visibleList = filteredList.slice(0, visibleCount)
   const hasMore = visibleCount < filteredList.length
@@ -280,24 +296,56 @@ export function DataAnakRtScreen() {
 
   const headerSubtitle =
     view === "kecamatan" ? null : view === "rw" ? (
-      <span className="h-10 px-3 flex items-center gap-1 bg-zinc-100 rounded-lg outline outline-1 outline-offset-[-1px] outline-stone-300 text-zinc-900 text-sm font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif]">
-        RW {selectedRw}
-        <ChevronDown className="size-3 text-neutral-700" />
-      </span>
+      <div className="flex items-center gap-2">
+        <label className="text-xs font-semibold text-neutral-600">Pilih RW:</label>
+        <div className="relative">
+          <select
+            value={selectedRw}
+            aria-label="Pilih RW"
+            onChange={(e) => setSelectedRw(e.target.value)}
+            className="h-10 pl-3 pr-8 bg-zinc-100 rounded-lg outline outline-1 outline-offset-[-1px] outline-stone-300 text-zinc-900 text-sm font-semibold cursor-pointer appearance-none"
+          >
+            {rwList.map((item) => (
+              <option key={item.rw} value={item.rw}>
+                RW {item.rw}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-neutral-600" />
+        </div>
+      </div>
     ) : (
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setView("rw")}
-          className="h-10 px-3 flex items-center gap-1 bg-zinc-100 rounded-lg outline outline-1 outline-offset-[-1px] outline-stone-300 text-zinc-900 text-sm font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] cursor-pointer"
-        >
-          RW {selectedRw}
-          <ChevronDown className="size-3 text-neutral-700" />
-        </button>
-        <span className="h-10 px-3 flex items-center gap-1 bg-zinc-100 rounded-lg outline outline-1 outline-offset-[-1px] outline-stone-300 text-zinc-900 text-sm font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif]">
-          RT {selectedRt}
-          <ChevronDown className="size-3 text-neutral-700" />
-        </span>
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative">
+          <select
+            value={selectedRw}
+            aria-label="Pilih RW"
+            onChange={(e) => setSelectedRw(e.target.value)}
+            className="h-10 pl-3 pr-8 bg-zinc-100 rounded-lg outline outline-1 outline-offset-[-1px] outline-stone-300 text-zinc-900 text-sm font-semibold cursor-pointer appearance-none"
+          >
+            {rwList.map((item) => (
+              <option key={item.rw} value={item.rw}>
+                RW {item.rw}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-neutral-600" />
+        </div>
+        <div className="relative">
+          <select
+            value={selectedRt}
+            aria-label="Pilih RT"
+            onChange={(e) => setSelectedRt(e.target.value)}
+            className="h-10 pl-3 pr-8 bg-zinc-100 rounded-lg outline outline-1 outline-offset-[-1px] outline-stone-300 text-zinc-900 text-sm font-bold cursor-pointer appearance-none"
+          >
+            {rtList.map((item) => (
+              <option key={item.rt} value={item.rt}>
+                RT {item.rt}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-neutral-600" />
+        </div>
       </div>
     )
 
@@ -307,20 +355,36 @@ export function DataAnakRtScreen() {
 
       <div className="mx-auto w-full max-w-6xl flex flex-col gap-6 pt-4">
         {/* Header wilayah */}
-        <div className="px-5 sm:px-8 flex items-start justify-between">
+        <div className="px-5 sm:px-8 flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h1 className="text-zinc-900 text-xl sm:text-2xl font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] leading-7 sm:leading-8">
               Kecamatan: {kecamatan}
             </h1>
+            {wilayahConfig?.posyandu && (
+              <span className="text-xs text-neutral-600 font-medium font-['Manrope:Regular',sans-serif]">
+                Posyandu: {wilayahConfig.posyandu}
+              </span>
+            )}
             {headerSubtitle && <div className="pt-2">{headerSubtitle}</div>}
           </div>
 
-          <span className="h-9 px-3 py-1 rounded-full flex items-center gap-2 shrink-0">
-            <span className="size-2.5 rounded-full bg-emerald-800 animate-pulse" />
-            <span className="text-emerald-800 text-[10px] font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
-              LIVE
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => navigate("/nakes/data")}
+              className="h-9 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Atur Data Wilayah Administratif"
+            >
+              <Settings2 className="size-3.5" />
+              <span className="hidden sm:inline">Ubah Wilayah</span>
+            </button>
+            <span className="h-9 px-3 py-1 rounded-full flex items-center gap-2">
+              <span className="size-2.5 rounded-full bg-emerald-800 animate-pulse" />
+              <span className="text-emerald-800 text-[10px] font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] uppercase tracking-wide">
+                LIVE
+              </span>
             </span>
-          </span>
+          </div>
         </div>
 
         {/* Tab level wilayah — switchable */}
@@ -346,9 +410,15 @@ export function DataAnakRtScreen() {
             ))}
           </div>
         </div>
+        {isLoading && (
+          <div className="py-16 px-5 flex flex-col items-center justify-center gap-3 text-neutral-500">
+            <Loader2 className="size-8 text-emerald-800 animate-spin" />
+            <span className="text-sm font-medium">Memuat data anak & wilayah...</span>
+          </div>
+        )}
 
         {/* KECAMATAN VIEW — list semua RW */}
-        {view === "kecamatan" && (
+        {!isLoading && view === "kecamatan" && (
           <div className="px-5 sm:px-8 flex flex-col gap-3">
             {rwList.map((item) => (
               <button
@@ -377,7 +447,7 @@ export function DataAnakRtScreen() {
         )}
 
         {/* RW VIEW — list semua RT dalam RW terpilih */}
-        {view === "rw" && (
+        {!isLoading && view === "rw" && (
           <div className="px-5 sm:px-8 flex flex-col gap-3">
             {rtList.map((item) => (
               <button
@@ -406,7 +476,7 @@ export function DataAnakRtScreen() {
         )}
 
         {/* RT VIEW — list anak (search, filter, table/cards) */}
-        {view === "rt" && (
+        {!isLoading && view === "rt" && (
           <>
             <div className="px-5 sm:px-8 flex flex-col gap-3">
               <div className="relative max-w-xl">
@@ -437,12 +507,36 @@ export function DataAnakRtScreen() {
 
             <div className="px-5 sm:px-8">
               {visibleList.length === 0 && (
-                <div className="py-10 flex flex-col items-center gap-2 text-center">
-                  <AlertTriangle className="size-6 text-neutral-400" />
-                  <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
-                    Tidak ada data yang cocok.
-                  </span>
-                </div>
+                searchQuery || filter !== "semua" ? (
+                  <div className="py-10 flex flex-col items-center gap-2 text-center">
+                    <AlertTriangle className="size-6 text-neutral-400" />
+                    <span className="text-sm text-neutral-500 font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                      Tidak ada data yang cocok dengan pencarian atau filter.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="py-12 px-4 bg-white rounded-2xl border border-dashed border-stone-200 flex flex-col items-center gap-3 text-center">
+                    <div className="size-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-700">
+                      <MapPin className="size-6" />
+                    </div>
+                    <div className="flex flex-col gap-1 max-w-sm">
+                      <span className="text-zinc-900 font-semibold text-base">
+                        Belum Ada Data Anak di RT {selectedRt} RW {selectedRw}
+                      </span>
+                      <span className="text-xs text-neutral-500 font-normal">
+                        Tambahkan anak baru di wilayah ini atau pilih RT / RW lainnya.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/nakes/input")}
+                      className="mt-2 h-10 px-4 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <Plus className="size-3.5" />
+                      Input Data Anak
+                    </button>
+                  </div>
+                )
               )}
 
               {visibleList.length > 0 && (

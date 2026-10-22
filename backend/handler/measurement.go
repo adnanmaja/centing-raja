@@ -98,6 +98,20 @@ func NewMeasurementHandler(measurementService *service.MeasurementService) *Meas
 	}
 }
 
+// CreateMeasurement godoc
+// @Summary Create child measurement (Nakes only)
+// @Description Record a new child growth measurement by healthcare worker
+// @Tags Measurements
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body CreateMeasurementRequest true "Create Measurement Payload"
+// @Success 201 {object} MeasurementResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/measurements [post]
 func (h *MeasurementHandler) CreateMeasurement(c *gin.Context) {
 	var req CreateMeasurementRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -149,9 +163,57 @@ func (h *MeasurementHandler) CreateMeasurement(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, toMeasurementResponse(measurement))
-
 }
 
+// CreateMeasurementByKader godoc
+// @Summary Create child measurement (Kader only)
+// @Description Record a new child growth measurement by Posyandu cadre
+// @Tags Measurements
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body CreateMeasurementRequest true "Create Measurement Payload"
+// @Success 201 {object} MeasurementResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /kader/measurements [post]
+func (h *MeasurementHandler) CreateMeasurementByKader(c *gin.Context) {
+	h.CreateMeasurement(c)
+}
+
+// CreateMeasurementByParent godoc
+// @Summary Create child measurement (Parent only)
+// @Description Record a new child growth measurement by parent/guardian
+// @Tags Measurements
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body CreateMeasurementRequest true "Create Measurement Payload"
+// @Success 201 {object} MeasurementResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /ortu/measurements [post]
+func (h *MeasurementHandler) CreateMeasurementByParent(c *gin.Context) {
+	h.CreateMeasurement(c)
+}
+
+// GetMeasurementByID godoc
+// @Summary Get measurement by ID (Nakes only)
+// @Description Retrieve single measurement record details by ID
+// @Tags Measurements
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Measurement ID (UUID)"
+// @Success 200 {object} MeasurementResponse
+// @Failure 400 {object} ErrorResponse "Invalid measurement ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/measurements/{id} [get]
 func (h *MeasurementHandler) GetMeasurementByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -167,9 +229,22 @@ func (h *MeasurementHandler) GetMeasurementByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, toMeasurementResponse(measurement))
-
 }
 
+// GetMeasurements godoc
+// @Summary Get all measurements (Nakes only)
+// @Description Retrieve paginated list of all measurements across all children
+// @Tags Measurements
+// @Security BearerAuth
+// @Produce json
+// @Param limit query int false "Limit (default 100)"
+// @Param offset query int false "Offset (default 0)"
+// @Success 200 {array} MeasurementResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/measurements [get]
 func (h *MeasurementHandler) GetMeasurements(c *gin.Context) {
 	var req ListMeasurementsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -215,6 +290,37 @@ func (h *MeasurementHandler) GetMeasurements(c *gin.Context) {
 	c.JSON(http.StatusOK, toMeasurementsResponse(measurements))
 }
 
+// GetMeasurementsByKader godoc
+// @Summary Get measurements recorded by kader (Kader only)
+// @Description Retrieve measurements recorded by the authenticated Posyandu cadre
+// @Tags Measurements
+// @Security BearerAuth
+// @Produce json
+// @Param limit query int false "Limit (default 100)"
+// @Param offset query int false "Offset (default 0)"
+// @Success 200 {array} MeasurementResponse
+// @Failure 400 {object} ErrorResponse "Validation error"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /kader/measurements [get]
+func (h *MeasurementHandler) GetMeasurementsByKader(c *gin.Context) {
+	h.GetMeasurements(c)
+}
+
+// ListMeasurementsByChildID godoc
+// @Summary List measurements by child ID (Nakes only)
+// @Description Retrieve measurement history for a child by healthcare worker
+// @Tags Measurements
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Child ID (UUID)"
+// @Success 200 {array} MeasurementResponse
+// @Failure 400 {object} ErrorResponse "Invalid child ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/children/{id}/measurements [get]
 func (h *MeasurementHandler) ListMeasurementsByChildID(c *gin.Context) {
 	idStr := c.Param("id")
 	childID, err := uuid.Parse(idStr)
@@ -230,9 +336,57 @@ func (h *MeasurementHandler) ListMeasurementsByChildID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, toMeasurementsResponse(measurements))
-
 }
 
+// ListMeasurementsByChildIDByKader godoc
+// @Summary List measurements by child ID (Kader only)
+// @Description Retrieve measurement history for a child by Posyandu cadre
+// @Tags Measurements
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Child ID (UUID)"
+// @Success 200 {array} MeasurementResponse
+// @Failure 400 {object} ErrorResponse "Invalid child ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /kader/children/{id}/measurements [get]
+func (h *MeasurementHandler) ListMeasurementsByChildIDByKader(c *gin.Context) {
+	h.ListMeasurementsByChildID(c)
+}
+
+// ListMeasurementsByChildIDByParent godoc
+// @Summary List measurements by child ID (Parent only)
+// @Description Retrieve measurement history for a child by parent/guardian
+// @Tags Measurements
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Child ID (UUID)"
+// @Success 200 {array} MeasurementResponse
+// @Failure 400 {object} ErrorResponse "Invalid child ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /ortu/children/{id}/measurements [get]
+func (h *MeasurementHandler) ListMeasurementsByChildIDByParent(c *gin.Context) {
+	h.ListMeasurementsByChildID(c)
+}
+
+// UpdateMeasurement godoc
+// @Summary Update child measurement (Nakes only)
+// @Description Update an existing measurement record
+// @Tags Measurements
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Measurement ID (UUID)"
+// @Param request body UpdateMeasurementRequest true "Update Measurement Payload"
+// @Success 200 {object} MeasurementResponse
+// @Failure 400 {object} ErrorResponse "Validation error or invalid ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/measurements/{id} [put]
 func (h *MeasurementHandler) UpdateMeasurement(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -263,6 +417,19 @@ func (h *MeasurementHandler) UpdateMeasurement(c *gin.Context) {
 	c.JSON(http.StatusOK, toMeasurementResponse(measurement))
 }
 
+// DeleteMeasurement godoc
+// @Summary Delete child measurement (Nakes only)
+// @Description Delete a measurement record by ID
+// @Tags Measurements
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Measurement ID (UUID)"
+// @Success 200 {object} MessageResponse
+// @Failure 400 {object} ErrorResponse "Invalid measurement ID"
+// @Failure 401 {object} ErrorResponse "Unauthorized"
+// @Failure 403 {object} ErrorResponse "Forbidden: insufficient permissions"
+// @Failure 500 {object} ErrorResponse "Internal server error"
+// @Router /nakes/measurements/{id} [delete]
 func (h *MeasurementHandler) DeleteMeasurement(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)

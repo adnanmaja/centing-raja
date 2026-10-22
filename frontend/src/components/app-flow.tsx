@@ -71,25 +71,29 @@ import { TugasBaruScreen } from "../features/nakes/tugas-baru-screen"
 import { MateriBaruScreen } from "../features/nakes/materi-baru-screen"
 import { KuisBaruScreen } from "../features/nakes/kuis-baru-screen"
 
-function SplashGate() {
+function SplashGateFallback() {
   const navigate = useNavigate()
-  const { isAuthenticated, user } = useAuth()
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      navigate(getRoleDashboardPath(user.role), { replace: true })
-      return
-    }
-
     const timer = window.setTimeout(
       () => navigate("/welcome-pages", { replace: true }),
       1000,
     )
 
     return () => window.clearTimeout(timer)
-  }, [navigate, isAuthenticated, user])
+  }, [navigate])
 
   return <Loading />
+}
+
+function SplashGate() {
+  const { isAuthenticated, user } = useAuth()
+
+  if (isAuthenticated && user) {
+    return <Navigate to={getRoleDashboardPath(user.role)} replace />
+  }
+
+  return <SplashGateFallback />
 }
 
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
@@ -165,6 +169,23 @@ function OtpRoute() {
       onBack={() => navigate(state.isRegistration ? "/auth/register" : "/auth/login")}
       onVerified={(user: UserProfile) => {
         navigate(getRoleDashboardPath(user.role), { replace: true })
+      }}
+    />
+  )
+}
+
+function AuthSuksesRoute() {
+  const navigate = useNavigate()
+  const { isAuthenticated, user } = useAuth()
+
+  return (
+    <DaftarBerhasil
+      onContinue={() => {
+        if (isAuthenticated && user) {
+          navigate(getRoleDashboardPath(user.role), { replace: true })
+          return
+        }
+        navigate("/auth/login")
       }}
     />
   )
@@ -366,24 +387,7 @@ function Flow() {
         }
       />
       <Route path="/auth/otp" element={<OtpRoute />} />
-      <Route
-        path="/auth/sukses"
-        element={
-          <DaftarBerhasil
-            onContinue={() => {
-              const savedUser = localStorage.getItem("centing_user")
-              if (savedUser) {
-                try {
-                  const u = JSON.parse(savedUser)
-                  navigate(getRoleDashboardPath(u.role), { replace: true })
-                  return
-                } catch {}
-              }
-              navigate("/auth/login")
-            }}
-          />
-        }
-      />
+      <Route path="/auth/sukses" element={<AuthSuksesRoute />} />
       {/* Orang Tua Routes */}
       <Route
         path="/orang-tua"
@@ -447,9 +451,9 @@ function Flow() {
         element={
           <ProtectedRoute allowedRoles={["orang_tua"]}>
             <InputDataAnak
-              onSaved={() => {
+              onSaved={(child) => {
                 setParentChildRegistered(true)
-                navigate("/orang-tua/input-anak/berhasil")
+                navigate("/orang-tua/input-anak/berhasil", { state: { child } })
               }}
               onHome={() => navigate("/orang-tua")}
               onMaterial={() => navigate("/orang-tua/materi")}
@@ -464,10 +468,10 @@ function Flow() {
           <ProtectedRoute allowedRoles={["orang_tua"]}>
             <DataAnakBerhasilDisimpan
               child
-              onContinue={() => navigate("/orang-tua/input-pengukuran")}
+              onContinue={() => navigate("/orang-tua/input-pengukuran", { state: location.state })}
               onHome={() => navigate("/orang-tua")}
               onMaterial={() => navigate("/orang-tua/materi")}
-              onInput={() => navigate("/orang-tua/input-pengukuran")}
+              onInput={() => navigate("/orang-tua/input-pengukuran", { state: location.state })}
             />
           </ProtectedRoute>
         }

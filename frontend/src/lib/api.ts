@@ -1,3 +1,5 @@
+import { getRoleFromToken } from "./auth-utils";
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -142,6 +144,24 @@ export interface CreateQuizSubmissionPayload {
   }>;
 }
 
+export interface Wilayah {
+  id: string;
+  user_id: string;
+  kecamatan: string;
+  posyandu: string;
+  jumlah_rw: number;
+  jumlah_rt: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SaveWilayahPayload {
+  kecamatan: string;
+  posyandu: string;
+  jumlah_rw: number;
+  jumlah_rt: number;
+}
+
 export interface NotificationItem {
   id: string;
   user_id: string;
@@ -228,16 +248,8 @@ export async function createParentChild(payload: CreateChildPayload): Promise<Ch
 }
 
 export async function createChild(payload: CreateChildPayload): Promise<Child> {
-  const userJson = localStorage.getItem("centing_user");
-  let role = "orang_tua";
-  if (userJson) {
-    try {
-      const user = JSON.parse(userJson);
-      role = user.role || role;
-    } catch {
-      // fallback
-    }
-  }
+  const token = localStorage.getItem("centing_token");
+  const role = getRoleFromToken(token) || "orang_tua";
   if (role === "tenaga_kesehatan") {
     return createNakesChild(payload);
   }
@@ -275,17 +287,10 @@ export async function getChildById(id: string): Promise<Child> {
 }
 
 function getRolePrefix(): string {
-  const userJson = localStorage.getItem("centing_user");
-  if (userJson) {
-    try {
-      const user = JSON.parse(userJson);
-      if (user.role === "tenaga_kesehatan") return "nakes";
-      if (user.role === "kader") return "kader";
-      if (user.role === "orang_tua") return "ortu";
-    } catch {
-      // fallback
-    }
-  }
+  const token = localStorage.getItem("centing_token");
+  const role = getRoleFromToken(token);
+  if (role === "tenaga_kesehatan") return "nakes";
+  if (role === "kader") return "kader";
   return "ortu";
 }
 
@@ -495,6 +500,19 @@ export async function createNotification(
 export async function deleteNotification(id: string): Promise<MessageResponse> {
   return apiClient<MessageResponse>(`/nakes/notifications/${id}`, {
     method: "DELETE",
+  });
+}
+
+export async function getNakesWilayah(): Promise<Wilayah> {
+  return apiClient<Wilayah>("/nakes/wilayah", {
+    method: "GET",
+  });
+}
+
+export async function saveNakesWilayah(payload: SaveWilayahPayload): Promise<Wilayah> {
+  return apiClient<Wilayah>("/nakes/wilayah", {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 

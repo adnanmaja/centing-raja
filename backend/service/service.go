@@ -15,6 +15,7 @@ type Services struct {
 	Quiz              *QuizService
 	Storage           *StorageService
 	WhatsApp          *WhatsAppService
+	Wilayah           *WilayahService
 }
 
 func NewService(queries *db.Queries, jwtSecret []byte, waSender *WhatsAppService) *Services {
@@ -32,5 +33,6 @@ func NewService(queries *db.Queries, jwtSecret []byte, waSender *WhatsAppService
 		Quiz:              NewQuizService(queries),
 		Storage:           NewStorageService(context.Background()),
 		WhatsApp:          waSender,
+		Wilayah:           NewWilayahService(queries),
 	}
 }

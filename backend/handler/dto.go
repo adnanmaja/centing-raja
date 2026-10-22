@@ -15,3 +15,10 @@ type MessageResponse struct {
 type StatusResponse struct {
 	Status string `json:"status" example:"aman"`
 }
+
+// UploadAvatarResponse represents avatar upload response body
+type UploadAvatarResponse struct {
+	Message   string `json:"message" example:"Avatar uploaded successfully"`
+	AvatarURL string `json:"avatar_url" example:"https://storage.googleapis.com/..."`
+	User      User   `json:"user"`
+}

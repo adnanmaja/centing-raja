@@ -1,11 +1,11 @@
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 import { SvgIcon } from "../ui/svg-icon"
 import parentDashboardPaths from "../../assets/icon-parent-dashboard"
 import parentNotificationPaths from "../../assets/icon-parent-notification"
 import { ParentNotification } from "./parent-notification"
 import { useAuth } from "../../context/auth-context"
-
+import { getNotifications } from "../../lib/api"
 export function ParentInputHeader({
   logo,
   title,
@@ -16,10 +16,22 @@ export function ParentInputHeader({
   onBack?: () => void
 }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  const [hasUnread, setHasUnread] = useState(false)
   const [imgError, setImgError] = useState(false)
   const { user } = useAuth()
   const profilePic = !imgError ? user?.avatar_url : null
 
+  const checkUnread = useCallback(() => {
+    getNotifications()
+      .then((items) => {
+        setHasUnread(Array.isArray(items) && items.some((item) => !item.is_read))
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    checkUnread()
+  }, [checkUnread])
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-black/[0.03] bg-white/95 backdrop-blur-xl">
@@ -51,7 +63,9 @@ export function ParentInputHeader({
                 viewBox="0 0 16 20"
                 className="size-5"
               />
-              <span className="absolute right-0 top-0 size-2 rounded-full bg-[#e24c4b]" />
+{hasUnread && (
+  <span className="absolute right-0 top-0 size-2 rounded-full bg-[#e24c4b]" />
+)}
             </button>
             {profilePic ? (
               <img
@@ -70,7 +84,12 @@ export function ParentInputHeader({
       </header>
 
       {isNotificationOpen && (
-        <ParentNotification onClose={() => setIsNotificationOpen(false)} />
+        <ParentNotification
+          onClose={() => {
+            setIsNotificationOpen(false)
+            checkUnread()
+          }}
+        />
       )}
     </>
   )

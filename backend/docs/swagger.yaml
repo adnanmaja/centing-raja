@@ -1,93 +1,5 @@
 basePath: /
 definitions:
-  db.Child:
-    properties:
-      birthDate:
-        type: string
-      createdAt:
-        type: string
-      fullName:
-        type: string
-      gender:
-        type: string
-      homeAddress:
-        type: string
-      id:
-        type: string
-      nik:
-        type: string
-      parentID:
-        type: string
-      updatedAt:
-        type: string
-    type: object
-  db.EducationMaterial:
-    properties:
-      createdAt:
-        type: string
-      creatorID:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      title:
-        type: string
-      updatedAt:
-        type: string
-      videoUrl:
-        type: string
-    type: object
-  db.Measurement:
-    properties:
-      age:
-        type: number
-      childrenID:
-        type: string
-      headCircumference:
-        type: number
-      height:
-        type: number
-      id:
-        type: string
-      measuredAt:
-        type: string
-      measurerID:
-        type: string
-      measurerRole:
-        $ref: '#/definitions/db.UserRole'
-      stuntingStatus:
-        $ref: '#/definitions/db.NullStuntingStatus'
-      upperArmCircumference:
-        type: number
-      weight:
-        type: number
-      zscore:
-        type: number
-    type: object
-  db.Notification:
-    properties:
-      createdAt:
-        type: string
-      id:
-        type: string
-      isRead:
-        type: boolean
-      message:
-        type: string
-      title:
-        type: string
-      userID:
-        type: string
-    type: object
-  db.NullStuntingStatus:
-    properties:
-      stuntingStatus:
-        $ref: '#/definitions/db.StuntingStatus'
-      valid:
-        description: Valid is true if StuntingStatus is not NULL
-        type: boolean
-    type: object
   db.QuestionType:
     enum:
     - multiple_choice
@@ -96,85 +8,33 @@ definitions:
     x-enum-varnames:
     - QuestionTypeMultipleChoice
     - QuestionTypeTrueFalse
-  db.Quiz:
-    properties:
-      createdAt:
-        type: string
-      creatorID:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      title:
-        type: string
-      updatedAt:
-        type: string
-    type: object
-  db.QuizQuestion:
-    properties:
-      correctAns:
-        type: string
-      id:
-        type: string
-      options:
-        items:
-          type: integer
-        type: array
-      questionText:
-        type: string
-      questionType:
-        $ref: '#/definitions/db.QuestionType'
-      quizID:
-        type: string
-    type: object
-  db.QuizSubmission:
-    properties:
-      answers:
-        items:
-          type: integer
-        type: array
-      id:
-        type: string
-      kaderID:
-        type: string
-      quizID:
-        type: string
-      score:
-        type: number
-      submittedAt:
-        type: string
-    type: object
-  db.StuntingStatus:
-    enum:
-    - severely_stunted
-    - stunted
-    - normal
-    - tall
-    type: string
-    x-enum-varnames:
-    - StuntingStatusSeverelyStunted
-    - StuntingStatusStunted
-    - StuntingStatusNormal
-    - StuntingStatusTall
-  db.UserRole:
-    enum:
-    - tenaga_kesehatan
-    - kader
-    - orang_tua
-    - admin
-    type: string
-    x-enum-varnames:
-    - UserRoleTenagaKesehatan
-    - UserRoleKader
-    - UserRoleOrangTua
-    - UserRoleAdmin
   handler.AuthResponse:
     properties:
       token:
         type: string
       user:
         $ref: '#/definitions/handler.User'
+    type: object
+  handler.ChildResponse:
+    properties:
+      birth_date:
+        type: string
+      created_at:
+        type: string
+      full_name:
+        type: string
+      gender:
+        type: string
+      home_address:
+        type: string
+      id:
+        type: string
+      nik:
+        type: string
+      parent_id:
+        type: string
+      updated_at:
+        type: string
     type: object
   handler.CreateChildrenRequest:
     properties:
@@ -241,9 +101,7 @@ definitions:
       correct_ans:
         type: string
       options:
-        items:
-          type: integer
-        type: array
+        type: object
       question_text:
         type: string
       question_type:
@@ -265,13 +123,28 @@ definitions:
   handler.CreateQuizSubmissionRequest:
     properties:
       answers:
-        items:
-          type: integer
-        type: array
+        type: object
       score:
         type: number
     required:
     - answers
+    type: object
+  handler.EducationMaterialResponse:
+    properties:
+      created_at:
+        type: string
+      creator_id:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      video_url:
+        type: string
     type: object
   handler.ErrorResponse:
     properties:
@@ -279,15 +152,104 @@ definitions:
         example: error message
         type: string
     type: object
+  handler.MeasurementResponse:
+    properties:
+      age:
+        type: number
+      children_id:
+        type: string
+      head_circumference:
+        type: number
+      height:
+        type: number
+      id:
+        type: string
+      measured_at:
+        type: string
+      measurer_id:
+        type: string
+      measurer_role:
+        type: string
+      stunting_status:
+        type: string
+      upper_arm_circumference:
+        type: number
+      weight:
+        type: number
+      z_score:
+        type: number
+    type: object
   handler.MessageResponse:
     properties:
       message:
         example: operation successful
         type: string
     type: object
+  handler.NotificationResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      is_read:
+        type: boolean
+      message:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: string
+    type: object
+  handler.QuizQuestionResponse:
+    properties:
+      correct_ans:
+        type: string
+      id:
+        type: string
+      options:
+        type: object
+      question_text:
+        type: string
+      question_type:
+        type: string
+      quiz_id:
+        type: string
+    type: object
+  handler.QuizResponse:
+    properties:
+      created_at:
+        type: string
+      creator_id:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  handler.QuizSubmissionResponse:
+    properties:
+      answers:
+        type: object
+      id:
+        type: string
+      kader_id:
+        type: string
+      quiz_id:
+        type: string
+      score:
+        type: number
+      submitted_at:
+        type: string
+    type: object
   handler.RegisterRequest:
     properties:
       name:
+        type: string
+      nik:
         type: string
       phone_number:
         type: string
@@ -359,14 +321,26 @@ definitions:
     - height
     - weight
     type: object
+  handler.UpdateProfileRequest:
+    properties:
+      is_notification_enabled:
+        type: boolean
+      name:
+        type: string
+      nik:
+        type: string
+      phone_number:
+        type: string
+    required:
+    - name
+    - phone_number
+    type: object
   handler.UpdateQuizQuestionRequest:
     properties:
       correct_ans:
         type: string
       options:
-        items:
-          type: integer
-        type: array
+        type: object
       question_text:
         type: string
       question_type:
@@ -385,11 +359,28 @@ definitions:
     required:
     - title
     type: object
+  handler.UploadAvatarResponse:
+    properties:
+      avatar_url:
+        example: https://storage.googleapis.com/...
+        type: string
+      message:
+        example: Avatar uploaded successfully
+        type: string
+      user:
+        $ref: '#/definitions/handler.User'
+    type: object
   handler.User:
     properties:
+      avatar_url:
+        type: string
       id:
         type: string
+      is_notification_enabled:
+        type: boolean
       name:
+        type: string
+      nik:
         type: string
       phone_number:
         type: string
@@ -427,7 +418,7 @@ paths:
       - Health
   /education-materials:
     get:
-      description: Retrieve paginated list of education materials
+      description: Retrieve paginated list of educational materials
       parameters:
       - description: Limit (default 10)
         in: query
@@ -444,7 +435,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.EducationMaterial'
+              $ref: '#/definitions/handler.EducationMaterialResponse'
             type: array
         "400":
           description: Validation error
@@ -465,7 +456,7 @@ paths:
       - Education Materials
   /education-materials/{id}:
     get:
-      description: Retrieve details of an education material by ID
+      description: Retrieve single education material details by ID
       parameters:
       - description: Education Material ID (UUID)
         in: path
@@ -478,9 +469,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.EducationMaterial'
+            $ref: '#/definitions/handler.EducationMaterialResponse'
         "400":
-          description: Invalid ID format
+          description: Invalid education material ID
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
         "401":
@@ -496,9 +487,18 @@ paths:
       summary: Get education material by ID
       tags:
       - Education Materials
-  /kader/submissions:
+  /kader/children:
     get:
-      description: Retrieve all quiz submissions submitted by the authenticated kader
+      description: Retrieve paginated list of children for Posyandu cadres
+      parameters:
+      - description: Limit (default 10)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -506,7 +506,160 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.QuizSubmission'
+              $ref: '#/definitions/handler.ChildResponse'
+            type: array
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: 'Forbidden: insufficient permissions'
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List children (Kader only)
+      tags:
+      - Children
+  /kader/children/{id}/measurements:
+    get:
+      description: Retrieve measurement history for a child by Posyandu cadre
+      parameters:
+      - description: Child ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.MeasurementResponse'
+            type: array
+        "400":
+          description: Invalid child ID
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: 'Forbidden: insufficient permissions'
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List measurements by child ID (Kader only)
+      tags:
+      - Measurements
+  /kader/measurements:
+    get:
+      description: Retrieve measurements recorded by the authenticated Posyandu cadre
+      parameters:
+      - description: Limit (default 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.MeasurementResponse'
+            type: array
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: 'Forbidden: insufficient permissions'
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get measurements recorded by kader (Kader only)
+      tags:
+      - Measurements
+    post:
+      consumes:
+      - application/json
+      description: Record a new child growth measurement by Posyandu cadre
+      parameters:
+      - description: Create Measurement Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateMeasurementRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.MeasurementResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: 'Forbidden: insufficient permissions'
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create child measurement (Kader only)
+      tags:
+      - Measurements
+  /kader/submissions:
+    get:
+      description: Retrieve submissions submitted by the authenticated Posyandu cadre
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.QuizSubmissionResponse'
             type: array
         "401":
           description: Unauthorized
@@ -588,7 +741,7 @@ paths:
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
         "500":
-          description: Internal server error
+          description: Failed to verify OTP
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
       summary: Verify OTP and login
@@ -596,7 +749,7 @@ paths:
       - Auth
   /nakes/children:
     get:
-      description: Retrieve paginated list of all children
+      description: Retrieve paginated list of all children across the system
       parameters:
       - description: Limit (default 10)
         in: query
@@ -613,7 +766,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.Child'
+              $ref: '#/definitions/handler.ChildResponse'
             type: array
         "400":
           description: Validation error
@@ -639,7 +792,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new child profile
+      description: Create a new child profile by healthcare worker
       parameters:
       - description: Create Child Payload
         in: body
@@ -653,7 +806,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/db.Child'
+            $ref: '#/definitions/handler.ChildResponse'
         "400":
           description: Validation error
           schema:
@@ -726,7 +879,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.Child'
+            $ref: '#/definitions/handler.ChildResponse'
         "400":
           description: Invalid child ID
           schema:
@@ -770,7 +923,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.Child'
+            $ref: '#/definitions/handler.ChildResponse'
         "400":
           description: Validation error or invalid ID
           schema:
@@ -794,7 +947,7 @@ paths:
       - Children
   /nakes/children/{id}/measurements:
     get:
-      description: Retrieve all growth measurements recorded for a specific child
+      description: Retrieve measurement history for a child by healthcare worker
       parameters:
       - description: Child ID (UUID)
         in: path
@@ -808,7 +961,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.Measurement'
+              $ref: '#/definitions/handler.MeasurementResponse'
             type: array
         "400":
           description: Invalid child ID
@@ -818,21 +971,25 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: 'Forbidden: insufficient permissions'
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: List measurements for a child
+      summary: List measurements by child ID (Nakes only)
       tags:
       - Measurements
   /nakes/education-materials:
     post:
       consumes:
       - application/json
-      description: Create a new education material with title, description, and optional
-        video URL
+      description: Create a new stunting education material with title, description,
+        and video URL
       parameters:
       - description: Create Education Material Payload
         in: body
@@ -846,7 +1003,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/db.EducationMaterial'
+            $ref: '#/definitions/handler.EducationMaterialResponse'
         "400":
           description: Validation error
           schema:
@@ -870,7 +1027,7 @@ paths:
       - Education Materials
   /nakes/education-materials/{id}:
     delete:
-      description: Delete an education material by ID
+      description: Delete an educational material record by ID
       parameters:
       - description: Education Material ID (UUID)
         in: path
@@ -885,7 +1042,7 @@ paths:
           schema:
             $ref: '#/definitions/handler.MessageResponse'
         "400":
-          description: Invalid ID
+          description: Invalid education material ID
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
         "401":
@@ -908,7 +1065,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update an existing education material
+      description: Update details of an existing educational material record
       parameters:
       - description: Education Material ID (UUID)
         in: path
@@ -927,7 +1084,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.EducationMaterial'
+            $ref: '#/definitions/handler.EducationMaterialResponse'
         "400":
           description: Validation error or invalid ID
           schema:
@@ -951,8 +1108,16 @@ paths:
       - Education Materials
   /nakes/measurements:
     get:
-      description: Retrieve all measurements recorded by authenticated healthcare
-        worker
+      description: Retrieve paginated list of all measurements across all children
+      parameters:
+      - description: Limit (default 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -960,44 +1125,8 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.Measurement'
+              $ref: '#/definitions/handler.MeasurementResponse'
             type: array
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-        "403":
-          description: 'Forbidden: insufficient permissions'
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handler.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get measurements by measurer (Nakes only)
-      tags:
-      - Measurements
-    post:
-      consumes:
-      - application/json
-      description: Record a new child growth measurement including weight, height,
-        head and arm circumference
-      parameters:
-      - description: Create Measurement Payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handler.CreateMeasurementRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/db.Measurement'
         "400":
           description: Validation error
           schema:
@@ -1016,12 +1145,51 @@ paths:
             $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Create measurement (Nakes only)
+      summary: Get all measurements (Nakes only)
+      tags:
+      - Measurements
+    post:
+      consumes:
+      - application/json
+      description: Record a new child growth measurement by healthcare worker
+      parameters:
+      - description: Create Measurement Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateMeasurementRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.MeasurementResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: 'Forbidden: insufficient permissions'
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create child measurement (Nakes only)
       tags:
       - Measurements
   /nakes/measurements/{id}:
     delete:
-      description: Delete a growth measurement record by ID
+      description: Delete a measurement record by ID
       parameters:
       - description: Measurement ID (UUID)
         in: path
@@ -1053,11 +1221,11 @@ paths:
             $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Delete measurement (Nakes only)
+      summary: Delete child measurement (Nakes only)
       tags:
       - Measurements
     get:
-      description: Retrieve single measurement record by ID
+      description: Retrieve single measurement record details by ID
       parameters:
       - description: Measurement ID (UUID)
         in: path
@@ -1070,7 +1238,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.Measurement'
+            $ref: '#/definitions/handler.MeasurementResponse'
         "400":
           description: Invalid measurement ID
           schema:
@@ -1095,7 +1263,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update an existing growth measurement record
+      description: Update an existing measurement record
       parameters:
       - description: Measurement ID (UUID)
         in: path
@@ -1114,7 +1282,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.Measurement'
+            $ref: '#/definitions/handler.MeasurementResponse'
         "400":
           description: Validation error or invalid ID
           schema:
@@ -1133,14 +1301,14 @@ paths:
             $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Update measurement (Nakes only)
+      summary: Update child measurement (Nakes only)
       tags:
       - Measurements
   /nakes/notifications:
     post:
       consumes:
       - application/json
-      description: Send a notification message to a specific user
+      description: Send a notification alert to a specific user
       parameters:
       - description: Create Notification Payload
         in: body
@@ -1154,7 +1322,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/db.Notification'
+            $ref: '#/definitions/handler.NotificationResponse'
         "400":
           description: Validation error
           schema:
@@ -1178,7 +1346,7 @@ paths:
       - Notifications
   /nakes/notifications/{id}:
     delete:
-      description: Delete a notification by ID
+      description: Delete a notification record by ID
       parameters:
       - description: Notification ID (UUID)
         in: path
@@ -1217,7 +1385,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new educational quiz
+      description: Create a new educational quiz with title and description
       parameters:
       - description: Create Quiz Payload
         in: body
@@ -1231,7 +1399,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/db.Quiz'
+            $ref: '#/definitions/handler.QuizResponse'
         "400":
           description: Validation error
           schema:
@@ -1255,7 +1423,7 @@ paths:
       - Quizzes
   /nakes/quizzes/{id}:
     delete:
-      description: Delete a quiz by ID
+      description: Delete a quiz record by ID
       parameters:
       - description: Quiz ID (UUID)
         in: path
@@ -1293,7 +1461,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update an existing quiz title and description
+      description: Update details of an existing quiz record
       parameters:
       - description: Quiz ID (UUID)
         in: path
@@ -1312,7 +1480,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.Quiz'
+            $ref: '#/definitions/handler.QuizResponse'
         "400":
           description: Validation error or invalid ID
           schema:
@@ -1338,14 +1506,14 @@ paths:
     post:
       consumes:
       - application/json
-      description: Add a question with answer options to a quiz
+      description: Create a new question for a specific quiz
       parameters:
       - description: Quiz ID (UUID)
         in: path
         name: id
         required: true
         type: string
-      - description: Create Question Payload
+      - description: Create Quiz Question Payload
         in: body
         name: request
         required: true
@@ -1357,7 +1525,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/db.QuizQuestion'
+            $ref: '#/definitions/handler.QuizQuestionResponse'
         "400":
           description: Validation error or invalid quiz ID
           schema:
@@ -1381,7 +1549,7 @@ paths:
       - Quizzes
   /nakes/quizzes/{id}/questions/{question_id}:
     delete:
-      description: Delete a question from a quiz
+      description: Delete a question by ID
       parameters:
       - description: Quiz ID (UUID)
         in: path
@@ -1422,7 +1590,7 @@ paths:
       tags:
       - Quizzes
     get:
-      description: Retrieve single quiz question details
+      description: Retrieve single question details by ID
       parameters:
       - description: Quiz ID (UUID)
         in: path
@@ -1440,7 +1608,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.QuizQuestion'
+            $ref: '#/definitions/handler.QuizQuestionResponse'
         "400":
           description: Invalid question ID
           schema:
@@ -1465,7 +1633,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update question text, type, options, or correct answer
+      description: Update details of an existing question
       parameters:
       - description: Quiz ID (UUID)
         in: path
@@ -1477,7 +1645,7 @@ paths:
         name: question_id
         required: true
         type: string
-      - description: Update Question Payload
+      - description: Update Quiz Question Payload
         in: body
         name: request
         required: true
@@ -1489,7 +1657,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.QuizQuestion'
+            $ref: '#/definitions/handler.QuizQuestionResponse'
         "400":
           description: Validation error or invalid ID
           schema:
@@ -1513,7 +1681,7 @@ paths:
       - Quizzes
   /nakes/quizzes/{id}/submissions:
     get:
-      description: List all submissions for a quiz
+      description: Retrieve all submissions for a quiz
       parameters:
       - description: Quiz ID (UUID)
         in: path
@@ -1527,7 +1695,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.QuizSubmission'
+              $ref: '#/definitions/handler.QuizSubmissionResponse'
             type: array
         "400":
           description: Invalid quiz ID
@@ -1547,12 +1715,12 @@ paths:
             $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: List quiz submissions (Nakes only)
+      summary: List quiz submissions by quiz ID (Nakes only)
       tags:
       - Quizzes
   /nakes/quizzes/{id}/submissions/{submission_id}:
     delete:
-      description: Delete a quiz submission by ID
+      description: Delete a quiz submission record by ID
       parameters:
       - description: Quiz ID (UUID)
         in: path
@@ -1593,7 +1761,7 @@ paths:
       tags:
       - Quizzes
     get:
-      description: Retrieve single quiz submission details
+      description: Retrieve single submission details by ID
       parameters:
       - description: Quiz ID (UUID)
         in: path
@@ -1611,7 +1779,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.QuizSubmission'
+            $ref: '#/definitions/handler.QuizSubmissionResponse'
         "400":
           description: Invalid submission ID
           schema:
@@ -1633,9 +1801,18 @@ paths:
       summary: Get quiz submission by ID (Nakes only)
       tags:
       - Quizzes
-  /notifications:
+  /nakes/users:
     get:
-      description: Retrieve all notifications belonging to the authenticated user
+      description: Retrieve paginated list of registered users
+      parameters:
+      - description: Limit (default 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Offset (default 0)
+        in: query
+        name: offset
+        type: integer
       produces:
       - application/json
       responses:
@@ -1643,7 +1820,83 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.Notification'
+              $ref: '#/definitions/handler.User'
+            type: array
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: 'Forbidden: insufficient permissions'
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Failed to list users
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List users (Nakes only)
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with phone number, role, name, and optional NIK
+      parameters:
+      - description: Create User Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.User'
+        "400":
+          description: Validation error or invalid role
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: 'Forbidden: insufficient permissions'
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "409":
+          description: User already exists
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new user (Nakes only)
+      tags:
+      - Users
+  /notifications:
+    get:
+      description: Retrieve all notifications for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handler.NotificationResponse'
             type: array
         "401":
           description: Unauthorized
@@ -1655,7 +1908,7 @@ paths:
             $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: List notifications for current user
+      summary: List user notifications
       tags:
       - Notifications
   /notifications/{id}:
@@ -1673,7 +1926,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.Notification'
+            $ref: '#/definitions/handler.NotificationResponse'
         "400":
           description: Invalid notification ID
           schema:
@@ -1693,7 +1946,7 @@ paths:
       - Notifications
   /notifications/{id}/read:
     patch:
-      description: Update read status of a notification
+      description: Update notification status to read by ID
       parameters:
       - description: Notification ID (UUID)
         in: path
@@ -1734,7 +1987,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.Child'
+              $ref: '#/definitions/handler.ChildResponse'
             type: array
         "401":
           description: Unauthorized
@@ -1753,9 +2006,48 @@ paths:
       summary: Get children by parent (Parent only)
       tags:
       - Children
+    post:
+      consumes:
+      - application/json
+      description: Register a new child profile by parent/guardian
+      parameters:
+      - description: Create Child Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateChildrenRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.ChildResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: 'Forbidden: insufficient permissions'
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create child profile (Parent only)
+      tags:
+      - Children
   /ortu/children/{id}/measurements:
     get:
-      description: Retrieve all growth measurements recorded for a specific child
+      description: Retrieve measurement history for a child by parent/guardian
       parameters:
       - description: Child ID (UUID)
         in: path
@@ -1769,7 +2061,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.Measurement'
+              $ref: '#/definitions/handler.MeasurementResponse'
             type: array
         "400":
           description: Invalid child ID
@@ -1779,13 +2071,57 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: 'Forbidden: insufficient permissions'
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/handler.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: List measurements for a child
+      summary: List measurements by child ID (Parent only)
+      tags:
+      - Measurements
+  /ortu/measurements:
+    post:
+      consumes:
+      - application/json
+      description: Record a new child growth measurement by parent/guardian
+      parameters:
+      - description: Create Measurement Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreateMeasurementRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.MeasurementResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "403":
+          description: 'Forbidden: insufficient permissions'
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create child measurement (Parent only)
       tags:
       - Measurements
   /quizzes:
@@ -1807,7 +2143,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.Quiz'
+              $ref: '#/definitions/handler.QuizResponse'
             type: array
         "400":
           description: Validation error
@@ -1828,7 +2164,7 @@ paths:
       - Quizzes
   /quizzes/{id}:
     get:
-      description: Retrieve quiz details by ID
+      description: Retrieve single quiz details by ID
       parameters:
       - description: Quiz ID (UUID)
         in: path
@@ -1841,7 +2177,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/db.Quiz'
+            $ref: '#/definitions/handler.QuizResponse'
         "400":
           description: Invalid quiz ID
           schema:
@@ -1875,7 +2211,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/db.QuizQuestion'
+              $ref: '#/definitions/handler.QuizQuestionResponse'
             type: array
         "400":
           description: Invalid quiz ID
@@ -1917,7 +2253,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/db.QuizSubmission'
+            $ref: '#/definitions/handler.QuizSubmissionResponse'
         "400":
           description: Validation error or invalid quiz ID
           schema:
@@ -1939,7 +2275,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Register a new user with phone number, role, and full name
+      description: Register a new user with phone number, role, name, and optional
+        NIK
       parameters:
       - description: Register Payload
         in: body
@@ -1969,6 +2306,104 @@ paths:
       summary: Register a new user
       tags:
       - Auth
+  /users/profile:
+    get:
+      description: Retrieve profile of authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.User'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update name, NIK, phone number, and notification preference of
+        authenticated user
+      parameters:
+      - description: Update Profile Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.User'
+        "400":
+          description: Validation error or invalid user ID
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Failed to update profile
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Users
+  /users/profile/avatar:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload an avatar image file (max 5MB) for the authenticated user
+      parameters:
+      - description: Avatar image file (JPEG/PNG, max 5MB)
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.UploadAvatarResponse'
+        "400":
+          description: Invalid user ID, file missing, or file size exceeds limit
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "500":
+          description: Storage service unavailable or failed to upload
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload user avatar
+      tags:
+      - Users
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

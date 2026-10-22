@@ -12,12 +12,16 @@ const measurementSuccessLogoParent = "/logo/logo-centing-raja.png"
 
 export function DataAnakBerhasilDisimpan({
   child,
+  childData,
+  measurementData,
   onContinue,
   onHome,
   onMaterial,
   onInput,
 }: {
   child?: boolean
+  childData?: Child
+  measurementData?: Measurement
   onContinue: () => void
   onHome: () => void
   onMaterial: () => void
@@ -34,8 +38,8 @@ export function DataAnakBerhasilDisimpan({
     child?: Child
     measurement?: Measurement
   }
-  const liveChild = state.child
-  const liveMeasurement = state.measurement
+  const liveChild = childData ?? state.child
+  const liveMeasurement = measurementData ?? state.measurement
   const statusInfo = formatStuntingStatus(liveMeasurement?.stunting_status)
 
   return (

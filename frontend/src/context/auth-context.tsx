@@ -1,66 +1,109 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { UserProfile } from "../lib/api";
+import { getUserProfile } from "../lib/api";
+import { isTokenValid, parseJwt } from "../lib/auth-utils";
 
 export interface AuthContextType {
   user: UserProfile | null;
   token: string | null;
   isAuthenticated: boolean;
   setUser: (user: UserProfile | null) => void;
-  login: (token: string, user: UserProfile) => void;
+  login: (token: string, user?: UserProfile) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_KEY = "centing_token";
-const USER_KEY = "centing_user";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem(TOKEN_KEY);
+    const savedToken = localStorage.getItem(TOKEN_KEY);
+    if (!savedToken || !isTokenValid(savedToken)) {
+      if (savedToken) localStorage.removeItem(TOKEN_KEY);
+      return null;
+    }
+    return savedToken;
   });
 
   const [user, setUser] = useState<UserProfile | null>(() => {
-    const savedUser = localStorage.getItem(USER_KEY);
-    if (!savedUser) return null;
-    try {
-      return JSON.parse(savedUser) as UserProfile;
-    } catch {
-      return null;
-    }
+    const savedToken = localStorage.getItem(TOKEN_KEY);
+    if (!savedToken || !isTokenValid(savedToken)) return null;
+    const claims = parseJwt(savedToken);
+    if (!claims) return null;
+    return {
+      id: claims.user_id,
+      phone_number: claims.phone_number,
+      role: claims.role,
+      name: "",
+    };
   });
 
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem(TOKEN_KEY, token);
-    } else {
-      localStorage.removeItem(TOKEN_KEY);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(USER_KEY);
-    }
-  }, [user]);
-
-  const login = (newToken: string, newUser: UserProfile) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem(TOKEN_KEY, newToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(newUser));
-  };
-
-  const logout = () => {
+  const logout = useCallback(() => {
     setToken(null);
     setUser(null);
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-  };
+    localStorage.removeItem("centing_user");
+  }, []);
 
-  const isAuthenticated = Boolean(token && user);
+  const login = useCallback((newToken: string, newUser?: UserProfile) => {
+    if (!isTokenValid(newToken)) return;
+    localStorage.setItem(TOKEN_KEY, newToken);
+    localStorage.removeItem("centing_user");
+    setToken(newToken);
+    if (newUser) {
+      setUser(newUser);
+    } else {
+      const claims = parseJwt(newToken);
+      if (claims) {
+        setUser({
+          id: claims.user_id,
+          phone_number: claims.phone_number,
+          role: claims.role,
+          name: "",
+        });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (token) {
+      if (!isTokenValid(token)) {
+        logout();
+      } else {
+        localStorage.setItem(TOKEN_KEY, token);
+      }
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  }, [token, logout]);
+
+  useEffect(() => {
+    if (!token || !isTokenValid(token)) return;
+
+    let active = true;
+    getUserProfile()
+      .then((profile) => {
+        if (active && profile) {
+          setUser(profile);
+        }
+      })
+      .catch((err) => {
+        console.warn("[Auth] Failed to sync user profile from token:", err);
+        if (
+          err instanceof Error &&
+          (err.message.includes("401") || err.message.toLowerCase().includes("unauthorized"))
+        ) {
+          logout();
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [token, logout]);
+
+  const isAuthenticated = Boolean(token && isTokenValid(token) && user);
 
   return (
     <AuthContext.Provider

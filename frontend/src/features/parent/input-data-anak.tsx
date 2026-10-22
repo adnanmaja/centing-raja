@@ -4,7 +4,7 @@ import { Check } from "lucide-react"
 import { ParentBottomNav } from "../../components/parent/parent-bottom-nav"
 import { ParentInputHeader } from "../../components/parent/parent-input-header"
 import { SvgIcon } from "../../components/ui/svg-icon"
-import { createChild } from "../../lib/api"
+import { createChild, type Child } from "../../lib/api"
 import childInputPaths from "../../assets/icon-child-input"
 
 const childInputLogo = "/logo/logo-centing-raja.png"
@@ -16,7 +16,7 @@ export function InputDataAnak({
   onMaterial,
   onInput,
 }: {
-  onSaved: () => void
+  onSaved?: (child?: Child) => void
   onHome: () => void
   onMaterial: () => void
   onInput: () => void
@@ -173,14 +173,24 @@ export function InputDataAnak({
                 const fullAddress = `RT ${rt} / RW ${rw}, ${address}`
                 const genderBackend = gender === "Laki-laki" ? "L" : "P"
 
-                await createChild({
+                const created = await createChild({
                   nik,
                   full_name: name,
                   gender: genderBackend,
                   home_address: fullAddress,
                   birth_date,
                 })
-                onSaved()
+                const fallbackChild: Child = {
+                  id: created?.id ?? `temp-${Date.now()}`,
+                  user_id: created?.user_id ?? "",
+                  nik,
+                  full_name: name,
+                  gender: genderBackend,
+                  home_address: fullAddress,
+                  birth_date,
+                  created_at: created?.created_at ?? new Date().toISOString(),
+                }
+                onSaved?.(created ?? fallbackChild)
               } catch (err: unknown) {
                 const msg = err instanceof Error ? err.message : "Gagal menyimpan data anak."
                 setErrorMessage(msg)

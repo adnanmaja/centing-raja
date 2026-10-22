@@ -1,11 +1,11 @@
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 import { SvgIcon } from "../ui/svg-icon"
 import parentNotificationPaths from "../../assets/icon-parent-notification"
 import { KaderNotification } from "./kader-notification"
 import { useAuth } from "../../context/auth-context"
 import { avatarPlaceholder } from "../../lib/avatar-placeholder"
-
+import { getNotifications } from "../../lib/api"
 const kaderProfileLogo = "/logo/logo-centing-raja.png"
 
 export function ProfileHeader({
@@ -18,10 +18,22 @@ export function ProfileHeader({
   onBack?: () => void
 }) {
   const [isNotifOpen, setIsNotifOpen] = useState(false)
+  const [hasUnread, setHasUnread] = useState(false)
   const [imgError, setImgError] = useState(false)
   const { user } = useAuth()
   const profilePic = !imgError && user?.avatar_url ? user.avatar_url : avatarPlaceholder
 
+  const checkUnread = useCallback(() => {
+    getNotifications()
+      .then((items) => {
+        setHasUnread(Array.isArray(items) && items.some((item) => !item.is_read))
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    checkUnread()
+  }, [checkUnread])
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-30 border-b border-black/[0.03] bg-white/90 backdrop-blur-xl">
@@ -51,7 +63,9 @@ export function ProfileHeader({
               aria-label="Notifikasi"
             >
               <SvgIcon path={parentNotificationPaths.p164b49c0} viewBox="0 0 16 20" className="size-5" />
-              <span className="absolute right-0 top-0 size-2 rounded-full bg-[#e24c4b]" />
+{hasUnread && (
+  <span className="absolute right-0 top-0 size-2 rounded-full bg-[#e24c4b]" />
+)}
             </button>
             <img
               src={profilePic}
@@ -63,7 +77,14 @@ export function ProfileHeader({
         </div>
       </header>
 
-      {isNotifOpen && <KaderNotification onClose={() => setIsNotifOpen(false)} />}
+{isNotifOpen && (
+  <KaderNotification
+    onClose={() => {
+      setIsNotifOpen(false)
+      checkUnread()
+    }}
+  />
+)}
     </>
   )
 }

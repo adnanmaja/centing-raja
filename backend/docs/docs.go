@@ -42,7 +42,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve paginated list of education materials",
+                "description": "Retrieve paginated list of educational materials",
                 "produces": [
                     "application/json"
                 ],
@@ -70,7 +70,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.EducationMaterial"
+                                "$ref": "#/definitions/handler.EducationMaterialResponse"
                             }
                         }
                     },
@@ -102,7 +102,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve details of an education material by ID",
+                "description": "Retrieve single education material details by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -123,17 +123,271 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.EducationMaterial"
+                            "$ref": "#/definitions/handler.EducationMaterialResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid ID format",
+                        "description": "Invalid education material ID",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/kader/children": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve paginated list of children for Posyandu cadres",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Children"
+                ],
+                "summary": "List children (Kader only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 10)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.ChildResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/kader/children/{id}/measurements": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve measurement history for a child by Posyandu cadre",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Measurements"
+                ],
+                "summary": "List measurements by child ID (Kader only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Child ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.MeasurementResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid child ID",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/kader/measurements": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve measurements recorded by the authenticated Posyandu cadre",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Measurements"
+                ],
+                "summary": "Get measurements recorded by kader (Kader only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.MeasurementResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Record a new child growth measurement by Posyandu cadre",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Measurements"
+                ],
+                "summary": "Create child measurement (Kader only)",
+                "parameters": [
+                    {
+                        "description": "Create Measurement Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.CreateMeasurementRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handler.MeasurementResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
@@ -154,7 +408,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all quiz submissions submitted by the authenticated kader",
+                "description": "Retrieve submissions submitted by the authenticated Posyandu cadre",
                 "produces": [
                     "application/json"
                 ],
@@ -168,7 +422,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.QuizSubmission"
+                                "$ref": "#/definitions/handler.QuizSubmissionResponse"
                             }
                         }
                     },
@@ -289,7 +543,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Failed to verify OTP",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
@@ -304,7 +558,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve paginated list of all children",
+                "description": "Retrieve paginated list of all children across the system",
                 "produces": [
                     "application/json"
                 ],
@@ -332,7 +586,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.Child"
+                                "$ref": "#/definitions/handler.ChildResponse"
                             }
                         }
                     },
@@ -368,7 +622,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new child profile",
+                "description": "Create a new child profile by healthcare worker",
                 "consumes": [
                     "application/json"
                 ],
@@ -394,7 +648,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/db.Child"
+                            "$ref": "#/definitions/handler.ChildResponse"
                         }
                     },
                     "400": {
@@ -452,7 +706,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.Child"
+                            "$ref": "#/definitions/handler.ChildResponse"
                         }
                     },
                     "400": {
@@ -520,7 +774,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.Child"
+                            "$ref": "#/definitions/handler.ChildResponse"
                         }
                     },
                     "400": {
@@ -613,14 +867,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all growth measurements recorded for a specific child",
+                "description": "Retrieve measurement history for a child by healthcare worker",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Measurements"
                 ],
-                "summary": "List measurements for a child",
+                "summary": "List measurements by child ID (Nakes only)",
                 "parameters": [
                     {
                         "type": "string",
@@ -636,7 +890,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.Measurement"
+                                "$ref": "#/definitions/handler.MeasurementResponse"
                             }
                         }
                     },
@@ -648,6 +902,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
@@ -668,7 +928,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new education material with title, description, and optional video URL",
+                "description": "Create a new stunting education material with title, description, and video URL",
                 "consumes": [
                     "application/json"
                 ],
@@ -694,7 +954,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/db.EducationMaterial"
+                            "$ref": "#/definitions/handler.EducationMaterialResponse"
                         }
                     },
                     "400": {
@@ -731,7 +991,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update an existing education material",
+                "description": "Update details of an existing educational material record",
                 "consumes": [
                     "application/json"
                 ],
@@ -764,7 +1024,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.EducationMaterial"
+                            "$ref": "#/definitions/handler.EducationMaterialResponse"
                         }
                     },
                     "400": {
@@ -799,7 +1059,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete an education material by ID",
+                "description": "Delete an educational material record by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -824,7 +1084,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid ID",
+                        "description": "Invalid education material ID",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
@@ -857,22 +1117,42 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all measurements recorded by authenticated healthcare worker",
+                "description": "Retrieve paginated list of all measurements across all children",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Measurements"
                 ],
-                "summary": "Get measurements by measurer (Nakes only)",
+                "summary": "Get all measurements (Nakes only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.Measurement"
+                                "$ref": "#/definitions/handler.MeasurementResponse"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "401": {
@@ -901,7 +1181,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Record a new child growth measurement including weight, height, head and arm circumference",
+                "description": "Record a new child growth measurement by healthcare worker",
                 "consumes": [
                     "application/json"
                 ],
@@ -911,7 +1191,7 @@ const docTemplate = `{
                 "tags": [
                     "Measurements"
                 ],
-                "summary": "Create measurement (Nakes only)",
+                "summary": "Create child measurement (Nakes only)",
                 "parameters": [
                     {
                         "description": "Create Measurement Payload",
@@ -927,7 +1207,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/db.Measurement"
+                            "$ref": "#/definitions/handler.MeasurementResponse"
                         }
                     },
                     "400": {
@@ -964,7 +1244,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve single measurement record by ID",
+                "description": "Retrieve single measurement record details by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -985,7 +1265,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.Measurement"
+                            "$ref": "#/definitions/handler.MeasurementResponse"
                         }
                     },
                     "400": {
@@ -1020,7 +1300,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update an existing growth measurement record",
+                "description": "Update an existing measurement record",
                 "consumes": [
                     "application/json"
                 ],
@@ -1030,7 +1310,7 @@ const docTemplate = `{
                 "tags": [
                     "Measurements"
                 ],
-                "summary": "Update measurement (Nakes only)",
+                "summary": "Update child measurement (Nakes only)",
                 "parameters": [
                     {
                         "type": "string",
@@ -1053,7 +1333,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.Measurement"
+                            "$ref": "#/definitions/handler.MeasurementResponse"
                         }
                     },
                     "400": {
@@ -1088,14 +1368,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a growth measurement record by ID",
+                "description": "Delete a measurement record by ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Measurements"
                 ],
-                "summary": "Delete measurement (Nakes only)",
+                "summary": "Delete child measurement (Nakes only)",
                 "parameters": [
                     {
                         "type": "string",
@@ -1146,7 +1426,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Send a notification message to a specific user",
+                "description": "Send a notification alert to a specific user",
                 "consumes": [
                     "application/json"
                 ],
@@ -1172,7 +1452,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/db.Notification"
+                            "$ref": "#/definitions/handler.NotificationResponse"
                         }
                     },
                     "400": {
@@ -1209,7 +1489,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a notification by ID",
+                "description": "Delete a notification record by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -1267,7 +1547,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a new educational quiz",
+                "description": "Create a new educational quiz with title and description",
                 "consumes": [
                     "application/json"
                 ],
@@ -1293,7 +1573,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/db.Quiz"
+                            "$ref": "#/definitions/handler.QuizResponse"
                         }
                     },
                     "400": {
@@ -1330,7 +1610,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update an existing quiz title and description",
+                "description": "Update details of an existing quiz record",
                 "consumes": [
                     "application/json"
                 ],
@@ -1363,7 +1643,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.Quiz"
+                            "$ref": "#/definitions/handler.QuizResponse"
                         }
                     },
                     "400": {
@@ -1398,7 +1678,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a quiz by ID",
+                "description": "Delete a quiz record by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -1456,7 +1736,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Add a question with answer options to a quiz",
+                "description": "Create a new question for a specific quiz",
                 "consumes": [
                     "application/json"
                 ],
@@ -1476,7 +1756,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Create Question Payload",
+                        "description": "Create Quiz Question Payload",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -1489,7 +1769,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/db.QuizQuestion"
+                            "$ref": "#/definitions/handler.QuizQuestionResponse"
                         }
                     },
                     "400": {
@@ -1526,7 +1806,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve single quiz question details",
+                "description": "Retrieve single question details by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -1554,7 +1834,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.QuizQuestion"
+                            "$ref": "#/definitions/handler.QuizQuestionResponse"
                         }
                     },
                     "400": {
@@ -1589,7 +1869,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update question text, type, options, or correct answer",
+                "description": "Update details of an existing question",
                 "consumes": [
                     "application/json"
                 ],
@@ -1616,7 +1896,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Update Question Payload",
+                        "description": "Update Quiz Question Payload",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -1629,7 +1909,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.QuizQuestion"
+                            "$ref": "#/definitions/handler.QuizQuestionResponse"
                         }
                     },
                     "400": {
@@ -1664,7 +1944,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a question from a quiz",
+                "description": "Delete a question by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -1729,14 +2009,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "List all submissions for a quiz",
+                "description": "Retrieve all submissions for a quiz",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Quizzes"
                 ],
-                "summary": "List quiz submissions (Nakes only)",
+                "summary": "List quiz submissions by quiz ID (Nakes only)",
                 "parameters": [
                     {
                         "type": "string",
@@ -1752,7 +2032,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.QuizSubmission"
+                                "$ref": "#/definitions/handler.QuizSubmissionResponse"
                             }
                         }
                     },
@@ -1790,7 +2070,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve single quiz submission details",
+                "description": "Retrieve single submission details by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -1818,7 +2098,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.QuizSubmission"
+                            "$ref": "#/definitions/handler.QuizSubmissionResponse"
                         }
                     },
                     "400": {
@@ -1853,7 +2133,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Delete a quiz submission by ID",
+                "description": "Delete a quiz submission record by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -1911,6 +2191,139 @@ const docTemplate = `{
                 }
             }
         },
+        "/nakes/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve paginated list of registered users",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "List users (Nakes only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit (default 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset (default 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handler.User"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to list users",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new user with phone number, role, name, and optional NIK",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Create a new user (Nakes only)",
+                "parameters": [
+                    {
+                        "description": "Create User Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handler.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error or invalid role",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "User already exists",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/notifications": {
             "get": {
                 "security": [
@@ -1918,21 +2331,21 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all notifications belonging to the authenticated user",
+                "description": "Retrieve all notifications for the authenticated user",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Notifications"
                 ],
-                "summary": "List notifications for current user",
+                "summary": "List user notifications",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.Notification"
+                                "$ref": "#/definitions/handler.NotificationResponse"
                             }
                         }
                     },
@@ -1979,7 +2392,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.Notification"
+                            "$ref": "#/definitions/handler.NotificationResponse"
                         }
                     },
                     "400": {
@@ -2010,7 +2423,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update read status of a notification",
+                "description": "Update notification status to read by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -2076,8 +2489,69 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.Child"
+                                "$ref": "#/definitions/handler.ChildResponse"
                             }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Register a new child profile by parent/guardian",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Children"
+                ],
+                "summary": "Create child profile (Parent only)",
+                "parameters": [
+                    {
+                        "description": "Create Child Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.CreateChildrenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ChildResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
                         }
                     },
                     "401": {
@@ -2108,14 +2582,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all growth measurements recorded for a specific child",
+                "description": "Retrieve measurement history for a child by parent/guardian",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Measurements"
                 ],
-                "summary": "List measurements for a child",
+                "summary": "List measurements by child ID (Parent only)",
                 "parameters": [
                     {
                         "type": "string",
@@ -2131,7 +2605,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.Measurement"
+                                "$ref": "#/definitions/handler.MeasurementResponse"
                             }
                         }
                     },
@@ -2143,6 +2617,75 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: insufficient permissions",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/ortu/measurements": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Record a new child growth measurement by parent/guardian",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Measurements"
+                ],
+                "summary": "Create child measurement (Parent only)",
+                "parameters": [
+                    {
+                        "description": "Create Measurement Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.CreateMeasurementRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handler.MeasurementResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden: insufficient permissions",
                         "schema": {
                             "$ref": "#/definitions/handler.ErrorResponse"
                         }
@@ -2191,7 +2734,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.Quiz"
+                                "$ref": "#/definitions/handler.QuizResponse"
                             }
                         }
                     },
@@ -2223,7 +2766,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve quiz details by ID",
+                "description": "Retrieve single quiz details by ID",
                 "produces": [
                     "application/json"
                 ],
@@ -2244,7 +2787,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/db.Quiz"
+                            "$ref": "#/definitions/handler.QuizResponse"
                         }
                     },
                     "400": {
@@ -2298,7 +2841,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/db.QuizQuestion"
+                                "$ref": "#/definitions/handler.QuizQuestionResponse"
                             }
                         }
                     },
@@ -2363,7 +2906,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/db.QuizSubmission"
+                            "$ref": "#/definitions/handler.QuizSubmissionResponse"
                         }
                     },
                     "400": {
@@ -2389,7 +2932,7 @@ const docTemplate = `{
         },
         "/register": {
             "post": {
-                "description": "Register a new user with phone number, role, and full name",
+                "description": "Register a new user with phone number, role, name, and optional NIK",
                 "consumes": [
                     "application/json"
                 ],
@@ -2438,143 +2981,162 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/profile": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve profile of authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get user profile",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update name, NIK, phone number, and notification preference of authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update user profile",
+                "parameters": [
+                    {
+                        "description": "Update Profile Payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.UpdateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error or invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to update profile",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/profile/avatar": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload an avatar image file (max 5MB) for the authenticated user",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Upload user avatar",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Avatar image file (JPEG/PNG, max 5MB)",
+                        "name": "avatar",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.UploadAvatarResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID, file missing, or file size exceeds limit",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Storage service unavailable or failed to upload",
+                        "schema": {
+                            "$ref": "#/definitions/handler.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "db.Child": {
-            "type": "object",
-            "properties": {
-                "birthDate": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "fullName": {
-                    "type": "string"
-                },
-                "gender": {
-                    "type": "string"
-                },
-                "homeAddress": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "nik": {
-                    "type": "string"
-                },
-                "parentID": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "db.EducationMaterial": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "creatorID": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "videoUrl": {
-                    "type": "string"
-                }
-            }
-        },
-        "db.Measurement": {
-            "type": "object",
-            "properties": {
-                "age": {
-                    "type": "number"
-                },
-                "childrenID": {
-                    "type": "string"
-                },
-                "headCircumference": {
-                    "type": "number"
-                },
-                "height": {
-                    "type": "number"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "measuredAt": {
-                    "type": "string"
-                },
-                "measurerID": {
-                    "type": "string"
-                },
-                "measurerRole": {
-                    "$ref": "#/definitions/db.UserRole"
-                },
-                "stuntingStatus": {
-                    "$ref": "#/definitions/db.NullStuntingStatus"
-                },
-                "upperArmCircumference": {
-                    "type": "number"
-                },
-                "weight": {
-                    "type": "number"
-                },
-                "zscore": {
-                    "type": "number"
-                }
-            }
-        },
-        "db.Notification": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "isRead": {
-                    "type": "boolean"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "userID": {
-                    "type": "string"
-                }
-            }
-        },
-        "db.NullStuntingStatus": {
-            "type": "object",
-            "properties": {
-                "stuntingStatus": {
-                    "$ref": "#/definitions/db.StuntingStatus"
-                },
-                "valid": {
-                    "description": "Valid is true if StuntingStatus is not NULL",
-                    "type": "boolean"
-                }
-            }
-        },
         "db.QuestionType": {
             "type": "string",
             "enum": [
@@ -2586,111 +3148,6 @@ const docTemplate = `{
                 "QuestionTypeTrueFalse"
             ]
         },
-        "db.Quiz": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "creatorID": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "db.QuizQuestion": {
-            "type": "object",
-            "properties": {
-                "correctAns": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "options": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "questionText": {
-                    "type": "string"
-                },
-                "questionType": {
-                    "$ref": "#/definitions/db.QuestionType"
-                },
-                "quizID": {
-                    "type": "string"
-                }
-            }
-        },
-        "db.QuizSubmission": {
-            "type": "object",
-            "properties": {
-                "answers": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "id": {
-                    "type": "string"
-                },
-                "kaderID": {
-                    "type": "string"
-                },
-                "quizID": {
-                    "type": "string"
-                },
-                "score": {
-                    "type": "number"
-                },
-                "submittedAt": {
-                    "type": "string"
-                }
-            }
-        },
-        "db.StuntingStatus": {
-            "type": "string",
-            "enum": [
-                "severely_stunted",
-                "stunted",
-                "normal",
-                "tall"
-            ],
-            "x-enum-varnames": [
-                "StuntingStatusSeverelyStunted",
-                "StuntingStatusStunted",
-                "StuntingStatusNormal",
-                "StuntingStatusTall"
-            ]
-        },
-        "db.UserRole": {
-            "type": "string",
-            "enum": [
-                "tenaga_kesehatan",
-                "kader",
-                "orang_tua",
-                "admin"
-            ],
-            "x-enum-varnames": [
-                "UserRoleTenagaKesehatan",
-                "UserRoleKader",
-                "UserRoleOrangTua",
-                "UserRoleAdmin"
-            ]
-        },
         "handler.AuthResponse": {
             "type": "object",
             "properties": {
@@ -2699,6 +3156,38 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/handler.User"
+                }
+            }
+        },
+        "handler.ChildResponse": {
+            "type": "object",
+            "properties": {
+                "birth_date": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "home_address": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "nik": {
+                    "type": "string"
+                },
+                "parent_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -2802,10 +3291,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "options": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "question_text": {
                     "type": "string"
@@ -2836,13 +3322,36 @@ const docTemplate = `{
             ],
             "properties": {
                 "answers": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "score": {
                     "type": "number"
+                }
+            }
+        },
+        "handler.EducationMaterialResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "creator_id": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "video_url": {
+                    "type": "string"
                 }
             }
         },
@@ -2855,12 +3364,145 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.MeasurementResponse": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "number"
+                },
+                "children_id": {
+                    "type": "string"
+                },
+                "head_circumference": {
+                    "type": "number"
+                },
+                "height": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "measured_at": {
+                    "type": "string"
+                },
+                "measurer_id": {
+                    "type": "string"
+                },
+                "measurer_role": {
+                    "type": "string"
+                },
+                "stunting_status": {
+                    "type": "string"
+                },
+                "upper_arm_circumference": {
+                    "type": "number"
+                },
+                "weight": {
+                    "type": "number"
+                },
+                "z_score": {
+                    "type": "number"
+                }
+            }
+        },
         "handler.MessageResponse": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string",
                     "example": "operation successful"
+                }
+            }
+        },
+        "handler.NotificationResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_read": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.QuizQuestionResponse": {
+            "type": "object",
+            "properties": {
+                "correct_ans": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "options": {
+                    "type": "object"
+                },
+                "question_text": {
+                    "type": "string"
+                },
+                "question_type": {
+                    "type": "string"
+                },
+                "quiz_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.QuizResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "creator_id": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.QuizSubmissionResponse": {
+            "type": "object",
+            "properties": {
+                "answers": {
+                    "type": "object"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kader_id": {
+                    "type": "string"
+                },
+                "quiz_id": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "submitted_at": {
+                    "type": "string"
                 }
             }
         },
@@ -2873,6 +3515,9 @@ const docTemplate = `{
             ],
             "properties": {
                 "name": {
+                    "type": "string"
+                },
+                "nik": {
                     "type": "string"
                 },
                 "phone_number": {
@@ -2973,6 +3618,27 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.UpdateProfileRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "phone_number"
+            ],
+            "properties": {
+                "is_notification_enabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nik": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                }
+            }
+        },
         "handler.UpdateQuizQuestionRequest": {
             "type": "object",
             "required": [
@@ -2985,10 +3651,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "options": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "question_text": {
                     "type": "string"
@@ -3012,13 +3675,38 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.UploadAvatarResponse": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string",
+                    "example": "https://storage.googleapis.com/..."
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Avatar uploaded successfully"
+                },
+                "user": {
+                    "$ref": "#/definitions/handler.User"
+                }
+            }
+        },
         "handler.User": {
             "type": "object",
             "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
+                "is_notification_enabled": {
+                    "type": "boolean"
+                },
                 "name": {
+                    "type": "string"
+                },
+                "nik": {
                     "type": "string"
                 },
                 "phone_number": {
