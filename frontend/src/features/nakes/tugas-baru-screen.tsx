@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   AlertTriangle,
@@ -15,12 +15,15 @@ import {
 } from "lucide-react"
 import { NakesHeader } from "../../components/nakes/nakes-header"
 import { NakesBottomNav } from "../../components/nakes/nakes-bottom-nav"
+import { KaderNotification } from "../../components/kader/kader-notification"
 import { ConfirmDeleteModal } from "../../components/ui/confirm-delete-modal"
+import { useAuth } from "../../context/auth-context"
 import {
   createNotification,
   getNakesChildren,
   getNakesMeasurements,
   getNakesUsers,
+  getNotifications,
   type Child,
   type Measurement,
   type UserProfile,
@@ -438,6 +441,7 @@ function CreateTaskModal({
 
 export function TugasBaruScreen() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [anakList, setAnakList] = useState<AnakTugas[]>([])
   const [kaderOptions, setKaderOptions] = useState<string[]>([])
   const [kaderUsers, setKaderUsers] = useState<UserProfile[]>([])
@@ -450,6 +454,20 @@ export function TugasBaruScreen() {
   const [isCreating, setIsCreating] = useState(false)
   const [assigningId, setAssigningId] = useState<string | null>(null)
   const [checkingId, setCheckingId] = useState<string | null>(null)
+  const [hasUnread, setHasUnread] = useState(false)
+  const [showNotification, setShowNotification] = useState(false)
+
+  const checkUnread = useCallback(() => {
+    getNotifications()
+      .then((items) => {
+        setHasUnread(Array.isArray(items) && items.some((item) => !item.is_read))
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    checkUnread()
+  }, [checkUnread])
 
   useEffect(() => {
     let active = true
@@ -474,21 +492,20 @@ export function TugasBaruScreen() {
             .map((measurement) => measurement.children_id),
         )
 
-        const mapped: AnakTugas[] = validChildren
-          .filter((child) => !measuredThisWeek.has(child.id))
-          .map((child: Child) => {
-            const { rt, rw } = parseRtRw(child.home_address)
-            return {
-              id: child.id,
-              nama: child.full_name,
-              rt,
-              rw,
-              status: "belum-diukur",
-              kader: "",
-              batasWaktu: "",
-              ditugaskan: false,
-            }
-          })
+        const mapped: AnakTugas[] = validChildren.map((child: Child) => {
+          const { rt, rw } = parseRtRw(child.home_address)
+          const isDone = measuredThisWeek.has(child.id)
+          return {
+            id: child.id,
+            nama: child.full_name,
+            rt,
+            rw,
+            status: isDone ? "selesai" : "belum-diukur",
+            kader: "",
+            batasWaktu: "",
+            ditugaskan: false,
+          }
+        })
         setAnakList(mapped)
 
         const kaders = validUsers.filter((user) => user.role === "kader")
@@ -514,8 +531,8 @@ export function TugasBaruScreen() {
         .includes(searchQuery.toLowerCase())
       const matchesTab =
         filterTab === "Semua" ||
-        (filterTab === "Belum Diukur" && anak.status === "belum-diukur")
-      return matchesSearch && matchesTab
+        (filterTab === "Belum Diukur" && anak.status === "belum-diukur") ||
+        (filterTab === "Selesai Diukur" && anak.status === "selesai")
     })
   }, [anakList, searchQuery, filterTab])
 
@@ -670,13 +687,33 @@ export function TugasBaruScreen() {
       )
 
       if (isMeasured) {
-        setAnakList((prev) => prev.filter((item) => item.id !== anak.id))
+        setAnakList((prev) =>
+          prev.map((item) =>
+            item.id === anak.id ? { ...item, status: "selesai" } : item,
+          ),
+        )
+
+        // Kirim notifikasi penyelesaian tugas ke Nakes
+        try {
+          const token = localStorage.getItem("centing_token")
+          const nakesUserId = user?.id || (token ? getUserIdFromToken(token) : null)
+          if (nakesUserId) {
+            await createNotification({
+              user_id: nakesUserId,
+              title: `Pengukuran Selesai: ${anak.nama}`,
+              message: `Balita ${anak.nama} (RT ${anak.rt} / RW ${anak.rw}) sudah selesai diukur oleh kader.`,
+            })
+            checkUnread()
+          }
+        } catch {
+          // ignore network errors so status update still succeeds
+        }
+
         setAlertState({
           type: "success",
           title: "Pengukuran Selesai",
-          message: `${anak.nama} sudah diukur minggu ini dan dihapus dari daftar tugas.`,
+          message: `${anak.nama} sudah selesai diukur minggu ini. Status diperbarui ke "Selesai Diukur".`,
         })
-      } else {
         setAlertState({
           type: "info",
           title: "Belum Diukur",
@@ -695,10 +732,15 @@ export function TugasBaruScreen() {
     }
   }
 
-  const filterTabs: FilterTab[] = ["Semua", "Belum Diukur"]
+  const filterTabs: FilterTab[] = ["Semua", "Belum Diukur", "Selesai Diukur"]
   return (
     <main className="min-h-svh bg-gray-50 pb-24 flex flex-col">
-      <NakesHeader title="Akun" />
+      <NakesHeader
+        title="Akun"
+        onBack={() => navigate("/nakes/akun")}
+        hasUnread={hasUnread}
+        onNotificationClick={() => setShowNotification(true)}
+      />
 
       <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 py-6 flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -834,7 +876,24 @@ export function TugasBaruScreen() {
 
                 <div className="h-px bg-zinc-100" />
 
-                {anak.ditugaskan ? (
+                {anak.status === "selesai" ? (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-4">
+                      Status Pengukuran:
+                    </span>
+                    <div className="px-3 py-2 bg-emerald-50 rounded-lg flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-800 shrink-0" />
+                      <span className="text-emerald-800 text-sm font-semibold font-['Plus_Jakarta_Sans:SemiBold',sans-serif] leading-5 truncate">
+                        Sudah Diukur Minggu Ini
+                      </span>
+                    </div>
+                    {anak.kader && (
+                      <span className="text-neutral-600 text-xs font-normal font-['Plus_Jakarta_Sans:Regular',sans-serif]">
+                        Kader: {anak.kader}
+                      </span>
+                    )}
+                  </div>
+                ) : anak.ditugaskan ? (
                   <div className="flex flex-col gap-2">
                     <span className="text-neutral-700 text-xs font-bold font-['Plus_Jakarta_Sans:Bold',sans-serif] leading-4">
                       Ditugaskan ke Kader:
@@ -928,6 +987,14 @@ export function TugasBaruScreen() {
       )}
 
       {alertState && <AlertModal alert={alertState} onClose={() => setAlertState(null)} />}
+      {showNotification && (
+        <KaderNotification
+          onClose={() => {
+            setShowNotification(false)
+            checkUnread()
+          }}
+        />
+      )}
 
       <NakesBottomNav
         active="Akun"
