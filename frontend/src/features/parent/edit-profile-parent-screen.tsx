@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Check, Pencil, User, CreditCard, Phone, MapPin } from "lucide-react"
 
@@ -18,13 +18,27 @@ export function EditProfileParentScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string>(user?.avatar_url || "")
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [form, setForm] = useState({
-    nama: user?.name || "Ibu Nisa",
-    nik: user?.nik || "3201987654321001",
-    whatsapp: user?.phone_number || "08123456789",
-    alamat: "Note: ntar dulu yak",
+    nama: user?.name || "",
+    nik: user?.nik || "",
+    whatsapp: user?.phone_number || "",
+    alamat: "",
     rtRw: "",
     kecamatan: "",
   })
+
+  useEffect(() => {
+    if (user) {
+      setForm((prev) => ({
+        ...prev,
+        nama: user.name || "",
+        nik: user.nik || "",
+        whatsapp: user.phone_number || "",
+      }))
+      if (user.avatar_url) {
+        setAvatarUrl(user.avatar_url)
+      }
+    }
+  }, [user])
 
   const handleChange =
     (field: keyof typeof form) =>
@@ -36,10 +50,11 @@ export function EditProfileParentScreen() {
     setErrorMsg(null)
     setSaving(true)
     try {
+      const trimmedNik = form.nik.trim()
       const updated = await updateUserProfile({
-        name: form.nama,
-        nik: form.nik,
-        phone_number: form.whatsapp,
+        name: form.nama.trim(),
+        nik: trimmedNik || undefined,
+        phone_number: form.whatsapp.trim(),
       })
       if (setUser) setUser(updated)
       navigate("/orang-tua/profil")
@@ -87,7 +102,7 @@ export function EditProfileParentScreen() {
           <div className="size-24 bg-emerald-300 rounded-full shadow-md outline outline-4 outline-offset-[-4px] outline-gray-50 flex justify-center items-center overflow-hidden">
             <img
               className="size-24 object-cover"
-              src={avatarUrl || "https://placehold.co/96x96"}
+              src={avatarUrl || logo}
               alt="avatar"
             />
           </div>
@@ -128,6 +143,7 @@ export function EditProfileParentScreen() {
 
           <Field
             label="Nama Lengkap"
+            placeholder="Masukkan nama lengkap"
             icon={<User className="size-3.5 text-neutral-700/50" />}
             value={form.nama}
             onChange={handleChange("nama")}
@@ -135,6 +151,7 @@ export function EditProfileParentScreen() {
 
           <Field
             label="Nomor Induk Kependudukan (NIK)"
+            placeholder="16 digit NIK (opsional)"
             icon={<CreditCard className="size-3.5 text-neutral-700/50" />}
             value={form.nik}
             onChange={handleChange("nik")}
@@ -151,6 +168,7 @@ export function EditProfileParentScreen() {
 
           <Field
             label="Nomor WhatsApp / HP"
+            placeholder="Contoh: 08123456789"
             icon={<Phone className="size-3.5 text-neutral-700/50" />}
             value={form.whatsapp}
             onChange={handleChange("whatsapp")}
@@ -165,6 +183,7 @@ export function EditProfileParentScreen() {
               <textarea
                 value={form.alamat}
                 onChange={handleChange("alamat")}
+                placeholder="Masukkan alamat lengkap"
                 rows={2}
                 className="w-full pl-10 pr-3 pt-3 pb-3 bg-white rounded-lg outline outline-2 outline-offset-[-2px] outline-zinc-100 text-black text-sm font-normal font-['Manrope:Regular',sans-serif] resize-none focus:outline-emerald-800"
               />
@@ -179,6 +198,7 @@ export function EditProfileParentScreen() {
               <input
                 value={form.rtRw}
                 onChange={handleChange("rtRw")}
+                placeholder="Contoh: 01/03"
                 className="w-full p-3 bg-white rounded-lg outline outline-2 outline-offset-[-2px] outline-zinc-100 text-center text-black text-sm font-normal font-['Manrope:Regular',sans-serif] focus:outline-emerald-800"
               />
             </div>
@@ -189,6 +209,7 @@ export function EditProfileParentScreen() {
               <input
                 value={form.kecamatan}
                 onChange={handleChange("kecamatan")}
+                placeholder="Contoh: Bantul"
                 className="w-full p-3 bg-white rounded-lg outline outline-2 outline-offset-[-2px] outline-zinc-100 text-black text-sm font-normal font-['Manrope:Regular',sans-serif] focus:outline-emerald-800"
               />
             </div>
@@ -221,11 +242,13 @@ export function EditProfileParentScreen() {
 
 function Field({
   label,
+  placeholder,
   icon,
   value,
   onChange,
 }: {
   label: string
+  placeholder?: string
   icon: React.ReactNode
   value: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
@@ -239,6 +262,7 @@ function Field({
         <span className="absolute left-3 top-1/2 -translate-y-1/2">{icon}</span>
         <input
           value={value}
+          placeholder={placeholder}
           onChange={onChange}
           className="w-full pl-10 pr-3 py-3 bg-white rounded-lg outline outline-2 outline-offset-[-2px] outline-zinc-100 text-black text-sm font-normal font-['Manrope:Regular',sans-serif] focus:outline-emerald-800"
         />
